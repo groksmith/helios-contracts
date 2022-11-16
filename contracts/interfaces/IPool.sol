@@ -16,12 +16,6 @@ interface IPool {
     event PoolStateChanged(State state);
 
     /**
-        @dev   Emits an event indicating a that the lockup period for the Pool was set.
-        @param newLockupPeriod The new lockup cap.
-     */
-    event LockupPeriodSet(uint256 newLockupPeriod);
-
-    /**
         @dev   Emits an event indicating a that a PoolAdmin was set.
         @param poolAdmin The address of a PoolAdmin.
         @param allowed   Whether `poolAdmin` is an admin of the Pool.

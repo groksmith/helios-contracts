@@ -83,4 +83,3 @@ contract Pool is IPool, ERC20 {
         return IHeliosGlobalsLike(IPoolFactory(poolFactory).globals());
     }
 }
-

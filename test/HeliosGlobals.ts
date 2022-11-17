@@ -56,5 +56,11 @@ describe("HeliosGlobals contract", function () {
             await expect(heliosGlobals.connect(admin2).setGlobalAdmin(admin2.address))
                 .to.be.revertedWith('HG:NOT_GOV_OR_ADMIN');
         });
+
+        it("Set Valid Pool Delegate", async function () {
+            await heliosGlobals.setPoolDelegateAllowList(address[0].address, true);
+            expect(await heliosGlobals.isValidPoolDelegate(address[0].address)).to.equal(true);
+            expect(await heliosGlobals.isValidPoolDelegate(address[1].address)).to.equal(false);
+        });
     });
 });

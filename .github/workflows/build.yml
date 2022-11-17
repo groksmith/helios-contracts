@@ -19,16 +19,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - uses: actions/setup-node@v2
+      - uses: borales/actions-yarn@v3.0.0
         with:
-          node-version: '18'
-          cache: yarn
-          
-      - name: Install
-        run: yarn install
-      - name: Build
-        run: yarn compile
-      - name: Run tests
-        env:
-          FORCE_COLOR: 3
-        run: yarn test
+          cmd: install
+      - uses: borales/actions-yarn@v3.0.0
+        with:
+          cmd: compile
+      - uses: borales/actions-yarn@v3.0.0
+        with:
+          cmd: test

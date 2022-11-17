@@ -6,7 +6,8 @@
   "author": "Tigran Arakelyan <tigranarakelyan@hive1-cs.com>",
   "license": "MIT",
   "scripts": {
-    "test": "hardhat test"
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",

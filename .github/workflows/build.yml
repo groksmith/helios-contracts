@@ -2,10 +2,6 @@ name: Build & Test
 
 on: pull_request
 
-defaults:
-  run:
-    working-directory: packages/hardhat-core
-
 jobs:
   build:
     runs-on: ubuntu-latest

@@ -1,7 +1,15 @@
 name: Build & Test
 
-on: pull_request
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'development'
 
+defaults:
+  run:
+    working-directory: packages/helios-contracts
+    
 jobs:
   build:
     runs-on: ubuntu-latest

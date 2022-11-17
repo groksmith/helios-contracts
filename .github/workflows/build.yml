@@ -1,0 +1,30 @@
+name: Build & Test
+
+on: pull_request
+
+defaults:
+  run:
+    working-directory: packages/hardhat-core
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          cache: yarn
+          
+      - name: Install
+        run: yarn --frozen-lockfile
+      - name: Build
+        run: yarn compile
+      - name: Run tests
+        env:
+          DO_NOT_SET_THIS_ENV_VAR____IS_HARDHAT_CI: true
+          FORCE_COLOR: 3
+        run: yarn test:except-tracing

@@ -1,11 +1,12 @@
 name: Build & Test
 
 on:
+  push:
+    branches: [$default-branch]
   pull_request:
     branches:
-      - 'master'
-      - 'development'
-
+      - "**"
+      
 defaults:
   run:
     working-directory: packages/helios-contracts
@@ -20,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: '18'
           cache: yarn
           
       - name: Install
@@ -29,6 +30,5 @@ jobs:
         run: yarn compile
       - name: Run tests
         env:
-          DO_NOT_SET_THIS_ENV_VAR____IS_HARDHAT_CI: true
           FORCE_COLOR: 3
-        run: yarn test:except-tracing
+        run: yarn test

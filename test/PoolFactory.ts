@@ -1,7 +1,12 @@
 const {ethers} = require('hardhat');
 import {expect} from "chai";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
-import {HeliosGlobals, HeliosGlobals__factory, PoolFactory, PoolFactory__factory} from "../typechain-types";
+import {
+    HeliosGlobals,
+    HeliosGlobals__factory,
+    PoolFactory,
+    PoolFactory__factory
+} from "../typechain-types";
 
 describe("PoolFactory contract", function () {
     let heliosGlobals: HeliosGlobals;
@@ -59,15 +64,29 @@ describe("PoolFactory contract", function () {
             await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
             await poolFactory.connect(admin).createPool(10, 12, 100000, 1);
 
+            await heliosGlobals.setPoolDelegateAllowList(admin2.address, true);
+            await poolFactory.connect(admin2).createPool(10, 12, 100000, 1);
+        });
+
+        it("Create Pool Fails", async function () {
             await expect(poolFactory.connect(admin2).createPool(10, 12, 100000, 1))
                 .to.be.revertedWith('PF:NOT_DELEGATE');
 
             await heliosGlobals.setPoolDelegateAllowList(admin2.address, false);
             await expect(poolFactory.connect(admin2).createPool(10, 12, 100000, 1))
                 .to.be.revertedWith('PF:NOT_DELEGATE');
+        });
 
-            await heliosGlobals.setPoolDelegateAllowList(admin2.address, true);
-            await poolFactory.connect(admin2).createPool(10, 12, 100000, 1);
+        it("Create Pool Fails Paused", async function () {
+            await poolFactory.pause();
+            await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
+            await expect(poolFactory.connect(admin).createPool(10, 12, 100000, 1))
+                .to.be.revertedWith('Pausable: paused');
+        });
+
+        it("Create Pool with valid", async function () {
+            await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
+            await poolFactory.connect(admin).createPool(10, 12, 100000, 1);
         });
     });
 });

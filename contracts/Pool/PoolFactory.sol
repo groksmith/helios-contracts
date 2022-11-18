@@ -6,8 +6,8 @@ import "./Pool.sol";
 import "../Global/HeliosGlobals.sol";
 
 contract PoolFactory is Pausable {
-    uint256  public poolsCreated;
-    HeliosGlobals public globals;
+    uint256         public poolsCreated;
+    HeliosGlobals   public globals;
 
     mapping(uint256 => address) public pools;              // Map to reference Pools corresponding to their respective indices.
     mapping(address => bool)    public isPool;             // True only if a Pool was instantiated by this factory.

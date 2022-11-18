@@ -6,11 +6,14 @@ async function main() {
 
     const globals = await globalsFactory.deploy(owner.address, admin.address);
     await globals.deployed();
+    await globals.setPoolDelegateAllowList(admin.address, true);
     console.log("HeliosGlobals deployed to:", globals.address);
 
     const poolFactoryFactory = await ethers.getContractFactory("PoolFactory");
     const poolFactory = await poolFactoryFactory.deploy(globals.address);
     await poolFactory.deployed();
+
+    await poolFactory.setPoolFactoryAdmin(admin.address, true);
 
     console.log("Pool Factory deployed to:", poolFactory.address);
     console.log("Owner:", owner.address);

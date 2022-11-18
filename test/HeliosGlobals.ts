@@ -2,6 +2,7 @@ const {ethers} = require('hardhat');
 import {expect} from "chai";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {HeliosGlobals, HeliosGlobals__factory} from "../typechain-types";
+import "hardhat-gas-reporter";
 
 describe("HeliosGlobals contract", function () {
     let heliosGlobals: HeliosGlobals;
@@ -9,6 +10,7 @@ describe("HeliosGlobals contract", function () {
     let admin: SignerWithAddress;
     let admin2: SignerWithAddress;
     let address: SignerWithAddress[];
+
 
     beforeEach(async function () {
         [owner, admin, admin2, ...address] = await ethers.getSigners();

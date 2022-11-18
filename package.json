@@ -8,7 +8,8 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "coverage": "npx hardhat coverage"
+    "coverage": "npx hardhat coverage",
+    "clean": "npx hardhat clean"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
@@ -26,7 +27,7 @@
     "chai": "^4.2.0",
     "ethers": "^5.4.7",
     "hardhat": "^2.12.2",
-    "hardhat-gas-reporter": "^1.0.8",
+    "hardhat-gas-reporter": "^1.0.9",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.0",

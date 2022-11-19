@@ -2,7 +2,6 @@ const {ethers} = require('hardhat');
 import {expect} from "chai";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {HeliosGlobals, HeliosGlobals__factory} from "../typechain-types";
-import "hardhat-gas-reporter";
 
 describe("HeliosGlobals contract", function () {
     let heliosGlobals: HeliosGlobals;

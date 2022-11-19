@@ -8,8 +8,6 @@ import {
     PoolFactory__factory
 } from "../typechain-types";
 
-import "hardhat-gas-reporter";
-
 describe("PoolFactory contract", function () {
     let heliosGlobals: HeliosGlobals;
     let poolFactory: PoolFactory;

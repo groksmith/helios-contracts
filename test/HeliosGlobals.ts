@@ -10,6 +10,7 @@ describe("HeliosGlobals contract", function () {
     let admin2: SignerWithAddress;
     let address: SignerWithAddress[];
 
+
     beforeEach(async function () {
         [owner, admin, admin2, ...address] = await ethers.getSigners();
 
@@ -55,6 +56,12 @@ describe("HeliosGlobals contract", function () {
         it("Set Global Admin Fail", async function () {
             await expect(heliosGlobals.connect(admin2).setGlobalAdmin(admin2.address))
                 .to.be.revertedWith('HG:NOT_GOV_OR_ADMIN');
+        });
+
+        it("Set Valid Pool Delegate", async function () {
+            await heliosGlobals.setPoolDelegateAllowList(address[0].address, true);
+            expect(await heliosGlobals.isValidPoolDelegate(address[0].address)).to.equal(true);
+            expect(await heliosGlobals.isValidPoolDelegate(address[1].address)).to.equal(false);
         });
     });
 });

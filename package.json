@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "repository": "https://traqel@github.com/groksmith/helios-contracts.git",
-  "author": "Tigran Arakelyan <tigranarakelyan@hive1-cs.com>",
-  "license": "MIT",
+  "author": "Tigran Arakelyan <tigran@groksmith.co>",
+  "license": "UNLICENSED",
+  "private": true,
   "scripts": {
     "compile": "npx hardhat compile",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage",
+    "clean": "npx hardhat clean"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
@@ -25,7 +28,7 @@
     "chai": "^4.2.0",
     "ethers": "^5.4.7",
     "hardhat": "^2.12.2",
-    "hardhat-gas-reporter": "^1.0.8",
+    "hardhat-gas-reporter": "^1.0.9",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.0",

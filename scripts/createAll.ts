@@ -33,10 +33,13 @@ async function main() {
     const poolContract = poolFactory.attach(pool);
 
     // TODO: next steps
-    await console.log(await poolContract.apy())
+    await console.log(await poolContract.poolState())
+    await poolContract.connect(admin).finalize()
+    await poolContract.connect(admin).deactivate()
+    await console.log(await poolContract.poolState())
 }
 
 main().catch((error) => {
-    console.error(error);
+    console.error(error.error.data.stack);
     process.exitCode = 1;
 });

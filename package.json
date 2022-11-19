@@ -10,7 +10,8 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
-    "clean": "npx hardhat clean"
+    "clean": "npx hardhat clean",
+    "try": "npx hardhat run scripts/createAll.ts --network localhost"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",

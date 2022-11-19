@@ -5,6 +5,7 @@
   "repository": "https://traqel@github.com/groksmith/helios-contracts.git",
   "author": "Tigran Arakelyan <tigranarakelyan@hive1-cs.com>",
   "license": "MIT",
+  "private": "true",
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",

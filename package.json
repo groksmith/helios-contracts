@@ -11,6 +11,7 @@
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
     "clean": "npx hardhat clean",
+    "deploy": "npx hardhat run scripts/deploy.ts --network localhost",
     "try": "npx hardhat run scripts/createAll.ts --network localhost"
   },
   "devDependencies": {

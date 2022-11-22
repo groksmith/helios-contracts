@@ -1,0 +1,16 @@
+[
+  "constructor(address,address)",
+  "event GlobalAdminSet(address indexed)",
+  "event Initialized()",
+  "event PoolDelegateSet(address indexed,bool)",
+  "event ProtocolPaused(bool)",
+  "function globalAdmin() view returns (address)",
+  "function governor() view returns (address)",
+  "function isValidPoolDelegate(address) view returns (bool)",
+  "function isValidPoolFactory(address) view returns (bool)",
+  "function protocolPaused() view returns (bool)",
+  "function setGlobalAdmin(address)",
+  "function setPoolDelegateAllowList(address,bool)",
+  "function setProtocolPause(bool)",
+  "function setValidPoolFactory(address,bool)"
+]

@@ -33,3 +33,8 @@ jobs:
         uses: borales/actions-yarn@v3.0.0
         with:
           cmd: test
+
+      - name: Yarn Generate abi
+        uses: borales/actions-yarn@v3.0.0
+        with:
+          cmd: export

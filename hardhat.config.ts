@@ -2,6 +2,7 @@
 
 import {HardhatUserConfig} from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-abi-exporter";
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -19,6 +20,15 @@ const config: HardhatUserConfig = {
         url: "http://localhost:8545",
         coinmarketcap: "5b857a1c-6633-4d01-b5da-279d35141c79"
     },
+    abiExporter: {
+        path: './abi',
+        only: ['Pool', 'PoolFactory', 'HeliosGlobals'],
+        runOnCompile: true,
+        clear: true,
+        flat: true,
+        spacing: 2,
+        pretty: true
+    }
 };
 
 export default config;

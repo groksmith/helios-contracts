@@ -4,7 +4,7 @@ import {HardhatUserConfig} from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-abi-exporter";
 
-const ALCHEMY_API_KEY = "kW408gep9UjLopwPqGizzD0MrBV5kLzd";
+const ALCHEMY_API_KEY = "Vh6E2PGEO2PplkuLh0z0fDhlsPN3DHlc";
 const GOERLI_OWNER_PRIVATE_KEY = "a43c7fdc611841d943a3b54faacd13bc29f73e0081e9e2800fef4167ecb876af";
 const GOERLI_ADMIN_PRIVATE_KEY = "6a91dbcfcac54182fad12d2049103917c3f8fc1d09cb7f01a25b6caa986a5985";
 

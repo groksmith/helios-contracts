@@ -11,7 +11,7 @@
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
     "clean": "npx hardhat clean",
-    "deploy": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy-local": "npx hardhat run scripts/deploy.ts --network localhost",
     "deploy-test": "npx hardhat run scripts/deploy.ts --network goerli",
     "pool-test": "npx hardhat run scripts/createPool.ts --network goerli",
     "try": "npx hardhat run scripts/createAll.ts --network localhost",

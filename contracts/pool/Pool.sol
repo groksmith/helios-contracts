@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../Global/HeliosGlobals.sol";
+import "../global/HeliosGlobals.sol";
 import "./PoolFactory.sol";
 
 contract Pool is ERC20 {

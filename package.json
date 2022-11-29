@@ -12,6 +12,8 @@
     "coverage": "npx hardhat coverage",
     "clean": "npx hardhat clean",
     "deploy": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy-test": "npx hardhat run scripts/deploy.ts --network goerli",
+    "pool-test": "npx hardhat run scripts/createPool.ts --network goerli",
     "try": "npx hardhat run scripts/createAll.ts --network localhost",
     "export": "npx hardhat export-abi"
   },
@@ -27,7 +29,6 @@
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.2.0",
     "@types/mocha": "^9.1.0",
-    "@types/node": ">=12.0.0",
     "chai": "^4.2.0",
     "ethers": "^5.4.7",
     "hardhat": "^2.12.2",
@@ -39,6 +40,8 @@
     "typescript": ">=4.5.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.0"
+    "@openzeppelin/contracts": "^4.8.0",
+    "@types/node": "^18.11.9",
+    "uuid-tool": "^2.0.3"
   }
 }

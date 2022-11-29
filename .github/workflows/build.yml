@@ -38,3 +38,14 @@ jobs:
         uses: borales/actions-yarn@v3.0.0
         with:
           cmd: export
+          
+      - name: Pushes to helios-admin
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'abi'
+          destination-github-username: 'traqel'
+          destination-repository-name: 'groksmith/helios-admin'
+          user-email: traqel@gmail.com
+          target-branch: develop

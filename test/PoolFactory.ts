@@ -2,6 +2,7 @@ import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
 import {expect} from "chai";
 import {HeliosGlobals__factory} from "../typechain-types";
 import {deployTokenFixture} from "./deployment";
+import {UuidTool} from "uuid-tool";
 
 const {ethers} = require('hardhat');
 
@@ -45,19 +46,23 @@ describe("PoolFactory contract", function () {
     it("Create Pool", async function () {
         const {heliosGlobals, poolFactory, admin, admin2} = await loadFixture(deployTokenFixture);
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
-        await poolFactory.connect(admin).createPool(10, 12, 100000, 1);
+        const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        await poolFactory.connect(admin).createPool(poolId, 10, 12, 100000, 1);
 
         await heliosGlobals.setPoolDelegateAllowList(admin2.address, true);
-        await poolFactory.connect(admin2).createPool(10, 12, 100000, 1);
+        const poolId2 = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        await poolFactory.connect(admin2).createPool(poolId2, 10, 12, 100000, 1);
     });
 
     it("Create Pool Fails", async function () {
         const {heliosGlobals, poolFactory, admin2} = await loadFixture(deployTokenFixture);
-        await expect(poolFactory.connect(admin2).createPool(10, 12, 100000, 1))
+        const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        await expect(poolFactory.connect(admin2).createPool(poolId, 10, 12, 100000, 1))
             .to.be.revertedWith('PF:NOT_DELEGATE');
 
         await heliosGlobals.setPoolDelegateAllowList(admin2.address, false);
-        await expect(poolFactory.connect(admin2).createPool(10, 12, 100000, 1))
+        const poolId2 = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        await expect(poolFactory.connect(admin2).createPool(poolId2, 10, 12, 100000, 1))
             .to.be.revertedWith('PF:NOT_DELEGATE');
     });
 
@@ -65,13 +70,15 @@ describe("PoolFactory contract", function () {
         const {heliosGlobals, poolFactory, admin} = await loadFixture(deployTokenFixture);
         await poolFactory.pause();
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
-        await expect(poolFactory.connect(admin).createPool(10, 12, 100000, 1))
+        const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        await expect(poolFactory.connect(admin).createPool(poolId, 10, 12, 100000, 1))
             .to.be.revertedWith('Pausable: paused');
     });
 
     it("Create Pool with valid", async function () {
         const {heliosGlobals, poolFactory, admin} = await loadFixture(deployTokenFixture);
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
-        await poolFactory.connect(admin).createPool(10, 12, 100000, 1);
+        const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        await poolFactory.connect(admin).createPool(poolId, 10, 12, 100000, 1);
     });
 });

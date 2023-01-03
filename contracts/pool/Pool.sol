@@ -11,8 +11,9 @@ contract Pool is ERC20 {
     address public poolDelegate;
     uint256 public lockupPeriod;
     uint256 public apy;
-    uint256 public maxInvestmentSize;
-    uint256 public minInvestmentSize;
+    uint256 public duration;
+    uint256 public investmentPoolSize;
+    uint256 public minInvestmentAmount;
 
     enum State {Initialized, Finalized, Deactivated}
     State public poolState;
@@ -26,8 +27,9 @@ contract Pool is ERC20 {
         address _poolDelegate,
         uint256 _lockupPeriod,
         uint256 _apy,
-        uint256 _maxInvestmentSize,
-        uint256 _minInvestmentSize,
+        uint256 _duration,
+        uint256 _investmentPoolSize,
+        uint256 _minInvestmentAmount,
         string memory name,
         string memory symbol
     ) ERC20(name, symbol){
@@ -35,8 +37,9 @@ contract Pool is ERC20 {
         poolDelegate = _poolDelegate;
         lockupPeriod = _lockupPeriod;
         apy = _apy;
-        maxInvestmentSize = _maxInvestmentSize;
-        minInvestmentSize = _minInvestmentSize;
+        duration = _duration;
+        investmentPoolSize = _investmentPoolSize;
+        minInvestmentAmount = _minInvestmentAmount;
         poolState = State.Initialized;
         emit PoolStateChanged(poolState);
     }

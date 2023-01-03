@@ -29,9 +29,10 @@ contract PoolFactory is Pausable {
         bytes16 poolId,
         uint256 lockupPeriod,
         uint256 apy,
-        uint256 maxInvestmentSize,
-        uint256 minInvestmentSize
-    ) external whenNotPaused returns (address poolAddress) {
+        uint256 duration,
+        uint256 investmentPoolSize,
+        uint256 minInvestmentAmount
+) external whenNotPaused returns (address poolAddress) {
 
         _whenProtocolNotPaused();
         {
@@ -48,8 +49,9 @@ contract PoolFactory is Pausable {
             msg.sender,
             lockupPeriod,
             apy,
-            maxInvestmentSize,
-            minInvestmentSize,
+            duration,
+            investmentPoolSize,
+            minInvestmentAmount,
             name,
             symbol
         );

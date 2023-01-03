@@ -47,22 +47,22 @@ describe("PoolFactory contract", function () {
         const {heliosGlobals, poolFactory, admin, admin2} = await loadFixture(deployTokenFixture);
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
         const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await poolFactory.connect(admin).createPool(poolId, 10, 12, 100000, 1);
+        await poolFactory.connect(admin).createPool(poolId, 10, 12, 100, 1000, 100);
 
         await heliosGlobals.setPoolDelegateAllowList(admin2.address, true);
         const poolId2 = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await poolFactory.connect(admin2).createPool(poolId2, 10, 12, 100000, 1);
+        await poolFactory.connect(admin2).createPool(poolId2, 10, 12, 100000, 1000, 100);
     });
 
     it("Create Pool Fails", async function () {
         const {heliosGlobals, poolFactory, admin2} = await loadFixture(deployTokenFixture);
         const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await expect(poolFactory.connect(admin2).createPool(poolId, 10, 12, 100000, 1))
+        await expect(poolFactory.connect(admin2).createPool(poolId, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('PF:NOT_DELEGATE');
 
         await heliosGlobals.setPoolDelegateAllowList(admin2.address, false);
         const poolId2 = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await expect(poolFactory.connect(admin2).createPool(poolId2, 10, 12, 100000, 1))
+        await expect(poolFactory.connect(admin2).createPool(poolId2, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('PF:NOT_DELEGATE');
     });
 
@@ -71,7 +71,7 @@ describe("PoolFactory contract", function () {
         await poolFactory.pause();
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
         const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await expect(poolFactory.connect(admin).createPool(poolId, 10, 12, 100000, 1))
+        await expect(poolFactory.connect(admin).createPool(poolId, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('Pausable: paused');
     });
 
@@ -79,6 +79,6 @@ describe("PoolFactory contract", function () {
         const {heliosGlobals, poolFactory, admin} = await loadFixture(deployTokenFixture);
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
         const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await poolFactory.connect(admin).createPool(poolId, 10, 12, 100000, 1);
+        await poolFactory.connect(admin).createPool(poolId, 10, 12, 100000, 100, 100);
     });
 });

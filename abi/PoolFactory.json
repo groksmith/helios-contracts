@@ -111,12 +111,17 @@
       },
       {
         "internalType": "uint256",
-        "name": "maxInvestmentSize",
+        "name": "duration",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "minInvestmentSize",
+        "name": "investmentPoolSize",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minInvestmentAmount",
         "type": "uint256"
       }
     ],

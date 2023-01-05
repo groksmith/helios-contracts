@@ -72,6 +72,8 @@ contract Pool is PoolFDT {
         minInvestmentAmount = _minInvestmentAmount;
         poolState = State.Initialized;
 
+        _isValidLiquidityAsset(_liquidityAsset);
+
         liquidityLocker = address(LiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
 
         emit PoolStateChanged(poolState);
@@ -119,8 +121,7 @@ contract Pool is PoolFDT {
     }
 
     function isDepositAllowed(uint256 depositAmt) public view returns (bool) {
-        return (openToPublic) &&
-        _balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize;
+        return (openToPublic) && _balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize;
     }
 
     function _toWad(uint256 amt) internal view returns (uint256) {
@@ -157,6 +158,10 @@ contract Pool is PoolFDT {
 
     function _whenProtocolNotPaused() internal view {
         require(!_globals(superFactory).protocolPaused(), "P:PROTO_PAUSED");
+    }
+
+    function _isValidLiquidityAsset(address _liquidityAsset) internal view {
+        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
     }
 
     function _isValidDelegateAndProtocolNotPaused() internal view {

@@ -8,13 +8,13 @@ import "../global/HeliosGlobals.sol";
 contract PoolFactory is Pausable {
     HeliosGlobals   public globals;
 
-    mapping(bytes16 => address)  public pools;              // Map to reference Pools corresponding to their respective indices.
-    mapping(address => bool)    public isPool;             // True only if a Pool was instantiated by this factory.
-    mapping(address => bool)    public poolFactoryAdmins;  // The PoolFactory Admin addresses that have permission to do certain operations in case of disaster management.
+    mapping(bytes16 => address) public pools;               // Map to reference Pools corresponding to their respective indices.
+    mapping(address => bool)    public isPool;              // True only if a Pool was instantiated by this factory.
+    mapping(address => bool)    public poolFactoryAdmins;   // The PoolFactory Admin addresses that have permission to do certain operations in case of disaster management.
 
     event PoolFactoryAdminSet(address indexed poolFactoryAdmin, bool allowed);
 
-    event PoolCreated(bytes16 poolId, address indexed pool, address indexed delegate, string name, string symbol);
+    event PoolCreated(bytes16 poolId, address liquidityAsset, address indexed pool, address indexed delegate, string name, string symbol);
 
     constructor(address _globals) {
         globals = HeliosGlobals(_globals);
@@ -27,12 +27,14 @@ contract PoolFactory is Pausable {
 
     function createPool(
         bytes16 poolId,
+        address liquidityAsset,
+        address llFactory,
         uint256 lockupPeriod,
         uint256 apy,
         uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount
-) external whenNotPaused returns (address poolAddress) {
+    ) external whenNotPaused returns (address poolAddress) {
 
         _whenProtocolNotPaused();
         {
@@ -47,6 +49,8 @@ contract PoolFactory is Pausable {
 
         Pool pool = new Pool(
             msg.sender,
+            liquidityAsset,
+            llFactory,
             lockupPeriod,
             apy,
             duration,
@@ -62,6 +66,7 @@ contract PoolFactory is Pausable {
 
         emit PoolCreated(
             poolId,
+            liquidityAsset,
             poolAddress,
             msg.sender,
             name,

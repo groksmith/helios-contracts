@@ -33,6 +33,12 @@
         "type": "bytes16"
       },
       {
+        "indexed": false,
+        "internalType": "address",
+        "name": "liquidityAsset",
+        "type": "address"
+      },
+      {
         "indexed": true,
         "internalType": "address",
         "name": "pool",
@@ -98,6 +104,16 @@
         "internalType": "bytes16",
         "name": "poolId",
         "type": "bytes16"
+      },
+      {
+        "internalType": "address",
+        "name": "liquidityAsset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "llFactory",
+        "type": "address"
       },
       {
         "internalType": "uint256",

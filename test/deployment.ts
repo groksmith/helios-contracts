@@ -26,7 +26,7 @@ export async function deployTokenFixture() {
 
     [owner, admin, admin2, ...address] = await ethers.getSigners();
 
-    const IERC20Token = await ethers.getContractAt("IERC20", USDC);
+    const IERC20Token = await ethers.getContractAt("IERC20", USDC, owner);
 
     const heliosGlobalsFactory = (await ethers.getContractFactory("HeliosGlobals", owner)) as HeliosGlobals__factory;
     heliosGlobals = await heliosGlobalsFactory.deploy(owner.address, admin.address);

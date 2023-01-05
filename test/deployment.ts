@@ -2,14 +2,18 @@ import {ethers} from "hardhat";
 import {expect} from "chai";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {
-    ERC20,
     HeliosGlobals,
-    HeliosGlobals__factory, LiquidityLockerFactory,
+    HeliosGlobals__factory,
+    LiquidityLockerFactory,
     LiquidityLockerFactory__factory,
+    Pool,
+    Pool__factory,
     PoolFactory,
     PoolFactory__factory
 } from "../typechain-types";
-import {FakeContract, MockContract, smock} from "@defi-wonderland/smock";
+import {UuidTool} from "uuid-tool";
+
+const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 export async function deployTokenFixture() {
     let heliosGlobals: HeliosGlobals;
@@ -19,15 +23,14 @@ export async function deployTokenFixture() {
     let admin: SignerWithAddress;
     let admin2: SignerWithAddress;
     let address: SignerWithAddress[]
-    let fakeToken: FakeContract<ERC20>;
 
     [owner, admin, admin2, ...address] = await ethers.getSigners();
 
-    fakeToken = await smock.fake<ERC20>('ERC20');
+    const IERC20Token = await ethers.getContractAt("IERC20", USDC);
 
     const heliosGlobalsFactory = (await ethers.getContractFactory("HeliosGlobals", owner)) as HeliosGlobals__factory;
     heliosGlobals = await heliosGlobalsFactory.deploy(owner.address, admin.address);
-    await heliosGlobals.setLiquidityAsset(fakeToken.address, true);
+    await heliosGlobals.setLiquidityAsset(USDC, true);
 
     const poolFactoryFactory = (await ethers.getContractFactory("PoolFactory", owner)) as PoolFactory__factory;
     poolFactory = await poolFactoryFactory.deploy(heliosGlobals.address);
@@ -36,5 +39,27 @@ export async function deployTokenFixture() {
     const liquidityLockerFactoryFactory = (await ethers.getContractFactory("LiquidityLockerFactory", owner)) as LiquidityLockerFactory__factory;
     liquidityLockerFactory = await liquidityLockerFactoryFactory.deploy();
 
-    return {heliosGlobals, poolFactory, liquidityLockerFactory, owner, admin, admin2, address, fakeToken};
+    await heliosGlobals.setValidPoolFactory(poolFactory.address, true);
+    await heliosGlobals.setValidSubFactory(poolFactory.address, liquidityLockerFactory.address, true);
+
+    return {heliosGlobals, poolFactory, liquidityLockerFactory, owner, admin, admin2, address, IERC20Token};
+}
+
+export async function createPoolFixture() {
+    const {
+        heliosGlobals,
+        poolFactory,
+        liquidityLockerFactory,
+        admin,
+        IERC20Token
+    } = await deployTokenFixture();
+
+    await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
+    const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+    await poolFactory.connect(admin).createPool(poolId, USDC, liquidityLockerFactory.address, 10, 12, 100, 1000, 100);
+
+    const pool = await poolFactory.pools(poolId);
+    const poolContractFactory = await ethers.getContractFactory("Pool") as Pool__factory;
+    const poolContract = poolContractFactory.attach(pool);
+    return {IERC20Token, poolContract};
 }

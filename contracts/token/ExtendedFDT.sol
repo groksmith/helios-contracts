@@ -60,11 +60,7 @@ abstract contract ExtendedFDT is BasicFDT {
         .toUint256Safe() / pointsMultiplier;
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint256 value
-    ) internal virtual override {
+    function _transfer(address from, address to, uint256 value) internal virtual override {
         super._transfer(from, to, value);
 
         int256 _lossesCorrection = lossesPerShare.mul(value).toInt256Safe();

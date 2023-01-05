@@ -61,11 +61,7 @@ abstract contract BasicFDT is ERC20 {
         .toUint256Safe() / pointsMultiplier;
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint256 value
-    ) internal virtual override {
+    function _transfer(address from, address to, uint256 value) internal virtual override {
         super._transfer(from, to, value);
 
         int256 _magCorrection = pointsPerShare.mul(value).toInt256Safe();

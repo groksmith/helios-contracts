@@ -1,11 +1,20 @@
 import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
-
-import {deployTokenFixture} from "./deployment";
+import {createPoolFixture} from "./deployment";
+import {ethers} from "hardhat";
 import {expect} from "chai";
 
 describe("Pool contract", function () {
-    it("Some func", async function () {
-        const {poolFactory} = await loadFixture(deployTokenFixture);
-        await poolFactory.pause();
+    it("Pool check", async function () {
+
+        const [owner, admin] = await ethers.getSigners();
+        const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+        await poolContract.connect(admin).finalize();
+        await poolContract.connect(admin).setOpenToPublic(true);
+
+        expect(await poolContract.isDepositAllowed(1)).true;
+
+        const locker = await poolContract.liquidityLocker();
+        await IERC20Token.approve(locker, 10);
+        await IERC20Token.transferFrom(owner.address, locker, 5);
     });
 });

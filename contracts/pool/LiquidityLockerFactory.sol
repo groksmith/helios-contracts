@@ -8,7 +8,7 @@ contract LiquidityLockerFactory {
     mapping(address => address) public owner;     // Mapping of LiquidityLocker addresses to their owner (i.e owner[locker] = Owner of the LiquidityLocker).
     mapping(address => bool)    public isLocker;  // True only if a LiquidityLocker was created by this factory.
 
-    uint8 public constant factoryType = 3;        // i.e LockerFactoryTypes::LIQUIDITY_LOCKER_FACTORY
+    uint8 public constant factoryType = 1;
 
     event LiquidityLockerCreated(address indexed owner, address liquidityLocker, address liquidityAsset);
 

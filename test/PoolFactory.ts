@@ -32,17 +32,15 @@ describe("PoolFactory contract", function () {
     });
 
     it("Set valid Pool Factory", async function () {
-        const {heliosGlobals, poolFactory, owner, admin} = await loadFixture(deployTokenFixture);
-        expect(await heliosGlobals.isValidPoolFactory(poolFactory.address)).is.false;
-        await heliosGlobals.setValidPoolFactory(poolFactory.address, true);
+        const {heliosGlobals, poolFactory} = await loadFixture(deployTokenFixture);
         expect(await heliosGlobals.isValidPoolFactory(poolFactory.address)).is.true;
+        await heliosGlobals.setValidPoolFactory(poolFactory.address, false);
+        expect(await heliosGlobals.isValidPoolFactory(poolFactory.address)).is.false;
     });
 
     it("Set Liquidity Locker Factory", async function () {
         const {heliosGlobals, poolFactory, liquidityLockerFactory} = await loadFixture(deployTokenFixture);
-        await heliosGlobals.setValidPoolFactory(poolFactory.address, true);
-        await heliosGlobals.setValidSubFactory(poolFactory.address, liquidityLockerFactory.address, true);
-        expect(await heliosGlobals.isValidSubFactory(poolFactory.address, liquidityLockerFactory.address, 3)).to.equal(true);
+        expect(await heliosGlobals.isValidSubFactory(poolFactory.address, liquidityLockerFactory.address, 1)).to.equal(true);
     });
 
     it("Set Pool factory Admin", async function () {
@@ -58,37 +56,54 @@ describe("PoolFactory contract", function () {
     });
 
     it("Create Pool", async function () {
-        const {heliosGlobals, poolFactory, liquidityLockerFactory, admin, admin2, fakeToken} = await loadFixture(deployTokenFixture);
-        await heliosGlobals.setValidPoolFactory(poolFactory.address, true);
-        await heliosGlobals.setValidSubFactory(poolFactory.address, liquidityLockerFactory.address, true);
+        const {
+            heliosGlobals,
+            poolFactory,
+            liquidityLockerFactory,
+            admin,
+            admin2,
+            IERC20Token
+        } = await loadFixture(deployTokenFixture);
 
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
         const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await poolFactory.connect(admin).createPool(poolId, fakeToken.address, liquidityLockerFactory.address,10, 12, 100, 1000, 100);
+        await poolFactory.connect(admin).createPool(poolId, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100, 1000, 100);
 
         await heliosGlobals.setPoolDelegateAllowList(admin2.address, true);
         const poolId2 = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await poolFactory.connect(admin2).createPool(poolId2, fakeToken.address, liquidityLockerFactory.address, 10, 12, 100000, 1000, 100);
+        await poolFactory.connect(admin2).createPool(poolId2, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 1000, 100);
     });
 
     it("Create Pool Fails", async function () {
-        const {heliosGlobals, poolFactory, liquidityLockerFactory, admin2, fakeToken} = await loadFixture(deployTokenFixture);
+        const {
+            heliosGlobals,
+            poolFactory,
+            liquidityLockerFactory,
+            admin2,
+            IERC20Token
+        } = await loadFixture(deployTokenFixture);
         const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await expect(poolFactory.connect(admin2).createPool(poolId, fakeToken.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
+        await expect(poolFactory.connect(admin2).createPool(poolId, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('PF:NOT_DELEGATE');
 
         await heliosGlobals.setPoolDelegateAllowList(admin2.address, false);
         const poolId2 = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await expect(poolFactory.connect(admin2).createPool(poolId2, fakeToken.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
+        await expect(poolFactory.connect(admin2).createPool(poolId2, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('PF:NOT_DELEGATE');
     });
 
     it("Create Pool Fails Paused", async function () {
-        const {heliosGlobals, poolFactory, liquidityLockerFactory, admin, fakeToken} = await loadFixture(deployTokenFixture);
+        const {
+            heliosGlobals,
+            poolFactory,
+            liquidityLockerFactory,
+            admin,
+            IERC20Token
+        } = await loadFixture(deployTokenFixture);
         await poolFactory.pause();
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
         const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await expect(poolFactory.connect(admin).createPool(poolId, fakeToken.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
+        await expect(poolFactory.connect(admin).createPool(poolId, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('Pausable: paused');
     });
 });

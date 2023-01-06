@@ -2,5 +2,5 @@
 pragma solidity ^0.8.0;
 
 interface ISubFactory {
-    function factoryType() external view returns (uint8);
+    function factoryType() external pure returns (uint8);
 }

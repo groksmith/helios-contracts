@@ -2,13 +2,17 @@
 pragma solidity ^0.8.0;
 
 import "./LiquidityLocker.sol";
+import "../interfaces/ISubFactory.sol";
 
-contract LiquidityLockerFactory {
+contract LiquidityLockerFactory is ISubFactory{
+    uint8 constant LIQUIDITY_LOCKER_FACTORY = 1;
 
     mapping(address => address) public owner;     // Mapping of LiquidityLocker addresses to their owner (i.e owner[locker] = Owner of the LiquidityLocker).
     mapping(address => bool)    public isLocker;  // True only if a LiquidityLocker was created by this factory.
 
-    uint8 public constant FACTORY_TYPE = 1;
+    function factoryType() external pure returns (uint8) {
+        return LIQUIDITY_LOCKER_FACTORY;
+    }
 
     event LiquidityLockerCreated(address indexed owner, address liquidityLocker, address liquidityAsset);
 

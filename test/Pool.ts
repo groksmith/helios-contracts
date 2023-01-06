@@ -15,7 +15,5 @@ describe("Pool contract", function () {
         const tx = await IERC20Token.approve(poolContract.address, 10);
         await tx.wait(1);
         await poolContract.deposit(10);
-        poolContract.balanceOf(owner.address).then(console.log);
-        poolContract.investmentPoolSize().then(console.log);
     });
 });

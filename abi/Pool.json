@@ -421,7 +421,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_owner",
+        "name": "owner",
         "type": "address"
       }
     ],
@@ -440,7 +440,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_owner",
+        "name": "owner",
         "type": "address"
       }
     ],
@@ -866,7 +866,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_owner",
+        "name": "owner",
         "type": "address"
       }
     ],
@@ -885,7 +885,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_owner",
+        "name": "owner",
         "type": "address"
       }
     ],
@@ -1048,7 +1048,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_owner",
+        "name": "owner",
         "type": "address"
       }
     ],
@@ -1067,7 +1067,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_owner",
+        "name": "owner",
         "type": "address"
       }
     ],

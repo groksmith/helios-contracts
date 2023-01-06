@@ -25,7 +25,7 @@ abstract contract BasicFDT is ERC20 {
     event FundsDistributed(address indexed by, uint256 fundsDistributed);
     event FundsWithdrawn(address indexed by, uint256 fundsWithdrawn, uint256 totalWithdrawn);
 
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+    constructor(string memory tokenName, string memory tokenSymbol) ERC20(tokenName, tokenSymbol) {}
 
     function _distributeFunds(uint256 value) internal {
         require(totalSupply() > 0, "FDT:ZERO_SUPPLY");
@@ -45,19 +45,19 @@ abstract contract BasicFDT is ERC20 {
         emit FundsWithdrawn(msg.sender, withdrawableDividend, _withdrawnFunds);
     }
 
-    function withdrawableFundsOf(address _owner) public view returns (uint256) {
-        return accumulativeFundsOf(_owner).sub(withdrawnFunds[_owner]);
+    function withdrawableFundsOf(address owner) public view returns (uint256) {
+        return accumulativeFundsOf(owner).sub(withdrawnFunds[owner]);
     }
 
-    function withdrawnFundsOf(address _owner) external view returns (uint256) {
-        return withdrawnFunds[_owner];
+    function withdrawnFundsOf(address owner) external view returns (uint256) {
+        return withdrawnFunds[owner];
     }
 
-    function accumulativeFundsOf(address _owner) public view returns (uint256) {
+    function accumulativeFundsOf(address owner) public view returns (uint256) {
         return pointsPerShare
-        .mul(balanceOf(_owner))
+        .mul(balanceOf(owner))
         .toInt256Safe()
-        .add(pointsCorrection[_owner])
+        .add(pointsCorrection[owner])
         .toUint256Safe() / POINTS_MULTIPLIER;
     }
 

@@ -21,7 +21,7 @@ abstract contract ExtendedFDT is BasicFDT {
     event LossesDistributed(address indexed by, uint256 lossesDistributed);
     event LossesRecognized(address indexed by, uint256 lossesRecognized, uint256 totalLossesRecognized);
 
-    constructor(string memory name, string memory symbol) BasicFDT(name, symbol) {}
+    constructor(string memory tokenName, string memory tokenSymbol) BasicFDT(tokenName, tokenSymbol) {}
 
     function _distributeLosses(uint256 value) internal {
         require(totalSupply() > 0, "FDT:ZERO_SUPPLY");
@@ -44,19 +44,19 @@ abstract contract ExtendedFDT is BasicFDT {
         emit LossesRecognized(msg.sender, recognizableDividend, _recognizedLosses);
     }
 
-    function recognizableLossesOf(address _owner) public view returns (uint256) {
-        return accumulativeLossesOf(_owner).sub(recognizedLosses[_owner]);
+    function recognizableLossesOf(address owner) public view returns (uint256) {
+        return accumulativeLossesOf(owner).sub(recognizedLosses[owner]);
     }
 
-    function recognizedLossesOf(address _owner) external view returns (uint256) {
-        return recognizedLosses[_owner];
+    function recognizedLossesOf(address owner) external view returns (uint256) {
+        return recognizedLosses[owner];
     }
 
-    function accumulativeLossesOf(address _owner) public view returns (uint256) {
+    function accumulativeLossesOf(address owner) public view returns (uint256) {
         return lossesPerShare
-        .mul(balanceOf(_owner))
+        .mul(balanceOf(owner))
         .toInt256Safe()
-        .add(lossesCorrection[_owner])
+        .add(lossesCorrection[owner])
         .toUint256Safe() / POINTS_MULTIPLIER;
     }
 

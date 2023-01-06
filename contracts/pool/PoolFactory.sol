@@ -56,8 +56,8 @@ contract PoolFactory is Pausable {
         );
 
         poolAddress = address(pool);
-        isPool[poolAddress] = true;
         pools[poolId] = poolAddress;
+        isPool[poolAddress] = true;
 
         emit PoolCreated(
             poolId,

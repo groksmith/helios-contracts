@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicensed
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 library SafeMathInt {
     function toUint256Safe(int256 a) internal pure returns (uint256) {

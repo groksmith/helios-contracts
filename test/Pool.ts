@@ -10,10 +10,12 @@ describe("Pool contract", function () {
         await poolContract.connect(admin).finalize();
         await poolContract.connect(admin).setOpenToPublic(true);
 
-        expect(await poolContract.isDepositAllowed(5)).true;
+        expect(await poolContract.isDepositAllowed(10)).true;
 
-        const tx = await IERC20Token.approve(poolContract.address, 5);
+        const tx = await IERC20Token.approve(poolContract.address, 10);
         await tx.wait(1);
-        await poolContract.deposit(5);
+        await poolContract.deposit(10);
+        poolContract.balanceOf(owner.address).then(console.log);
+        poolContract.investmentPoolSize().then(console.log);
     });
 });

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicensed
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 import "./ExtendedFDT.sol";
 
@@ -15,7 +15,9 @@ abstract contract PoolFDT is ExtendedFDT {
     uint256 public interestBalance;  // The amount of earned interest present and accounted for in this contract.
     uint256 public lossesBalance;    // The amount of losses present and accounted for in this contract.
 
-    constructor(string memory name, string memory symbol) ExtendedFDT(name, symbol) {}
+    constructor(string memory name, string memory symbol) ExtendedFDT(name, symbol) {
+        interestSum = 0;
+    }
 
     function _recognizeLosses() internal override returns (uint256 losses) {
         losses = _prepareLossesWithdraw();

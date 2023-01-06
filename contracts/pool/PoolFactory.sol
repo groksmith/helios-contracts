@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicensed
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import "./Pool.sol";
@@ -61,8 +61,8 @@ contract PoolFactory is Pausable {
         );
 
         poolAddress = address(pool);
-        pools[poolId] = poolAddress;
         isPool[poolAddress] = true;
+        pools[poolId] = poolAddress;
 
         emit PoolCreated(
             poolId,

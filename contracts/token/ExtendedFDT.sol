@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicensed
-pragma solidity ^0.8.1;
+pragma solidity ^0.8.0;
 
 import "../math/SafeMathInt.sol";
 import "../math/SafeMathUint.sol";
@@ -28,7 +28,7 @@ abstract contract ExtendedFDT is BasicFDT {
 
         if (value == 0) return;
 
-        uint256 _lossesPerShare = lossesPerShare.add(value.mul(pointsMultiplier) / totalSupply());
+        uint256 _lossesPerShare = lossesPerShare.add(value.mul(POINTS_MULTIPLIER) / totalSupply());
         lossesPerShare = _lossesPerShare;
 
         emit LossesDistributed(msg.sender, value);
@@ -57,7 +57,7 @@ abstract contract ExtendedFDT is BasicFDT {
         .mul(balanceOf(_owner))
         .toInt256Safe()
         .add(lossesCorrection[_owner])
-        .toUint256Safe() / pointsMultiplier;
+        .toUint256Safe() / POINTS_MULTIPLIER;
     }
 
     function _transfer(address from, address to, uint256 value) internal virtual override {

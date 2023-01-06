@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicensed
-pragma solidity ^0.8.1;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -14,7 +14,7 @@ abstract contract BasicFDT is ERC20 {
     using SignedSafeMath for int256;
     using SafeMathInt    for int256;
 
-    uint256 internal constant pointsMultiplier = 2 ** 128;
+    uint256 internal constant POINTS_MULTIPLIER = 2 ** 128;
     uint256 internal pointsPerShare;
 
     mapping(address => int256)  internal pointsCorrection;
@@ -32,7 +32,7 @@ abstract contract BasicFDT is ERC20 {
 
         if (value == 0) return;
 
-        pointsPerShare = pointsPerShare.add(value.mul(pointsMultiplier) / totalSupply());
+        pointsPerShare = pointsPerShare.add(value.mul(POINTS_MULTIPLIER) / totalSupply());
         emit FundsDistributed(msg.sender, value);
         emit PointsPerShareUpdated(pointsPerShare);
     }
@@ -58,7 +58,7 @@ abstract contract BasicFDT is ERC20 {
         .mul(balanceOf(_owner))
         .toInt256Safe()
         .add(pointsCorrection[_owner])
-        .toUint256Safe() / pointsMultiplier;
+        .toUint256Safe() / POINTS_MULTIPLIER;
     }
 
     function _transfer(address from, address to, uint256 value) internal virtual override {

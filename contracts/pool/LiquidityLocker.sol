@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicensed
-pragma solidity ^0.8.1;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -19,8 +19,9 @@ contract LiquidityLocker {
         _;
     }
 
-    function transfer(address dst, uint256 amt) external isPool {
+    function transfer(address dst, uint256 amt) external isPool returns (bool) {
         require(dst != address(0), "LL:NULL_DST");
         liquidityAsset.safeTransfer(dst, amt);
+        return true;
     }
 }

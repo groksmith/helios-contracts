@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicensed
-pragma solidity ^0.8.1;
+pragma solidity ^0.8.0;
 
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import "./Pool.sol";
@@ -14,7 +14,7 @@ contract PoolFactory is Pausable {
 
     event PoolFactoryAdminSet(address indexed poolFactoryAdmin, bool allowed);
 
-    event PoolCreated(bytes16 poolId, address liquidityAsset, address indexed pool, address indexed delegate, string name, string symbol);
+    event PoolCreated(bytes16 poolId, address liquidityAsset, address indexed pool, address indexed delegate);
 
     constructor(address _globals) {
         globals = HeliosGlobals(_globals);
@@ -44,9 +44,6 @@ contract PoolFactory is Pausable {
 
         _isMappingKeyValid(poolId);
 
-        string memory name = "Helios Tokenized Pool";
-        string memory symbol = "HLS-P";
-
         Pool pool = new Pool(
             msg.sender,
             liquidityAsset,
@@ -55,9 +52,7 @@ contract PoolFactory is Pausable {
             apy,
             duration,
             investmentPoolSize,
-            minInvestmentAmount,
-            name,
-            symbol
+            minInvestmentAmount
         );
 
         poolAddress = address(pool);
@@ -68,9 +63,7 @@ contract PoolFactory is Pausable {
             poolId,
             liquidityAsset,
             poolAddress,
-            msg.sender,
-            name,
-            symbol
+            msg.sender
         );
     }
 

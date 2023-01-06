@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicensed
-pragma solidity ^0.8.1;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -12,6 +12,9 @@ import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
 
 contract Pool is PoolFDT {
+    string constant NAME = "Helios Tokenized Pool";
+    string constant SYMBOL = "HLS-P";
+
     using SafeMath  for uint256;
     using SafeERC20 for IERC20;
     uint256 constant WAD = 10 ** 18;
@@ -56,10 +59,8 @@ contract Pool is PoolFDT {
         uint256 _apy,
         uint256 _duration,
         uint256 _investmentPoolSize,
-        uint256 _minInvestmentAmount,
-        string memory name,
-        string memory symbol
-    ) PoolFDT(name, symbol){
+        uint256 _minInvestmentAmount
+    ) PoolFDT(NAME, SYMBOL){
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
 

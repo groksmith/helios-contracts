@@ -236,7 +236,7 @@ contract Pool is PoolFDT {
         _whenProtocolNotPaused();
     }
 
-    function _transferLiquidityLockerFunds(address to, uint256 value) internal {
-        LiquidityLocker(liquidityLocker).transfer(to, value);
+    function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool){
+        return LiquidityLocker(liquidityLocker).transfer(to, value);
     }
 }

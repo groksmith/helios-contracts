@@ -11,9 +11,8 @@ import {
     PoolFactory,
     PoolFactory__factory
 } from "../typechain-types";
-import {UuidTool} from "uuid-tool";
 
-const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
 export async function deployTokenFixture() {
     let heliosGlobals: HeliosGlobals;
@@ -30,6 +29,7 @@ export async function deployTokenFixture() {
 
     const heliosGlobalsFactory = (await ethers.getContractFactory("HeliosGlobals", owner)) as HeliosGlobals__factory;
     heliosGlobals = await heliosGlobalsFactory.deploy(owner.address, admin.address);
+
     await heliosGlobals.setLiquidityAsset(USDC, true);
 
     const poolFactoryFactory = (await ethers.getContractFactory("PoolFactory", owner)) as PoolFactory__factory;

@@ -12,10 +12,9 @@
     "coverage": "npx hardhat coverage",
     "clean": "npx hardhat clean",
     "analyze": "slither .",
-    "deploy-local": "npx hardhat run scripts/deploy.ts --network localhost",
-    "deploy-goerli": "npx hardhat run scripts/deploy.ts --network goerli",
-    "pool-test": "npx hardhat run scripts/createPool.ts --network goerli",
-    "try": "npx hardhat run scripts/createAll.ts --network localhost",
+    "test-deploy": "npx hardhat run scripts/01-deploy.ts --network goerli",
+    "test-set-assets": "npx hardhat run scripts/02-liquidityAsset.ts --network goerli",
+    "test-create-pool": "npx hardhat run scripts/03-createPool.ts --network goerli",
     "export": "npx hardhat export-abi"
   },
   "devDependencies": {

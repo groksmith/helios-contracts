@@ -12,7 +12,7 @@ async function main() {
     const poolFactoryFactory = await ethers.getContractFactory("PoolFactory", owner);
     const poolFactoryContract = await poolFactoryFactory.attach(POOL_FACTORY_ADDRESS);
 
-    const poolId = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
+    const poolId = "7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
 
     const liquidityLockerFactoryFactory = await ethers.getContractFactory("LiquidityLockerFactory", owner);
     const liquidityLockerFactory = await liquidityLockerFactoryFactory.attach(LIQUIDITY_LOCKER_FACTORY_ADDRESS);
@@ -31,10 +31,10 @@ async function main() {
 
     // Retrieve Pool Contract
     const pool = await poolFactoryContract.pools(poolId);
-    const poolFactory = await ethers.getContractFactory("Pool");
+    const poolFactory = await ethers.getContractFactory("Pool", admin);
     const poolContract = poolFactory.attach(pool);
-
-    await console.log(await poolContract.name())
+    await poolContract.finalize();
+    await poolContract.setOpenToPublic(true);
 }
 
 main().catch((error) => {

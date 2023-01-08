@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../interfaces/ISubFactory.sol";
+import "../interfaces/IHeliosGlobals.sol";
 
-contract HeliosGlobals {
+contract HeliosGlobals is IHeliosGlobals {
     address public globalAdmin;
     bool    public protocolPaused;
     address public governor;

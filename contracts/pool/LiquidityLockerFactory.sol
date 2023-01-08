@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import "./LiquidityLocker.sol";
 import "../interfaces/ISubFactory.sol";
+import "../interfaces/ILiquidityLockerFactory.sol";
 
-contract LiquidityLockerFactory is ISubFactory{
+contract LiquidityLockerFactory is ILiquidityLockerFactory{
     uint8 constant LIQUIDITY_LOCKER_FACTORY = 1;
 
     mapping(address => address) public owner;     // Mapping of LiquidityLocker addresses to their owner (i.e owner[locker] = Owner of the LiquidityLocker).

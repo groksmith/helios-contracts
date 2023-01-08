@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../interfaces/ILiquidityLocker.sol";
 
-contract LiquidityLocker {
+contract LiquidityLocker is ILiquidityLocker{
     using SafeERC20 for IERC20;
 
     address public immutable pool;            // The Pool that owns this LiquidityLocker.

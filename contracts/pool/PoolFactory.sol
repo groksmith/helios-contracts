@@ -6,7 +6,7 @@ import "./Pool.sol";
 import "../global/HeliosGlobals.sol";
 
 contract PoolFactory is Pausable {
-    HeliosGlobals   public globals;
+    IHeliosGlobals   public globals;
 
     mapping(string => address)  public pools;               // Map to reference Pools corresponding to their respective indices.
     mapping(address => bool)    public isPool;              // True only if a Pool was instantiated by this factory.
@@ -17,12 +17,12 @@ contract PoolFactory is Pausable {
     event PoolCreated(string poolId, address liquidityAsset, address indexed pool, address indexed delegate);
 
     constructor(address _globals) {
-        globals = HeliosGlobals(_globals);
+        globals = IHeliosGlobals(_globals);
     }
 
     function setGlobals(address newGlobals) external {
         _isValidGovernor();
-        globals = HeliosGlobals(newGlobals);
+        globals = IHeliosGlobals(newGlobals);
     }
 
     function createPool(
@@ -38,7 +38,7 @@ contract PoolFactory is Pausable {
 
         _whenProtocolNotPaused();
         {
-            HeliosGlobals _globals = globals;
+            IHeliosGlobals _globals = globals;
             require(_globals.isValidPoolDelegate(msg.sender), "PF:NOT_DELEGATE");
         }
 

@@ -145,7 +145,7 @@
     "name": "globals",
     "outputs": [
       {
-        "internalType": "contract HeliosGlobals",
+        "internalType": "contract IHeliosGlobals",
         "name": "",
         "type": "address"
       }

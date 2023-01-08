@@ -78,7 +78,7 @@ contract Pool is PoolFDT {
 
         _isValidLiquidityAsset(_liquidityAsset);
 
-        liquidityLocker = address(LiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
+        liquidityLocker = address(ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
 
         emit PoolStateChanged(poolState);
     }
@@ -207,8 +207,8 @@ contract Pool is PoolFDT {
         require(msg.sender == poolDelegate, "P:NOT_DEL");
     }
 
-    function _globals(address poolFactory) internal view returns (HeliosGlobals) {
-        return HeliosGlobals(PoolFactory(poolFactory).globals());
+    function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
+        return IHeliosGlobals(PoolFactory(poolFactory).globals());
     }
 
     function _emitBalanceUpdatedEvent() internal {
@@ -237,6 +237,6 @@ contract Pool is PoolFDT {
     }
 
     function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool){
-        return LiquidityLocker(liquidityLocker).transfer(to, value);
+        return ILiquidityLocker(liquidityLocker).transfer(to, value);
     }
 }

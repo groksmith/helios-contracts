@@ -16,10 +16,21 @@ library PoolLib {
         uint256 prevDate = depositDate[account];
 
         uint256 newDate = (balance + amt) > 0
-            ? prevDate.add(block.timestamp.sub(prevDate).mul(amt).div(balance + amt))
-            : prevDate;
+        ? prevDate.add(block.timestamp.sub(prevDate).mul(amt).div(balance + amt))
+        : prevDate;
 
         depositDate[account] = newDate;
         emit DepositDateUpdated(account, newDate);
+    }
+
+    function transferByCustodianChecks(address from, address to, uint256 amount) internal pure {
+        require(to == from, "P:INVALID_RECEIVER");
+        require(amount != uint256(0), "P:INVALID_AMT");
+    }
+
+    function increaseCustodyAllowanceChecks(address custodian, uint256 amount, uint256 newTotalAllowance, uint256 fdtBal) internal pure {
+        require(custodian != address(0), "P:INVALID_CUSTODIAN");
+        require(amount != uint256(0), "P:INVALID_AMT");
+        require(newTotalAllowance <= fdtBal, "P:INSUF_BALANCE");
     }
 }

@@ -59,12 +59,7 @@ contract PoolFactory is Pausable {
         pools[poolId] = poolAddress;
         isPool[poolAddress] = true;
 
-        emit PoolCreated(
-            poolId,
-            liquidityAsset,
-            poolAddress,
-            msg.sender
-        );
+        emit PoolCreated(poolId, liquidityAsset, poolAddress, msg.sender);
     }
 
     function setPoolFactoryAdmin(address poolFactoryAdmin, bool allowed) external {

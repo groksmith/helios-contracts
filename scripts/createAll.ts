@@ -26,7 +26,7 @@ async function main() {
 
     const poolId = "be9e334f-da45-1d9f-40d1-9d1ebd7c1132";
     // Create Pool Contract
-    await poolFactoryContract.connect(admin).createPool(poolId, 10, 12, 100000, 1);
+    //await poolFactoryContract.connect(admin).createPool(poolId, 10, 12, 100000, 1);
 
     // Retrieve Pool Contract
     const pool = await poolFactoryContract.pools(poolId)

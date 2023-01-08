@@ -56,7 +56,15 @@ export async function createPoolFixture() {
 
     await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
     const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-    await poolFactory.connect(admin).createPool(poolId, USDC, liquidityLockerFactory.address, 10, 12, 100, 1000, 100);
+    await poolFactory.connect(admin).createPool(
+        poolId,
+        USDC,
+        liquidityLockerFactory.address,
+        1000,
+        12,
+        100,
+        1000,
+        100);
 
     const pool = await poolFactory.pools(poolId);
     const poolContractFactory = await ethers.getContractFactory("Pool") as Pool__factory;

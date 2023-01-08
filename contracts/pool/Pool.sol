@@ -47,9 +47,12 @@ contract Pool is PoolFDT {
     event CustodyAllowanceChanged(address indexed liquidityProvider, address indexed custodian, uint256 oldAllowance, uint256 newAllowance);
     event CoolDown(address indexed liquidityProvider, uint256 cooldown);
     event DepositDateUpdated(address indexed liquidityProvider, uint256 depositDate);
+    event TotalCustodyAllowanceUpdated(address indexed liquidityProvider, uint256 newTotalAllowance);
 
     mapping(address => bool)        public poolAdmins;
     mapping(address => uint256)     public depositDate;
+    mapping(address => uint256)     public totalCustodyAllowance;
+    mapping(address => mapping(address => uint256)) public custodyAllowance;
 
     constructor(
         address _poolDelegate,
@@ -103,7 +106,7 @@ contract Pool is PoolFDT {
     function deposit(uint256 amt) external {
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
-        require(isDepositAllowed(amt), "P:DEP_NOT_ALLOWED");
+        isDepositAllowed(amt);
 
         uint256 wad = _toWad(amt);
         PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), wad, msg.sender);
@@ -115,14 +118,77 @@ contract Pool is PoolFDT {
         emit CoolDown(msg.sender, uint256(0));
     }
 
+    function withdraw(uint256 amt) external {
+        _whenProtocolNotPaused();
+        uint256 wad = _toWad(amt);
+        _canWithdraw(msg.sender, wad);
+
+        _burn(msg.sender, wad);  // Burn the corresponding PoolFDTs balance.
+        withdrawFunds();         // Transfer full entitled interest, decrement `interestSum`.
+
+        // Transfer amount that is due after realized losses are accounted for.
+        // Recognized losses are absorbed by the LP.
+        _transferLiquidityLockerFunds(msg.sender, amt.sub(_recognizeLosses()));
+
+        _emitBalanceUpdatedEvent();
+    }
+
+    function withdrawFunds() public override {
+        _whenProtocolNotPaused();
+        uint256 withdrawableFunds = _prepareWithdraw();
+
+        if (withdrawableFunds == uint256(0)) return;
+
+        _transferLiquidityLockerFunds(msg.sender, withdrawableFunds);
+        _emitBalanceUpdatedEvent();
+
+        interestSum = interestSum.sub(withdrawableFunds);
+
+        _updateFundsTokenBalance();
+    }
+
+    function increaseCustodyAllowance(address custodian, uint256 amount) external {
+        uint256 oldAllowance      = custodyAllowance[msg.sender][custodian];
+        uint256 newAllowance      = oldAllowance.add(amount);
+        uint256 newTotalAllowance = totalCustodyAllowance[msg.sender].add(amount);
+
+        PoolLib.increaseCustodyAllowanceChecks(custodian, amount, newTotalAllowance, balanceOf(msg.sender));
+
+        custodyAllowance[msg.sender][custodian] = newAllowance;
+        totalCustodyAllowance[msg.sender]       = newTotalAllowance;
+        emit CustodyAllowanceChanged(msg.sender, custodian, oldAllowance, newAllowance);
+        emit TotalCustodyAllowanceUpdated(msg.sender, newTotalAllowance);
+    }
+
+    function transferByCustodian(address from, address to, uint256 amount) external {
+        uint256 oldAllowance = custodyAllowance[from][msg.sender];
+        uint256 newAllowance = oldAllowance.sub(amount);
+
+        PoolLib.transferByCustodianChecks(from, to, amount);
+
+        custodyAllowance[from][msg.sender] = newAllowance;
+        uint256 newTotalAllowance          = totalCustodyAllowance[from].sub(amount);
+        totalCustodyAllowance[from]        = newTotalAllowance;
+        emit CustodyTransfer(msg.sender, from, to, amount);
+        emit CustodyAllowanceChanged(from, msg.sender, oldAllowance, newAllowance);
+        emit TotalCustodyAllowanceUpdated(msg.sender, newTotalAllowance);
+    }
+
     function setPoolAdmin(address poolAdmin, bool allowed) external {
         _isValidDelegateAndProtocolNotPaused();
         poolAdmins[poolAdmin] = allowed;
         emit PoolAdminSet(poolAdmin, allowed);
     }
 
-    function isDepositAllowed(uint256 depositAmt) public view returns (bool) {
-        return (openToPublic) && _balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize;
+    function isDepositAllowed(uint256 depositAmt) public view {
+        require(openToPublic, "P:POOL_NOT_OPEN");
+        require(_balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize, "P:DEPOSIT_AMT_EXCEEDS_POOL_SIZE");
+        require(_balanceOfLiquidityLocker().add(depositAmt) >= minInvestmentAmount, "P:DEPOSIT_AMT_BELOW_MIN");
+    }
+
+    function _canWithdraw(address account, uint256 wad) internal view {
+        require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(balanceOf(account).sub(wad) >= totalCustodyAllowance[account], "P:INSUF_TRANS_BAL");
     }
 
     function _toWad(uint256 amt) internal view returns (uint256) {
@@ -168,5 +234,9 @@ contract Pool is PoolFDT {
     function _isValidDelegateAndProtocolNotPaused() internal view {
         _isValidDelegate();
         _whenProtocolNotPaused();
+    }
+
+    function _transferLiquidityLockerFunds(address to, uint256 value) internal {
+        LiquidityLocker(liquidityLocker).transfer(to, value);
     }
 }

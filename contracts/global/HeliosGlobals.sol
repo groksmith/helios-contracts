@@ -6,8 +6,8 @@ import "../interfaces/ISubFactory.sol";
 
 contract HeliosGlobals {
     address public globalAdmin;
-    address public governor;
     bool    public protocolPaused;
+    address public governor;
 
     mapping(address => bool) public isValidPoolDelegate;
     mapping(address => bool) public isValidPoolFactory;

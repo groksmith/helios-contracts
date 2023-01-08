@@ -3,6 +3,7 @@
 import {HardhatUserConfig} from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-abi-exporter";
+import "hardhat-storage-layout";
 
 const ALCHEMY_MAIN_NET_API_KEY = "https://eth-mainnet.g.alchemy.com/v2/IGBhQoY7nzZOHZ56Od9CuhVj3jiJ58KU";
 
@@ -17,6 +18,11 @@ const config: HardhatUserConfig = {
             optimizer: {
                 enabled: true,
                 runs: 300,
+            },
+            outputSelection: {
+                "*": {
+                    "*": ["storageLayout"],
+                },
             }
         },
     },

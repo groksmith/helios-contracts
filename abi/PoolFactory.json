@@ -28,9 +28,9 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "bytes16",
+        "internalType": "string",
         "name": "poolId",
-        "type": "bytes16"
+        "type": "string"
       },
       {
         "indexed": false,
@@ -89,9 +89,9 @@
   {
     "inputs": [
       {
-        "internalType": "bytes16",
+        "internalType": "string",
         "name": "poolId",
-        "type": "bytes16"
+        "type": "string"
       },
       {
         "internalType": "address",
@@ -214,9 +214,9 @@
   {
     "inputs": [
       {
-        "internalType": "bytes16",
+        "internalType": "string",
         "name": "",
-        "type": "bytes16"
+        "type": "string"
       }
     ],
     "name": "pools",

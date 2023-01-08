@@ -11,7 +11,8 @@ async function main() {
     const poolFactoryContract = await poolFactoryFactory.attach("0xD327A5E662C20766073E833102945c3C7df39f63");
     // console.log("Pool Factory address:", poolFactoryContract.address);
 
-    const poolId = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+    const poolId = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
+
     console.log("Pool Id:", poolId);
     // Create Pool Contract
     // await poolFactoryContract.createPool(poolId,10, 12, 100000, 1);

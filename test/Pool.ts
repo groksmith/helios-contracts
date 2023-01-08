@@ -17,7 +17,7 @@ describe("Pool contract", function () {
         await mine(1);
         await poolContract.deposit(100);
         await time.increase(1000);
-        await poolContract.withdraw(10);
+        await poolContract.withdrawFunds();
         IERC20Token.balanceOf(owner.address).then(console.log);
     });
 });

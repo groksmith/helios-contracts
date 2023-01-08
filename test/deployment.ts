@@ -55,7 +55,7 @@ export async function createPoolFixture() {
     } = await deployTokenFixture();
 
     await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
-    const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+    const poolId = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
     await poolFactory.connect(admin).createPool(
         poolId,
         USDC,

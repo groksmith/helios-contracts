@@ -3,6 +3,7 @@ import {expect} from "chai";
 import {HeliosGlobals__factory} from "../typechain-types";
 import {deployTokenFixture} from "./deployment";
 import {UuidTool} from "uuid-tool";
+import {BytesLike} from "ethers";
 
 const {ethers} = require('hardhat');
 
@@ -66,11 +67,11 @@ describe("PoolFactory contract", function () {
         } = await loadFixture(deployTokenFixture);
 
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
-        const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        const poolId = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
         await poolFactory.connect(admin).createPool(poolId, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100, 1000, 100);
 
         await heliosGlobals.setPoolDelegateAllowList(admin2.address, true);
-        const poolId2 = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        const poolId2 = "7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
         await poolFactory.connect(admin2).createPool(poolId2, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 1000, 100);
     });
 
@@ -82,12 +83,13 @@ describe("PoolFactory contract", function () {
             admin2,
             IERC20Token
         } = await loadFixture(deployTokenFixture);
-        const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+
+        const poolId = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
         await expect(poolFactory.connect(admin2).createPool(poolId, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('PF:NOT_DELEGATE');
 
         await heliosGlobals.setPoolDelegateAllowList(admin2.address, false);
-        const poolId2 = UuidTool.toBytes('7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
+        const poolId2 = "7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
         await expect(poolFactory.connect(admin2).createPool(poolId2, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('PF:NOT_DELEGATE');
     });
@@ -102,8 +104,8 @@ describe("PoolFactory contract", function () {
         } = await loadFixture(deployTokenFixture);
         await poolFactory.pause();
         await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
-        const poolId = UuidTool.toBytes('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b');
-        await expect(poolFactory.connect(admin).createPool(poolId, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
+        const poolId2 = "7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
+        await expect(poolFactory.connect(admin).createPool(poolId2, IERC20Token.address, liquidityLockerFactory.address, 10, 12, 100000, 100, 100))
             .to.be.revertedWith('Pausable: paused');
     });
 });

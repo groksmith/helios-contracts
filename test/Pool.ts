@@ -1,7 +1,6 @@
 import {loadFixture, mine, time} from "@nomicfoundation/hardhat-network-helpers";
 import {createPoolFixture} from "./deployment";
 import {ethers} from "hardhat";
-import {expect} from "chai";
 
 describe("Pool contract", function () {
     it("Pool check", async function () {
@@ -13,11 +12,11 @@ describe("Pool contract", function () {
         await poolContract.isDepositAllowed(100);
         IERC20Token.balanceOf(owner.address).then(console.log);
 
-        await IERC20Token.approve(poolContract.address, 100);
+        await IERC20Token.approve(poolContract.address, 10000);
         await mine(1);
-        await poolContract.deposit(100);
-        await time.increase(1000);
-        await poolContract.withdrawFunds();
+        await poolContract.deposit(600);
+        await time.increase(10000);
+        await poolContract.withdraw(100);
         IERC20Token.balanceOf(owner.address).then(console.log);
     });
 });

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/ILiquidityLocker.sol";
 
 contract LiquidityLocker is ILiquidityLocker{
@@ -11,6 +12,8 @@ contract LiquidityLocker is ILiquidityLocker{
     IERC20  public immutable liquidityAsset;  // The Liquidity Asset which this LiquidityLocker will escrow.
 
     constructor(address _liquidityAsset, address _pool) {
+        require(_liquidityAsset != address(0), "LL:ZERO_LIQUIDITY_ASSET");
+        require(_pool != address(0), "LL:ZERO_POOL");
         liquidityAsset = IERC20(_liquidityAsset);
         pool = _pool;
     }
@@ -20,7 +23,7 @@ contract LiquidityLocker is ILiquidityLocker{
         _;
     }
 
-    function transfer(address dst, uint256 amt) external isPool returns (bool) {
+    function transfer(address dst, uint256 amt) external override isPool returns (bool) {
         require(dst != address(0), "LL:NULL_DST");
         liquidityAsset.safeTransfer(dst, amt);
         return true;

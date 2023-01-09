@@ -64,6 +64,10 @@ contract Pool is PoolFDT {
         uint256 _investmentPoolSize,
         uint256 _minInvestmentAmount
     ) PoolFDT(NAME, SYMBOL){
+        require(_liquidityAsset != address(0), "P:ZERO_LIQUIDITY_ASSET");
+        require(_poolDelegate != address(0), "P:ZERO_POOL_DELEGATE");
+        require(_llFactory != address(0), "P:ZERO_LIQUIDITY_LOCKER_FACTORY");
+
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
 
@@ -103,7 +107,7 @@ contract Pool is PoolFDT {
         emit PoolOpenedToPublic(open);
     }
 
-    function deposit(uint256 amt) external {
+    function deposit(uint256 amt) external nonReentrant {
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
         isDepositAllowed(amt);
@@ -118,7 +122,7 @@ contract Pool is PoolFDT {
         emit CoolDown(msg.sender, uint256(0));
     }
 
-    function withdraw(uint256 amt) external {
+    function withdraw(uint256 amt) external nonReentrant {
         _whenProtocolNotPaused();
         uint256 wad = _toWad(amt);
         _canWithdraw(msg.sender, wad);
@@ -181,6 +185,7 @@ contract Pool is PoolFDT {
     }
 
     function isDepositAllowed(uint256 depositAmt) public view {
+        require(depositAmt > 0, "P:NEGATIVE_DEPOSIT");
         require(openToPublic, "P:POOL_NOT_OPEN");
         require(_balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize, "P:DEPOSIT_AMT_EXCEEDS_POOL_SIZE");
         require(_balanceOfLiquidityLocker().add(depositAmt) >= minInvestmentAmount, "P:DEPOSIT_AMT_BELOW_MIN");
@@ -188,7 +193,7 @@ contract Pool is PoolFDT {
 
     function _canWithdraw(address account, uint256 wad) internal view {
         require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
-        require(balanceOf(account).sub(wad) >= totalCustodyAllowance[account], "P:INSUF_TRANS_BAL");
+        require(balanceOf(account).sub(wad) >= totalCustodyAllowance[account], "P:INSUFFICIENT_TRANS_BAL");
     }
 
     function _toWad(uint256 amt) internal view returns (uint256) {
@@ -217,10 +222,6 @@ contract Pool is PoolFDT {
 
     function _transferLiquidityAsset(address to, uint256 value) internal {
         liquidityAsset.safeTransfer(to, value);
-    }
-
-    function _isValidDelegateOrPoolAdmin() internal view {
-        require(msg.sender == poolDelegate || poolAdmins[msg.sender], "P:NOT_DEL_OR_ADMIN");
     }
 
     function _whenProtocolNotPaused() internal view {

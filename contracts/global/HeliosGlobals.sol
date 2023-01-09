@@ -6,14 +6,14 @@ import "../interfaces/ISubFactory.sol";
 import "../interfaces/IHeliosGlobals.sol";
 
 contract HeliosGlobals is IHeliosGlobals {
-    address public globalAdmin;
-    bool    public protocolPaused;
-    address public governor;
+    address public override globalAdmin;
+    bool    public override protocolPaused;
+    address public override governor;
 
-    mapping(address => bool) public isValidPoolDelegate;
-    mapping(address => bool) public isValidPoolFactory;
-    mapping(address => bool) public isValidLiquidityAsset;
-    mapping(address => mapping(address => bool)) public validSubFactories;
+    mapping(address => bool) public override isValidPoolDelegate;
+    mapping(address => bool) public override isValidPoolFactory;
+    mapping(address => bool) public override isValidLiquidityAsset;
+    mapping(address => mapping(address => bool)) public override validSubFactories;
 
     event ProtocolPaused(bool pause);
     event Initialized();
@@ -27,6 +27,8 @@ contract HeliosGlobals is IHeliosGlobals {
     }
 
     constructor(address _governor, address _globalAdmin) {
+        require(_governor != address(0), "HG:ZERO_GOVERNOR");
+        require(_globalAdmin != address(0), "HG:ZERO_GLOBAL_ADMIN");
         governor = _governor;
         globalAdmin = _globalAdmin;
         emit Initialized();

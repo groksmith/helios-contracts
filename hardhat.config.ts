@@ -11,7 +11,6 @@ const GOERLI_OWNER_PRIVATE_KEY = "a43c7fdc611841d943a3b54faacd13bc29f73e0081e9e2
 const GOERLI_ADMIN_PRIVATE_KEY = "6a91dbcfcac54182fad12d2049103917c3f8fc1d09cb7f01a25b6caa986a5985";
 
 const ALCHEMY_API_KEY = "Vh6E2PGEO2PplkuLh0z0fDhlsPN3DHlc";
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 const config: HardhatUserConfig = {
     solidity: {

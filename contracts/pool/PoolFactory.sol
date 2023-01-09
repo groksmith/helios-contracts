@@ -2,10 +2,12 @@
 pragma solidity ^0.8.0;
 
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import "./Pool.sol";
 import "../global/HeliosGlobals.sol";
 
-contract PoolFactory is Pausable {
+contract PoolFactory is Pausable, ReentrancyGuard {
     IHeliosGlobals   public globals;
 
     mapping(string => address)  public pools;               // Map to reference Pools corresponding to their respective indices.
@@ -22,6 +24,7 @@ contract PoolFactory is Pausable {
 
     function setGlobals(address newGlobals) external {
         _isValidGovernor();
+        require(newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
         globals = IHeliosGlobals(newGlobals);
     }
 
@@ -34,7 +37,7 @@ contract PoolFactory is Pausable {
         uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount
-    ) external whenNotPaused returns (address poolAddress) {
+    ) external whenNotPaused nonReentrant returns (address poolAddress) {
 
         _whenProtocolNotPaused();
         {

@@ -15,6 +15,7 @@
     "test-deploy": "npx hardhat run scripts/01-deploy.ts --network goerli",
     "test-set-assets": "npx hardhat run scripts/02-liquidityAsset.ts --network goerli",
     "test-create-pool": "npx hardhat run scripts/03-createPool.ts --network goerli",
+    "test-pool": "npx hardhat run scripts/04-transactionsPool.ts --network goerli",
     "export": "npx hardhat export-abi"
   },
   "devDependencies": {

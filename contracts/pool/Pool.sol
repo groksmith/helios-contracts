@@ -92,6 +92,8 @@ contract Pool is PoolFDT {
         _isValidState(State.Initialized);
         poolState = State.Finalized;
         emit PoolStateChanged(poolState);
+        openToPublic = true;
+        emit PoolOpenedToPublic(openToPublic);
     }
 
     function deactivate() external {
@@ -108,9 +110,13 @@ contract Pool is PoolFDT {
     }
 
     function deposit(uint256 amt) external nonReentrant {
+        require(amt > 0, "P:NEGATIVE_DEPOSIT");
+        require(openToPublic, "P:POOL_NOT_OPEN");
+        require(_balanceOfLiquidityLocker().add(amt) <= investmentPoolSize, "P:DEPOSIT_AMT_EXCEEDS_POOL_SIZE");
+        require(_balanceOfLiquidityLocker().add(amt) >= minInvestmentAmount, "P:DEPOSIT_AMT_BELOW_MIN");
+
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
-        isDepositAllowed(amt);
 
         uint256 wad = _toWad(amt);
         PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), wad, msg.sender);
@@ -137,7 +143,7 @@ contract Pool is PoolFDT {
         _emitBalanceUpdatedEvent();
     }
 
-    function withdrawFunds() public override {
+    function withdrawFunds() public override{
         _whenProtocolNotPaused();
         uint256 withdrawableFunds = _prepareWithdraw();
 
@@ -164,7 +170,7 @@ contract Pool is PoolFDT {
         emit TotalCustodyAllowanceUpdated(msg.sender, newTotalAllowance);
     }
 
-    function transferByCustodian(address from, address to, uint256 amount) external {
+    function transferByCustodian(address from, address to, uint256 amount) external nonReentrant {
         uint256 oldAllowance = custodyAllowance[from][msg.sender];
         uint256 newAllowance = oldAllowance.sub(amount);
 
@@ -184,11 +190,13 @@ contract Pool is PoolFDT {
         emit PoolAdminSet(poolAdmin, allowed);
     }
 
-    function isDepositAllowed(uint256 depositAmt) public view {
+    function isDepositAllowed(uint256 depositAmt) public view returns (bool) {
         require(depositAmt > 0, "P:NEGATIVE_DEPOSIT");
         require(openToPublic, "P:POOL_NOT_OPEN");
         require(_balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize, "P:DEPOSIT_AMT_EXCEEDS_POOL_SIZE");
         require(_balanceOfLiquidityLocker().add(depositAmt) >= minInvestmentAmount, "P:DEPOSIT_AMT_BELOW_MIN");
+
+        return true;
     }
 
     function _canWithdraw(address account, uint256 wad) internal view {

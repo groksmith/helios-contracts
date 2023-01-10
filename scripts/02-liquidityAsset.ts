@@ -1,8 +1,8 @@
 import {ethers} from "hardhat";
 
-const USDC_ADDRESS = "0xde637d4c445ca2aae8f782ffac8d2971b93a4998";
+const USDC_ADDRESS = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
 
-const global = "0xd58490F3Bc01C98C18026a1f3E31F90c0e953E44";
+const global = "0xd47eE5c092786985A582c6c2f951989634213740";
 
 async function main() {
     let [owner, admin] = await ethers.getSigners();

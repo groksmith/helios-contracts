@@ -1,9 +1,10 @@
 import {ethers} from "hardhat";
 
+let POOL_FACTORY_ADDRESS = process.env.POOL_FACTORY_ADDRESS!;
+let USDC = process.env.USDC_ADDRESS!;
+let POOL_ID = process.env.CONTRACT_POOL!;
+
 async function main() {
-    let POOL_FACTORY_ADDRESS = process.env.POOL_FACTORY_ADDRESS!;
-    let USDC = process.env.USDC_ADDRESS!;
-    let POOL_ID = process.env.CONTRACT_POOL!;
 
     // Get Signers
     let [owner, admin] = await ethers.getSigners();

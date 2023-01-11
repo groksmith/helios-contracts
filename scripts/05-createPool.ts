@@ -1,26 +1,27 @@
 import {ethers} from "hardhat";
 import {mine} from "@nomicfoundation/hardhat-network-helpers";
 
+let CONTRACT_POOL_FACTORY = process.env.CONTRACT_POOL_FACTORY!;
+let CONTRACT_LIQUIDITY_LOCKER_FACTORY = process.env.CONTRACT_LIQUIDITY_LOCKER_FACTORY!;
+let CONTRACT_USDC = process.env.CONTRACT_USDC!;
+let POOL_ID = "";
+
 async function main() {
-    let POOL_FACTORY_ADDRESS = process.env.POOL_FACTORY_ADDRESS!;
-    let LIQUIDITY_LOCKER_FACTORY_ADDRESS = process.env.LIQUIDITY_LOCKER_FACTORY_ADDRESS!;
-    let USDC = process.env.USDC_ADDRESS!;
-    let POOL_ID = process.env.CONTRACT_POOL!;
 
     // Get Signers
-    let [, admin] = await ethers.getSigners();
+    let [owner, admin] = await ethers.getSigners();
 
     // Get PoolFactory Contract
     const poolFactoryFactory = await ethers.getContractFactory("PoolFactory", admin);
-    const poolFactoryContract = await poolFactoryFactory.attach(POOL_FACTORY_ADDRESS);
+    const poolFactoryContract = await poolFactoryFactory.attach(CONTRACT_POOL_FACTORY);
 
     const liquidityLockerFactoryFactory = await ethers.getContractFactory("LiquidityLockerFactory", admin);
-    const liquidityLockerFactory = await liquidityLockerFactoryFactory.attach(LIQUIDITY_LOCKER_FACTORY_ADDRESS);
+    const liquidityLockerFactory = await liquidityLockerFactoryFactory.attach(CONTRACT_LIQUIDITY_LOCKER_FACTORY);
 
     // Create Pool Contract
     await poolFactoryContract.createPool(
         POOL_ID,
-        USDC,
+        CONTRACT_USDC,
         liquidityLockerFactory.address,
         10,
         12,

@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/ILiquidityLocker.sol";
 
-contract LiquidityLocker is ILiquidityLocker{
+contract LiquidityLocker is ILiquidityLocker {
     using SafeERC20 for IERC20;
 
     address public immutable pool;            // The Pool that owns this LiquidityLocker.
@@ -18,12 +18,8 @@ contract LiquidityLocker is ILiquidityLocker{
         pool = _pool;
     }
 
-    modifier isPool() {
+    function transfer(address dst, uint256 amt) external override returns (bool) {
         require(msg.sender == pool, "LL:NOT_P");
-        _;
-    }
-
-    function transfer(address dst, uint256 amt) external override isPool returns (bool) {
         require(dst != address(0), "LL:NULL_DST");
         liquidityAsset.safeTransfer(dst, amt);
         return true;

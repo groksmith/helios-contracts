@@ -1,0 +1,15 @@
+[
+  {
+    "inputs": [],
+    "name": "globals",
+    "outputs": [
+      {
+        "internalType": "contract IHeliosGlobals",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

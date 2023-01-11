@@ -12,8 +12,8 @@ import "../math/SafeMathInt.sol";
 abstract contract BasicFDT is ERC20, ReentrancyGuard {
     using SafeMath       for uint256;
     using SafeMathUint   for uint256;
-    using SignedSafeMath for int256;
     using SafeMathInt    for int256;
+    using SignedSafeMath for int256;
 
     uint256 internal constant POINTS_MULTIPLIER = 2 ** 128;
     uint256 internal pointsPerShare;

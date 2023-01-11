@@ -5,10 +5,11 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./Pool.sol";
-import "../global/HeliosGlobals.sol";
+import "../interfaces/IHeliosGlobals.sol";
+import "../interfaces/IPoolFactory.sol";
 
-contract PoolFactory is Pausable, ReentrancyGuard {
-    IHeliosGlobals   public globals;
+contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
+    IHeliosGlobals public override globals;
 
     mapping(string => address)  public pools;               // Map to reference Pools corresponding to their respective indices.
     mapping(address => bool)    public isPool;              // True only if a Pool was instantiated by this factory.

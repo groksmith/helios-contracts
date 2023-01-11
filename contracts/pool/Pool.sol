@@ -5,22 +5,17 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-import "./PoolFactory.sol";
-import "./LiquidityLockerFactory.sol";
-import "../global/HeliosGlobals.sol";
+import "../interfaces/IPoolFactory.sol";
+import "../interfaces/ILiquidityLockerFactory.sol";
+import "../interfaces/ILiquidityLocker.sol";
+import "../interfaces/IHeliosGlobals.sol";
 import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
 
 contract Pool is PoolFDT {
-    string constant NAME = "Helios TKN Pool";
-    string constant SYMBOL = "HLS-P";
-
     using SafeMath  for uint256;
-    using SafeERC20 for IERC20;
-    uint256 constant WAD = 10 ** 18;
-
-    using SafeMath for uint256;
     using SafeCast for uint256;
+    using SafeERC20 for IERC20;
 
     address public immutable superFactory;
     address public immutable liquidityLocker;
@@ -33,14 +28,12 @@ contract Pool is PoolFDT {
     uint256 public duration;
     uint256 public investmentPoolSize;
     uint256 public minInvestmentAmount;
-    bool public openToPublic;
 
     enum State {Initialized, Finalized, Deactivated}
     State public poolState;
 
     event PoolStateChanged(State state);
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
-    event PoolOpenedToPublic(bool isOpen);
 
     event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
     event CustodyTransfer(address indexed custodian, address indexed from, address indexed to, uint256 amount);
@@ -63,7 +56,7 @@ contract Pool is PoolFDT {
         uint256 _duration,
         uint256 _investmentPoolSize,
         uint256 _minInvestmentAmount
-    ) PoolFDT(NAME, SYMBOL){
+    ) PoolFDT(PoolLib.NAME, PoolLib.SYMBOL){
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
@@ -80,7 +73,7 @@ contract Pool is PoolFDT {
         minInvestmentAmount = _minInvestmentAmount;
         poolState = State.Initialized;
 
-        _isValidLiquidityAsset(_liquidityAsset);
+        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
 
         liquidityLocker = address(ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
 
@@ -92,8 +85,6 @@ contract Pool is PoolFDT {
         _isValidState(State.Initialized);
         poolState = State.Finalized;
         emit PoolStateChanged(poolState);
-        openToPublic = true;
-        emit PoolOpenedToPublic(openToPublic);
     }
 
     function deactivate() external {
@@ -103,15 +94,8 @@ contract Pool is PoolFDT {
         emit PoolStateChanged(poolState);
     }
 
-    function setOpenToPublic(bool open) external {
-        _isValidDelegateAndProtocolNotPaused();
-        openToPublic = open;
-        emit PoolOpenedToPublic(open);
-    }
-
     function deposit(uint256 amt) external nonReentrant {
         require(amt > 0, "P:NEG_DEPOSIT");
-        require(openToPublic, "P:POOL_NOT_OPEN");
         require(_balanceOfLiquidityLocker().add(amt) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
         require(_balanceOfLiquidityLocker().add(amt) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
@@ -188,22 +172,13 @@ contract Pool is PoolFDT {
         emit PoolAdminSet(poolAdmin, allowed);
     }
 
-    function isDepositAllowed(uint256 depositAmt) public view returns (bool) {
-        require(depositAmt > 0, "P:NEG_DEPOSIT");
-        require(openToPublic, "P:POOL_NOT_OPEN");
-        require(_balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
-        require(_balanceOfLiquidityLocker().add(depositAmt) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-
-        return true;
-    }
-
     function _canWithdraw(address account, uint256 wad) internal view {
         require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
         require(balanceOf(account).sub(wad) >= totalCustodyAllowance[account], "P:INSUFF_TRANS_BAL");
     }
 
     function _toWad(uint256 amt) internal view returns (uint256) {
-        return amt.mul(WAD).div(10 ** liquidityAssetDecimals);
+        return amt.mul(PoolLib.WAD).div(10 ** liquidityAssetDecimals);
     }
 
     function _balanceOfLiquidityLocker() internal view returns (uint256) {
@@ -214,12 +189,8 @@ contract Pool is PoolFDT {
         require(poolState == _state, "P:BAD_STATE");
     }
 
-    function _isValidDelegate() internal view {
-        require(msg.sender == poolDelegate, "P:NOT_DEL");
-    }
-
     function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
-        return IHeliosGlobals(PoolFactory(poolFactory).globals());
+        return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 
     function _emitBalanceUpdatedEvent() internal {
@@ -234,12 +205,8 @@ contract Pool is PoolFDT {
         require(!_globals(superFactory).protocolPaused(), "P:PROTO_PAUSED");
     }
 
-    function _isValidLiquidityAsset(address _liquidityAsset) internal view {
-        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
-    }
-
     function _isValidDelegateAndProtocolNotPaused() internal view {
-        _isValidDelegate();
+        require(msg.sender == poolDelegate, "P:NOT_DEL");
         _whenProtocolNotPaused();
     }
 

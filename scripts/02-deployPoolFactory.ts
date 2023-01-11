@@ -3,7 +3,7 @@ import {ethers} from "hardhat";
 let CONTRACT_HELIOS_GLOBALS = process.env.CONTRACT_HELIOS_GLOBALS!;
 
 async function main() {
-    let [owner, admin] = await ethers.getSigners();
+    const [owner, admin] = await ethers.getSigners();
 
     // Deploy Pool Factory
     const poolFactoryFactory = await ethers.getContractFactory("PoolFactory", owner);

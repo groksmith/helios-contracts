@@ -1,33 +1,41 @@
 import {ethers} from "hardhat";
+import {IERC20Metadata} from "../typechain-types";
+import {BigNumber} from "ethers";
 
-let POOL_FACTORY_ADDRESS = process.env.POOL_FACTORY_ADDRESS!;
-let USDC = process.env.USDC_ADDRESS!;
-let POOL_ID = process.env.CONTRACT_POOL!;
+let CONTRACT_POOL_FACTORY = process.env.CONTRACT_POOL_FACTORY!;
+let CONTRACT_USDC = process.env.CONTRACT_USDC!;
+let POOL_ID = process.env.POOL_ID!;
 
 async function main() {
-
-    // Get Signers
-    let [owner, admin] = await ethers.getSigners();
+    const [owner, admin] = await ethers.getSigners();
 
     // Get PoolFactory Contract
     const poolFactoryFactory = await ethers.getContractFactory("PoolFactory", admin);
-    const poolFactoryContract = await poolFactoryFactory.attach(POOL_FACTORY_ADDRESS);
+    const poolFactoryContract = await poolFactoryFactory.attach(CONTRACT_POOL_FACTORY);
 
     const pool = await poolFactoryContract.pools(POOL_ID);
     const poolFactory = await ethers.getContractFactory("Pool", admin);
     const poolContract = poolFactory.attach(pool);
 
-    const USD = 10 ** 6;
-    const IERC20Token = await ethers.getContractAt("IERC20", USDC, admin);
+    const IERC20Token = await ethers.getContractAt("IERC20Metadata", CONTRACT_USDC, admin) as IERC20Metadata;
+    const decimals = await IERC20Token.decimals();
 
-    const balanceBefore = await IERC20Token.balanceOf(admin.address);
+    const balanceBeforeBN = await IERC20Token.balanceOf(admin.address);
+    const balance = toWad(balanceBeforeBN, decimals);
 
-    await poolContract.isDepositAllowed(1);
+    await poolContract.isDepositAllowed(2);
 
     await IERC20Token.approve(poolContract.address, 2);
-    await poolContract.withdraw(1);
+    await poolContract.deposit(2);
 
-    const balanceAfter = await IERC20Token.balanceOf(owner.address);
+    const balanceAfterBN = await IERC20Token.balanceOf(admin.address);
+    const balanceAfter = toWad(balanceAfterBN, decimals);
+}
+
+const toWad = (amount: BigNumber, decimals = 18) => {
+    if (!amount) return 0;
+
+    return amount.toNumber() / 10 ** decimals;
 }
 
 main().catch((error) => {

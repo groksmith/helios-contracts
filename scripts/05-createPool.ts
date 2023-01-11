@@ -1,15 +1,12 @@
 import {ethers} from "hardhat";
-import {mine} from "@nomicfoundation/hardhat-network-helpers";
 
 let CONTRACT_POOL_FACTORY = process.env.CONTRACT_POOL_FACTORY!;
 let CONTRACT_LIQUIDITY_LOCKER_FACTORY = process.env.CONTRACT_LIQUIDITY_LOCKER_FACTORY!;
 let CONTRACT_USDC = process.env.CONTRACT_USDC!;
-let POOL_ID = "";
+let POOL_ID = process.env.POOL_ID!;
 
 async function main() {
-
-    // Get Signers
-    let [owner, admin] = await ethers.getSigners();
+    const [, admin] = await ethers.getSigners();
 
     // Get PoolFactory Contract
     const poolFactoryFactory = await ethers.getContractFactory("PoolFactory", admin);
@@ -34,7 +31,6 @@ async function main() {
     const poolFactory = await ethers.getContractFactory("Pool", admin);
     const poolContract = poolFactory.attach(pool);
     await poolContract.finalize();
-    await mine(1);
 }
 
 main().catch((error) => {

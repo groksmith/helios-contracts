@@ -1,7 +1,7 @@
 import {ethers} from "hardhat";
 
 async function main() {
-    let [owner, admin] = await ethers.getSigners();
+    const [owner, admin] = await ethers.getSigners();
     console.log("ACCOUNT::Owner:", owner.address);
     console.log("ACCOUNT::Admin:", admin.address);
 

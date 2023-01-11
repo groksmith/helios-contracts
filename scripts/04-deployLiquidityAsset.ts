@@ -4,7 +4,7 @@ let HELIOS_GLOBALS = process.env.CONTRACT_HELIOS_GLOBALS!;
 let CONTRACT_USDC = process.env.CONTRACT_USDC!;
 
 async function main() {
-    let [owner] = await ethers.getSigners();
+    const [owner] = await ethers.getSigners();
 
     // Get HeliosGlobals Contract
     const heliosGlobalsFactory = await ethers.getContractFactory("HeliosGlobals", owner);

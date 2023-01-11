@@ -2,8 +2,6 @@ import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
 import {expect} from "chai";
 import {HeliosGlobals__factory} from "../typechain-types";
 import {deployTokenFixture} from "./deployment";
-import {UuidTool} from "uuid-tool";
-import {BytesLike} from "ethers";
 
 const {ethers} = require('hardhat');
 

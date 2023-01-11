@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicensed
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
@@ -86,7 +86,7 @@ contract PoolFactory is Pausable, ReentrancyGuard {
     }
 
     function _isValidGovernorOrPoolFactoryAdmin() internal view {
-        require(msg.sender == globals.governor() || poolFactoryAdmins[msg.sender], "PF:NOT_GOV_OR_ADMIN");
+        require(msg.sender == globals.governor() || poolFactoryAdmins[msg.sender], "PF:NOT_GOV_OR_ADM");
     }
 
     function _whenProtocolNotPaused() internal view {

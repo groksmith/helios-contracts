@@ -12,6 +12,8 @@ import {
     PoolFactory__factory
 } from "../typechain-types";
 
+const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+
 export async function deployTokenFixture() {
     let heliosGlobals: HeliosGlobals;
     let poolFactory: PoolFactory;
@@ -20,8 +22,6 @@ export async function deployTokenFixture() {
     let admin: SignerWithAddress;
     let admin2: SignerWithAddress;
     let address: SignerWithAddress[]
-
-    let USDC = process.env.USDC_ADDRESS!;
 
     [owner, admin, admin2, ...address] = await ethers.getSigners();
 
@@ -54,7 +54,6 @@ export async function createPoolFixture() {
         IERC20Token
     } = await deployTokenFixture();
 
-    let USDC = process.env.USDC_ADDRESS!;
     await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
     const poolId = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
     await poolFactory.connect(admin).createPool(

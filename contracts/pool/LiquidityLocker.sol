@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicensed
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -12,8 +12,8 @@ contract LiquidityLocker is ILiquidityLocker{
     IERC20  public immutable liquidityAsset;  // The Liquidity Asset which this LiquidityLocker will escrow.
 
     constructor(address _liquidityAsset, address _pool) {
-        require(_liquidityAsset != address(0), "LL:ZERO_LIQUIDITY_ASSET");
-        require(_pool != address(0), "LL:ZERO_POOL");
+        require(_liquidityAsset != address(0), "LL:ZERO_LIQ_ASSET");
+        require(_pool != address(0), "LL:ZERO_P");
         liquidityAsset = IERC20(_liquidityAsset);
         pool = _pool;
     }

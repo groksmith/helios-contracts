@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicensed
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -12,7 +12,7 @@ import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
 
 contract Pool is PoolFDT {
-    string constant NAME = "Helios Tokenized Pool";
+    string constant NAME = "Helios TKN Pool";
     string constant SYMBOL = "HLS-P";
 
     using SafeMath  for uint256;
@@ -64,9 +64,9 @@ contract Pool is PoolFDT {
         uint256 _investmentPoolSize,
         uint256 _minInvestmentAmount
     ) PoolFDT(NAME, SYMBOL){
-        require(_liquidityAsset != address(0), "P:ZERO_LIQUIDITY_ASSET");
-        require(_poolDelegate != address(0), "P:ZERO_POOL_DELEGATE");
-        require(_llFactory != address(0), "P:ZERO_LIQUIDITY_LOCKER_FACTORY");
+        require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
+        require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
+        require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
@@ -110,10 +110,10 @@ contract Pool is PoolFDT {
     }
 
     function deposit(uint256 amt) external nonReentrant {
-        require(amt > 0, "P:NEGATIVE_DEPOSIT");
+        require(amt > 0, "P:NEG_DEPOSIT");
         require(openToPublic, "P:POOL_NOT_OPEN");
-        require(_balanceOfLiquidityLocker().add(amt) <= investmentPoolSize, "P:DEPOSIT_AMT_EXCEEDS_POOL_SIZE");
-        require(_balanceOfLiquidityLocker().add(amt) >= minInvestmentAmount, "P:DEPOSIT_AMT_BELOW_MIN");
+        require(_balanceOfLiquidityLocker().add(amt) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(_balanceOfLiquidityLocker().add(amt) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
@@ -136,8 +136,6 @@ contract Pool is PoolFDT {
         _burn(msg.sender, wad);  // Burn the corresponding PoolFDTs balance.
         withdrawFunds();         // Transfer full entitled interest, decrement `interestSum`.
 
-        // Transfer amount that is due after realized losses are accounted for.
-        // Recognized losses are absorbed by the LP.
         _transferLiquidityLockerFunds(msg.sender, amt.sub(_recognizeLosses()));
 
         _emitBalanceUpdatedEvent();
@@ -191,17 +189,17 @@ contract Pool is PoolFDT {
     }
 
     function isDepositAllowed(uint256 depositAmt) public view returns (bool) {
-        require(depositAmt > 0, "P:NEGATIVE_DEPOSIT");
+        require(depositAmt > 0, "P:NEG_DEPOSIT");
         require(openToPublic, "P:POOL_NOT_OPEN");
-        require(_balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize, "P:DEPOSIT_AMT_EXCEEDS_POOL_SIZE");
-        require(_balanceOfLiquidityLocker().add(depositAmt) >= minInvestmentAmount, "P:DEPOSIT_AMT_BELOW_MIN");
+        require(_balanceOfLiquidityLocker().add(depositAmt) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(_balanceOfLiquidityLocker().add(depositAmt) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
         return true;
     }
 
     function _canWithdraw(address account, uint256 wad) internal view {
         require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
-        require(balanceOf(account).sub(wad) >= totalCustodyAllowance[account], "P:INSUFFICIENT_TRANS_BAL");
+        require(balanceOf(account).sub(wad) >= totalCustodyAllowance[account], "P:INSUFF_TRANS_BAL");
     }
 
     function _toWad(uint256 amt) internal view returns (uint256) {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicensed
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./ExtendedFDT.sol";
@@ -21,25 +21,19 @@ abstract contract PoolFDT is ExtendedFDT {
 
     function _recognizeLosses() internal override returns (uint256 losses) {
         losses = _prepareLossesWithdraw();
-
         poolLosses = poolLosses.sub(losses);
-
         _updateLossesBalance();
     }
 
     function _updateLossesBalance() internal override returns (int256) {
         uint256 _prevLossesTokenBalance = lossesBalance;
-
         lossesBalance = poolLosses;
-
         return int256(lossesBalance).sub(int256(_prevLossesTokenBalance));
     }
 
     function _updateFundsTokenBalance() internal override returns (int256) {
         uint256 _prevFundsTokenBalance = interestBalance;
-
         interestBalance = interestSum;
-
         return int256(interestBalance).sub(int256(_prevFundsTokenBalance));
     }
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicensed
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -27,22 +27,22 @@ contract HeliosGlobals is IHeliosGlobals {
     }
 
     constructor(address _governor, address _globalAdmin) {
-        require(_governor != address(0), "HG:ZERO_GOVERNOR");
-        require(_globalAdmin != address(0), "HG:ZERO_GLOBAL_ADMIN");
+        require(_governor != address(0), "HG:ZERO_GOV");
+        require(_globalAdmin != address(0), "HG:ZERO_ADM");
         governor = _governor;
         globalAdmin = _globalAdmin;
         emit Initialized();
     }
 
     function setGlobalAdmin(address newGlobalAdmin) external {
-        require(msg.sender == governor && newGlobalAdmin != address(0), "HG:NOT_GOV_OR_ADMIN");
+        require(msg.sender == governor && newGlobalAdmin != address(0), "HG:NOT_GOV_OR_ADM");
         require(!protocolPaused, "HG:PROTO_PAUSED");
         globalAdmin = newGlobalAdmin;
         emit GlobalAdminSet(newGlobalAdmin);
     }
 
     function setProtocolPause(bool pause) external {
-        require(msg.sender == globalAdmin, "HG:NOT_ADMIN");
+        require(msg.sender == globalAdmin, "HG:NOT_ADM");
         protocolPaused = pause;
         emit ProtocolPaused(pause);
     }
@@ -57,7 +57,7 @@ contract HeliosGlobals is IHeliosGlobals {
     }
 
     function setValidSubFactory(address superFactory, address subFactory, bool valid) external isGovernor {
-        require(isValidPoolFactory[superFactory], "HG:INVALID_SUPER_F");
+        require(isValidPoolFactory[superFactory], "HG:INV_SUPER_F");
         validSubFactories[superFactory][subFactory] = valid;
     }
 

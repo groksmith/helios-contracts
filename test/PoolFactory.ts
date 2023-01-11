@@ -17,7 +17,7 @@ describe("PoolFactory contract", function () {
     it("Should have correct governor", async function () {
         const {poolFactory, admin} = await loadFixture(deployTokenFixture);
         await expect(poolFactory.connect(admin).pause())
-            .to.be.revertedWith('PF:NOT_GOV_OR_ADMIN');
+            .to.be.revertedWith('PF:NOT_GOV_OR_ADM');
     });
 
     it("Set new globals", async function () {

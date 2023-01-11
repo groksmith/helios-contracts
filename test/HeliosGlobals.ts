@@ -21,7 +21,7 @@ describe("HeliosGlobals contract", function () {
             const {heliosGlobals, owner} = await loadFixture(deployTokenFixture);
 
             await expect(heliosGlobals.connect(owner).setProtocolPause(true))
-                .to.be.revertedWith('HG:NOT_ADMIN');
+                .to.be.revertedWith('HG:NOT_ADM');
         });
     });
 
@@ -53,7 +53,7 @@ describe("HeliosGlobals contract", function () {
             const {heliosGlobals, admin2} = await loadFixture(deployTokenFixture);
 
             await expect(heliosGlobals.connect(admin2).setGlobalAdmin(admin2.address))
-                .to.be.revertedWith('HG:NOT_GOV_OR_ADMIN');
+                .to.be.revertedWith('HG:NOT_GOV_OR_ADM');
         });
 
         it("Set Valid Pool Delegate", async function () {

@@ -4,6 +4,7 @@ import {HardhatUserConfig} from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-abi-exporter";
 import "hardhat-storage-layout";
+import "hardhat-contract-sizer";
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -50,7 +51,11 @@ const config: HardhatUserConfig = {
         },
         goerli: {
             url: process.env.GOERLI_API_KEY,
-            accounts: [process.env.GOERLI_OWNER_PRIVATE_KEY!, process.env.GOERLI_ADMIN_PRIVATE_KEY!]
+            accounts: [
+                process.env.GOERLI_OWNER_PRIVATE_KEY!,
+                process.env.GOERLI_ADMIN_PRIVATE_KEY!,
+                process.env.GOERLI_USER_PRIVATE_KEY!
+            ]
         }
     }
 };

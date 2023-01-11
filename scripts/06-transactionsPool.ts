@@ -7,20 +7,20 @@ let CONTRACT_USDC = process.env.CONTRACT_USDC!;
 let POOL_ID = process.env.POOL_ID!;
 
 async function main() {
-    const [owner, admin] = await ethers.getSigners();
+    const [, , user] = await ethers.getSigners();
 
     // Get PoolFactory Contract
-    const poolFactoryFactory = await ethers.getContractFactory("PoolFactory", admin);
+    const poolFactoryFactory = await ethers.getContractFactory("PoolFactory", user);
     const poolFactoryContract = await poolFactoryFactory.attach(CONTRACT_POOL_FACTORY);
 
     const pool = await poolFactoryContract.pools(POOL_ID);
-    const poolFactory = await ethers.getContractFactory("Pool", admin);
+    const poolFactory = await ethers.getContractFactory("Pool", user);
     const poolContract = poolFactory.attach(pool);
 
-    const IERC20Token = await ethers.getContractAt("IERC20Metadata", CONTRACT_USDC, admin) as IERC20Metadata;
+    const IERC20Token = await ethers.getContractAt("IERC20Metadata", CONTRACT_USDC, user) as IERC20Metadata;
     const decimals = await IERC20Token.decimals();
 
-    const balanceBeforeBN = await IERC20Token.balanceOf(admin.address);
+    const balanceBeforeBN = await IERC20Token.balanceOf(user.address);
     const balance = toWad(balanceBeforeBN, decimals);
 
     await poolContract.isDepositAllowed(2);
@@ -28,7 +28,7 @@ async function main() {
     await IERC20Token.approve(poolContract.address, 2);
     await poolContract.deposit(2);
 
-    const balanceAfterBN = await IERC20Token.balanceOf(admin.address);
+    const balanceAfterBN = await IERC20Token.balanceOf(user.address);
     const balanceAfter = toWad(balanceAfterBN, decimals);
 }
 

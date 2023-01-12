@@ -62,6 +62,10 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
         .toUint256Safe() / POINTS_MULTIPLIER;
     }
 
+    function decimals() public view virtual override returns (uint8) {
+        return 18;
+    }
+
     function _transfer(address from, address to, uint256 value) internal virtual override {
         super._transfer(from, to, value);
 
@@ -101,7 +105,7 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
 
     function withdrawFunds() public virtual {}
 
-    function _updateFundsTokenBalance() internal virtual returns (int256) {}
+    function _updateFundsTokenBalance() internal virtual returns (int256);
 
     function updateFundsReceived() public virtual {
         int256 newFunds = _updateFundsTokenBalance();

@@ -23,10 +23,9 @@ async function main() {
     const balanceBeforeBN = await IERC20Token.balanceOf(user.address);
     const balance = toWad(balanceBeforeBN, decimals);
 
-    await poolContract.isDepositAllowed(2);
-
-    await IERC20Token.approve(poolContract.address, 2);
-    await poolContract.deposit(2);
+    const amount = BigNumber.from(2 * 10 ** decimals);
+    await IERC20Token.approve(poolContract.address, amount);
+    await poolContract.deposit(amount);
 
     const balanceAfterBN = await IERC20Token.balanceOf(user.address);
     const balanceAfter = toWad(balanceAfterBN, decimals);

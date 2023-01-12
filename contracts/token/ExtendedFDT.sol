@@ -105,7 +105,7 @@ abstract contract ExtendedFDT is BasicFDT {
         _distributeLosses(newLosses.toUint256Safe());
     }
 
-    function _recognizeLosses() internal virtual returns (uint256 losses) {}
+    function _recognizeLosses() internal virtual returns (uint256 losses);
 
-    function _updateLossesBalance() internal virtual returns (int256) {}
+    function _updateLossesBalance() internal virtual returns (int256);
 }

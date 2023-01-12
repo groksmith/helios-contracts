@@ -125,6 +125,10 @@ contract Pool is PoolFDT {
         _emitBalanceUpdatedEvent();
     }
 
+    function decimals() public view override returns (uint8) {
+        return uint8(liquidityAssetDecimals);
+    }
+
     function withdrawFunds() public override{
         _whenProtocolNotPaused();
         uint256 withdrawableFunds = _prepareWithdraw();
@@ -178,7 +182,7 @@ contract Pool is PoolFDT {
     }
 
     function _toWad(uint256 amt) internal view returns (uint256) {
-        return amt.mul(PoolLib.WAD).div(10 ** liquidityAssetDecimals);
+        return amt.mul(liquidityAssetDecimals).div(10 ** liquidityAssetDecimals);
     }
 
     function _balanceOfLiquidityLocker() internal view returns (uint256) {

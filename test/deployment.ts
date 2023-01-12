@@ -41,7 +41,7 @@ export async function deployTokenFixture() {
 
     await heliosGlobals.setValidPoolFactory(poolFactory.address, true);
     await heliosGlobals.setValidSubFactory(poolFactory.address, liquidityLockerFactory.address, true);
-
+    await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
     return {heliosGlobals, poolFactory, liquidityLockerFactory, owner, admin, admin2, address, IERC20Token};
 }
 
@@ -69,5 +69,6 @@ export async function createPoolFixture() {
     const pool = await poolFactory.pools(poolId);
     const poolContractFactory = await ethers.getContractFactory("Pool") as Pool__factory;
     const poolContract = poolContractFactory.attach(pool);
+    await poolContract.connect(admin).finalize();
     return {IERC20Token, poolContract};
 }

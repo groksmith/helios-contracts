@@ -41,10 +41,9 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     ) external whenNotPaused nonReentrant returns (address poolAddress) {
 
         _whenProtocolNotPaused();
-        {
-            IHeliosGlobals _globals = globals;
-            require(_globals.isValidPoolDelegate(msg.sender), "PF:NOT_DELEGATE");
-        }
+
+        IHeliosGlobals _globals = globals;
+        require(_globals.isValidPoolDelegate(msg.sender), "PF:NOT_DELEGATE");
 
         _isMappingKeyValid(poolId);
 

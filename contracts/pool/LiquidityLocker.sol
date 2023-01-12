@@ -18,10 +18,23 @@ contract LiquidityLocker is ILiquidityLocker {
         pool = _pool;
     }
 
-    function transfer(address dst, uint256 amt) external override returns (bool) {
-        require(msg.sender == pool, "LL:NOT_P");
+    function transfer(address dst, uint256 amt) external override isPool returns (bool) {
         require(dst != address(0), "LL:NULL_DST");
         liquidityAsset.safeTransfer(dst, amt);
         return true;
+    }
+
+    function balance() external view override isPool returns (uint256) {
+        return liquidityAsset.balanceOf(address(pool));
+    }
+
+    function approve(address borrower, uint256 amt) external isPool returns (bool) {
+        liquidityAsset.safeApprove(borrower, amt);
+        return true;
+    }
+
+    modifier isPool() {
+        require(msg.sender == pool, "LL:NOT_P");
+        _;
     }
 }

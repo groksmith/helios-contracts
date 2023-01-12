@@ -36,16 +36,11 @@ contract Pool is PoolFDT {
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
 
     event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
-    event CustodyTransfer(address indexed custodian, address indexed from, address indexed to, uint256 amount);
-    event CustodyAllowanceChanged(address indexed liquidityProvider, address indexed custodian, uint256 oldAllowance, uint256 newAllowance);
     event CoolDown(address indexed liquidityProvider, uint256 cooldown);
     event DepositDateUpdated(address indexed liquidityProvider, uint256 depositDate);
-    event TotalCustodyAllowanceUpdated(address indexed liquidityProvider, uint256 newTotalAllowance);
 
     mapping(address => bool)        public poolAdmins;
     mapping(address => uint256)     public depositDate;
-    mapping(address => uint256)     public totalCustodyAllowance;
-    mapping(address => mapping(address => uint256)) public custodyAllowance;
 
     constructor(
         address _poolDelegate,
@@ -102,7 +97,6 @@ contract Pool is PoolFDT {
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
 
-        //uint256 wad = _toWad(amount);
         PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), amount, msg.sender);
 
         liquidityAsset.safeTransferFrom(msg.sender, liquidityLocker, amount);
@@ -114,7 +108,6 @@ contract Pool is PoolFDT {
 
     function withdraw(uint256 amount) external nonReentrant {
         _whenProtocolNotPaused();
-        //uint256 wad = _toWad(amount);
         _canWithdraw(msg.sender, amount);
 
         _burn(msg.sender, amount);  // Burn the corresponding PoolFDTs balance.
@@ -143,46 +136,15 @@ contract Pool is PoolFDT {
         _updateFundsTokenBalance();
     }
 
-    function increaseCustodyAllowance(address custodian, uint256 amount) external {
-        uint256 oldAllowance      = custodyAllowance[msg.sender][custodian];
-        uint256 newAllowance      = oldAllowance.add(amount);
-        uint256 newTotalAllowance = totalCustodyAllowance[msg.sender].add(amount);
-
-        PoolLib.increaseCustodyAllowanceChecks(custodian, amount, newTotalAllowance, balanceOf(msg.sender));
-
-        custodyAllowance[msg.sender][custodian] = newAllowance;
-        totalCustodyAllowance[msg.sender]       = newTotalAllowance;
-        emit CustodyAllowanceChanged(msg.sender, custodian, oldAllowance, newAllowance);
-        emit TotalCustodyAllowanceUpdated(msg.sender, newTotalAllowance);
-    }
-
-    function transferByCustodian(address from, address to, uint256 amount) external nonReentrant {
-        uint256 oldAllowance = custodyAllowance[from][msg.sender];
-        uint256 newAllowance = oldAllowance.sub(amount);
-
-        PoolLib.transferByCustodianChecks(from, to, amount);
-
-        custodyAllowance[from][msg.sender] = newAllowance;
-        uint256 newTotalAllowance          = totalCustodyAllowance[from].sub(amount);
-        totalCustodyAllowance[from]        = newTotalAllowance;
-        emit CustodyTransfer(msg.sender, from, to, amount);
-        emit CustodyAllowanceChanged(from, msg.sender, oldAllowance, newAllowance);
-        emit TotalCustodyAllowanceUpdated(msg.sender, newTotalAllowance);
-    }
-
     function setPoolAdmin(address poolAdmin, bool allowed) external {
         _isValidDelegateAndProtocolNotPaused();
         poolAdmins[poolAdmin] = allowed;
         emit PoolAdminSet(poolAdmin, allowed);
     }
 
-    function _canWithdraw(address account, uint256 wad) internal view {
+    function _canWithdraw(address account, uint256 amount) internal view {
         require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
-        require(balanceOf(account).sub(wad) >= totalCustodyAllowance[account], "P:INSUFF_TRANS_BAL");
-    }
-
-    function _toWad(uint256 amt) internal view returns (uint256) {
-        return amt.mul(liquidityAssetDecimals).div(10 ** liquidityAssetDecimals);
+        require(balanceOf(account).sub(amount) >= 0, "P:INSUFF_TRANS_BAL");
     }
 
     function _balanceOfLiquidityLocker() internal view returns (uint256) {

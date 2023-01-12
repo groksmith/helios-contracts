@@ -22,15 +22,4 @@ library PoolLib {
         depositDate[account] = newDate;
         emit DepositDateUpdated(account, newDate);
     }
-
-    function transferByCustodianChecks(address from, address to, uint256 amount) internal pure {
-        require(to == from, "P:INV_TO");
-        require(amount != uint256(0), "P:INV_AMT");
-    }
-
-    function increaseCustodyAllowanceChecks(address custodian, uint256 amount, uint256 newTotalAllowance, uint256 fdtBal) internal pure {
-        require(custodian != address(0), "P:INV_CUSTODIAN");
-        require(amount != uint256(0), "P:INV_AMT");
-        require(newTotalAllowance <= fdtBal, "P:INSUF_BAL");
-    }
 }

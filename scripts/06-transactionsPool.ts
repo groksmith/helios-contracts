@@ -23,9 +23,9 @@ async function main() {
     const balanceBeforeBN = await IERC20Token.balanceOf(user.address);
     const balance = toWad(balanceBeforeBN, decimals);
 
-    const amount = BigNumber.from(2 * 10 ** decimals);
+    const amount = 10 * 10 ** decimals;
     await IERC20Token.approve(poolContract.address, amount);
-    await poolContract.deposit(amount);
+    await poolContract.withdraw(amount);
 
     const balanceAfterBN = await IERC20Token.balanceOf(user.address);
     const balanceAfter = toWad(balanceAfterBN, decimals);
@@ -33,7 +33,6 @@ async function main() {
 
 const toWad = (amount: BigNumber, decimals = 18) => {
     if (!amount) return 0;
-
     return amount.toNumber() / 10 ** decimals;
 }
 

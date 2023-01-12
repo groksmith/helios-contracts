@@ -94,33 +94,33 @@ contract Pool is PoolFDT {
         emit PoolStateChanged(poolState);
     }
 
-    function deposit(uint256 amt) external nonReentrant {
-        require(amt > 0, "P:NEG_DEPOSIT");
-        require(_balanceOfLiquidityLocker().add(amt) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
-        require(_balanceOfLiquidityLocker().add(amt) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+    function deposit(uint256 amount) external nonReentrant {
+        require(amount > 0, "P:NEG_DEPOSIT");
+        require(_balanceOfLiquidityLocker().add(amount) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(_balanceOfLiquidityLocker().add(amount) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
 
-        uint256 wad = _toWad(amt);
-        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), wad, msg.sender);
+        //uint256 wad = _toWad(amount);
+        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), amount, msg.sender);
 
-        liquidityAsset.safeTransferFrom(msg.sender, liquidityLocker, amt);
-        _mint(msg.sender, wad);
+        liquidityAsset.safeTransferFrom(msg.sender, liquidityLocker, amount);
+        _mint(msg.sender, amount);
 
         _emitBalanceUpdatedEvent();
         emit CoolDown(msg.sender, uint256(0));
     }
 
-    function withdraw(uint256 amt) external nonReentrant {
+    function withdraw(uint256 amount) external nonReentrant {
         _whenProtocolNotPaused();
-        uint256 wad = _toWad(amt);
-        _canWithdraw(msg.sender, wad);
+        //uint256 wad = _toWad(amount);
+        _canWithdraw(msg.sender, amount);
 
-        _burn(msg.sender, wad);  // Burn the corresponding PoolFDTs balance.
+        _burn(msg.sender, amount);  // Burn the corresponding PoolFDTs balance.
         withdrawFunds();         // Transfer full entitled interest, decrement `interestSum`.
 
-        _transferLiquidityLockerFunds(msg.sender, amt.sub(_recognizeLosses()));
+        _transferLiquidityLockerFunds(msg.sender, amount.sub(_recognizeLosses()));
 
         _emitBalanceUpdatedEvent();
     }

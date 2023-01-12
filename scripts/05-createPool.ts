@@ -1,5 +1,6 @@
 import {ethers} from "hardhat";
 import {mine} from "@nomicfoundation/hardhat-network-helpers";
+import {IERC20Metadata} from "../typechain-types";
 
 let CONTRACT_POOL_FACTORY = process.env.CONTRACT_POOL_FACTORY!;
 let CONTRACT_LIQUIDITY_LOCKER_FACTORY = process.env.CONTRACT_LIQUIDITY_LOCKER_FACTORY!;
@@ -16,6 +17,9 @@ async function main() {
     const liquidityLockerFactoryFactory = await ethers.getContractFactory("LiquidityLockerFactory", admin);
     const liquidityLockerFactory = await liquidityLockerFactoryFactory.attach(CONTRACT_LIQUIDITY_LOCKER_FACTORY);
 
+    const IERC20Token = await ethers.getContractAt("IERC20Metadata", CONTRACT_USDC, admin) as IERC20Metadata;
+    const decimals = await IERC20Token.decimals();
+
     // Create Pool Contract
     const tx = await poolFactoryContract.createPool(
         POOL_ID,
@@ -24,8 +28,8 @@ async function main() {
         10,
         12,
         10000,
-        10,
-        1);
+        10 * 10 ** decimals,
+        1 * 10 ** decimals);
 
     await tx.wait(1);
 

@@ -613,7 +613,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "amt",
+        "name": "amount",
         "type": "uint256"
       }
     ],
@@ -1086,7 +1086,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "amt",
+        "name": "amount",
         "type": "uint256"
       }
     ],

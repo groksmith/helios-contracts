@@ -40,7 +40,7 @@ describe("Pool contract", function () {
 
         await IERC20Token.approve(poolContract.address, 100);
         await poolContract.deposit(100);
-        expect(await poolContract.withdraw(100))
-            .to.be.revertedWith('P:FUNDS_LOCKED');
+        await(expect(poolContract.withdraw(100))
+            .to.be.revertedWith('P:FUNDS_LOCKED'));
     });
 });

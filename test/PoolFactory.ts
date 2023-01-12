@@ -129,7 +129,6 @@ describe("PoolFactory contract", function () {
 
     it("Create Pool Fails Paused", async function () {
         const {
-            heliosGlobals,
             poolFactory,
             liquidityLockerFactory,
             admin,
@@ -152,11 +151,9 @@ describe("PoolFactory contract", function () {
 
     it("Create Pool Fails null Liquidity Locker Factory", async function () {
         const {
-            heliosGlobals,
             poolFactory,
             liquidityLockerFactory,
-            admin,
-            IERC20Token
+            admin
         } = await loadFixture(deployTokenFixture);
 
         const poolId2 = "7ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
@@ -176,7 +173,6 @@ describe("PoolFactory contract", function () {
 
     it("Create Pool Fails null liquidity asset", async function () {
         const {
-            heliosGlobals,
             poolFactory,
             admin,
             IERC20Token

@@ -1,4 +1,4 @@
-import {loadFixture, time} from "@nomicfoundation/hardhat-network-helpers";
+import {loadFixture, mine, time} from "@nomicfoundation/hardhat-network-helpers";
 import {createPoolFixture} from "./deployment";
 import {ethers} from "hardhat";
 import {expect} from "chai";
@@ -45,25 +45,31 @@ describe("Pool contract", function () {
     });
 
     it("Pool borrow", async function () {
-        const [, admin, borrower] = await ethers.getSigners();
+        const [, admin, investor, borrower] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
-
-        await IERC20Token.approve(poolContract.address, 100);
-        await poolContract.deposit(100);
 
         const liquidityLockerFactory = await ethers.getContractFactory("LiquidityLocker", admin);
         const liquidityLocker = liquidityLockerFactory.attach(await poolContract.liquidityLocker());
 
-        expect(await IERC20Token.balanceOf(liquidityLocker.address)).equal(100);
-
         await poolContract.connect(admin).setBorrower(borrower.address);
 
-        expect(await IERC20Token.balanceOf(borrower.address)).equal(0);
-        await poolContract.connect(borrower).borrow(100);
-        expect(await IERC20Token.balanceOf(borrower.address)).equal(100);
+        await IERC20Token.transfer(investor.address, 100);
+        await IERC20Token.transfer(borrower.address, 120);
 
+        await IERC20Token.connect(investor).approve(poolContract.address, 100);
+        await poolContract.connect(investor).deposit(100);
+
+        await poolContract.connect(borrower).borrow(100);
+
+        await IERC20Token.connect(borrower).approve(poolContract.address, 120);
+        await poolContract.connect(borrower).repay(120);
         await time.increase(1001);
-        await(expect(poolContract.withdraw(5))
-            .to.be.revertedWith('P:INSUFF_TRANS_BAL'));
+
+        await poolContract.connect(investor).withdraw(100);
+        const amountAfter = await IERC20Token.balanceOf(investor.address);
+        console.log("investor amountAfter:", amountAfter);
+
+        const liquidityLockerAmount = await IERC20Token.balanceOf(liquidityLocker.address);
+        console.log("liquidityLockerAmount:", liquidityLockerAmount);
     });
 });

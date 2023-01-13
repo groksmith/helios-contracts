@@ -25,8 +25,8 @@ contract Pool is PoolFDT {
     IERC20  public immutable liquidityAsset;
     uint256 private immutable liquidityAssetDecimals;
 
+    uint256 public principalOut;  // The sum of all outstanding principal on Loans.
     address public borrower;
-    uint256 public totalBorrowed;
 
     uint256 public lockupPeriod;
     uint256 public apy;
@@ -114,22 +114,39 @@ contract Pool is PoolFDT {
         _whenProtocolNotPaused();
         _canWithdraw(msg.sender, amount);
 
-        _burn(msg.sender, amount);
         // Burn the corresponding PoolFDTs balance.
+        _burn(msg.sender, amount);
+
         withdrawFunds();
         // Transfer full entitled interest, decrement `interestSum`.
-
         _transferLiquidityLockerFunds(msg.sender, amount.sub(_recognizeLosses()));
 
         _emitBalanceUpdatedEvent();
     }
 
     function borrow(uint256 amount) external isBorrower {
-        ILiquidityLocker ll = ILiquidityLocker(liquidityLocker);
-        require(amount >= ll.balance(), "P:INSUFFICIENT_LIQUIDITY");
-        totalBorrowed += amount;
-        ll.approve(msg.sender, amount);
+        require(amount >= principalOut, "P:INSUFFICIENT_LIQUIDITY");
+
+        principalOut = principalOut.add(amount);
+
+        ILiquidityLocker(liquidityLocker).approve(msg.sender, amount);
+
         _transferLiquidityLockerFunds(msg.sender, amount);
+    }
+
+    function repay(uint256 principalClaim) external {
+        require(principalClaim >= principalOut, "P:NOT_ENOUGH_TO_REPAY");
+
+        uint256 interestClaim;
+
+        interestClaim = interestClaim.add(principalClaim - principalOut);   // Distribute `principalClaim` overflow as interest to LPs.
+        principalClaim = principalOut;                                      // Set `principalClaim` to `principalOut` so correct amount gets transferred.
+        principalOut   = 0;                                                 // Set `principalOut` to zero to avoid subtraction overflow.
+
+        interestSum = interestSum.add(interestClaim);
+
+        _transferLiquidityAssetFrom(msg.sender, liquidityLocker, principalClaim.add(interestClaim));
+        updateFundsReceived();
     }
 
     function decimals() public view override returns (uint8) {
@@ -183,8 +200,8 @@ contract Pool is PoolFDT {
         emit BalanceUpdated(liquidityLocker, address(liquidityAsset), _balanceOfLiquidityLocker());
     }
 
-    function _transferLiquidityAsset(address to, uint256 value) internal {
-        liquidityAsset.safeTransfer(to, value);
+    function _transferLiquidityAssetFrom(address from, address to, uint256 value) internal {
+        liquidityAsset.safeTransferFrom(from, to, value);
     }
 
     function _whenProtocolNotPaused() internal view {

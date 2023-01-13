@@ -15,9 +15,7 @@ abstract contract PoolFDT is ExtendedFDT {
     uint256 public interestBalance;  // The amount of earned interest present and accounted for in this contract.
     uint256 public lossesBalance;    // The amount of losses present and accounted for in this contract.
 
-    constructor(string memory tokenName, string memory tokenSymbol) ExtendedFDT(tokenName, tokenSymbol) {
-        interestSum = 0;
-    }
+    constructor(string memory tokenName, string memory tokenSymbol) ExtendedFDT(tokenName, tokenSymbol) {}
 
     function _recognizeLosses() internal override returns (uint256 losses) {
         losses = _prepareLossesWithdraw();

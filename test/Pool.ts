@@ -45,7 +45,7 @@ describe("Pool contract", function () {
     });
 
     it("Pool borrow", async function () {
-        const [, admin, investor, borrower] = await ethers.getSigners();
+        const [, admin, investor1, investor2, borrower] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
 
         const liquidityLockerFactory = await ethers.getContractFactory("LiquidityLocker", admin);
@@ -53,21 +53,29 @@ describe("Pool contract", function () {
 
         await poolContract.connect(admin).setBorrower(borrower.address);
 
-        await IERC20Token.transfer(investor.address, 100);
-        await IERC20Token.transfer(borrower.address, 120);
+        await IERC20Token.transfer(investor1.address, 100);
+        await IERC20Token.transfer(investor2.address, 100);
+        await IERC20Token.transfer(borrower.address, 1000);
 
-        await IERC20Token.connect(investor).approve(poolContract.address, 100);
-        await poolContract.connect(investor).deposit(100);
+        await IERC20Token.connect(investor1).approve(poolContract.address, 100);
+        await poolContract.connect(investor1).deposit(100);
 
-        await poolContract.connect(borrower).borrow(100);
+        await IERC20Token.connect(investor2).approve(poolContract.address, 100);
+        await poolContract.connect(investor2).deposit(50);
 
-        await IERC20Token.connect(borrower).approve(poolContract.address, 120);
-        await poolContract.connect(borrower).repay(120);
+        await poolContract.connect(borrower).borrow(150);
+
+        await IERC20Token.connect(borrower).approve(poolContract.address, 300);
+        await poolContract.connect(borrower).repay(300);
         await time.increase(1001);
 
-        await poolContract.connect(investor).withdraw(100);
-        const amountAfter = await IERC20Token.balanceOf(investor.address);
-        console.log("investor amountAfter:", amountAfter);
+        await poolContract.connect(investor1).withdraw(100);
+        const investor1Total = await IERC20Token.balanceOf(investor1.address);
+        console.log("investor1Total:", investor1Total);
+
+        await poolContract.connect(investor2).withdraw(50);
+        const investor2Total = await IERC20Token.balanceOf(investor2.address);
+        console.log("investor2Total:", investor2Total);
 
         const liquidityLockerAmount = await IERC20Token.balanceOf(liquidityLocker.address);
         console.log("liquidityLockerAmount:", liquidityLockerAmount);

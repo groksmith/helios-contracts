@@ -14,8 +14,10 @@ import "../token/PoolFDT.sol";
 
 contract Pool is PoolFDT {
     using SafeMath  for uint256;
+    using SafeMathUint for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
+
 
     address public immutable superFactory;
     address public immutable liquidityLocker;
@@ -162,7 +164,7 @@ contract Pool is PoolFDT {
 
     function _canWithdraw(address account, uint256 amount) internal view {
         require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
-        require(balanceOf(account).sub(amount) >= 0, "P:INSUFF_TRANS_BAL");
+        require(_balanceOfLiquidityLocker() >= amount, "P:INSUFF_TRANS_BAL");
     }
 
     function _balanceOfLiquidityLocker() internal view returns (uint256) {

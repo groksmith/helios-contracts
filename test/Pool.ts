@@ -45,20 +45,25 @@ describe("Pool contract", function () {
     });
 
     it("Pool borrow", async function () {
-        const [owner, admin, user] = await ethers.getSigners();
+        const [owner, admin, borrower] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
 
         await IERC20Token.approve(poolContract.address, 100);
         await poolContract.deposit(100);
+
         const liquidityLockerFactory = await ethers.getContractFactory("LiquidityLocker", admin);
         const liquidityLocker = liquidityLockerFactory.attach(await poolContract.liquidityLocker());
 
         expect(await IERC20Token.balanceOf(liquidityLocker.address)).equal(100);
 
-        await poolContract.connect(admin).setBorrower(user.address);
+        await poolContract.connect(admin).setBorrower(borrower.address);
 
-        expect(await IERC20Token.balanceOf(user.address)).equal(0);
-        await poolContract.connect(user).borrow(100);
-        expect(await IERC20Token.balanceOf(user.address)).equal(100);
+        expect(await IERC20Token.balanceOf(borrower.address)).equal(0);
+        await poolContract.connect(borrower).borrow(100);
+        expect(await IERC20Token.balanceOf(borrower.address)).equal(100);
+
+        await time.increase(1001);
+        await(expect(poolContract.withdraw(5))
+            .to.be.revertedWith('P:INSUFF_TRANS_BAL'));
     });
 });

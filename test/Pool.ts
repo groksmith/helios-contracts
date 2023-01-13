@@ -45,7 +45,7 @@ describe("Pool contract", function () {
     });
 
     it("Pool borrow", async function () {
-        const [owner, admin, borrower] = await ethers.getSigners();
+        const [, admin, borrower] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
 
         await IERC20Token.approve(poolContract.address, 100);

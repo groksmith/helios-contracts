@@ -29,6 +29,15 @@ const config: HardhatUserConfig = {
     },
     abiExporter: {
         path: './abi',
+        only: [
+            'Pool',
+            'PoolFactory',
+            'HeliosGlobals',
+            'LiquidityLocker',
+            'LiquidityLockerFactory',
+            'IERC20Metadata',
+            'IERC20',
+        ],
         runOnCompile: true,
         flat: true,
         spacing: 2,

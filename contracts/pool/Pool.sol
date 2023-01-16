@@ -94,7 +94,7 @@ contract Pool is PoolFDT {
 
     function deposit(uint256 amount) external nonReentrant {
         require(amount > 0, "P:NEG_DEPOSIT");
-        require(_balanceOfLiquidityLocker().add(amount) <= principalOut, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(_balanceOfLiquidityLocker().add(amount) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
         require(_balanceOfLiquidityLocker().add(amount) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
         _whenProtocolNotPaused();
@@ -124,7 +124,7 @@ contract Pool is PoolFDT {
     }
 
     function borrow(uint256 amount) external isBorrower {
-        require(amount >= principalOut, "P:INSUFFICIENT_LIQUIDITY");
+        require(amount >= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
 
         principalOut = principalOut.add(amount);
 

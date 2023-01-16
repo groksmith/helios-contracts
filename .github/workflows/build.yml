@@ -32,6 +32,9 @@ jobs:
           COIN_MARKET_CAP: ${{ secrets.COIN_MARKET_CAP }}
           MAIN_NET_FORK_API_KEY: ${{ secrets.MAIN_NET_FORK_API_KEY }}
           GOERLI_API_KEY: ${{ secrets.GOERLI_API_KEY }}
+          GOERLI_OWNER_PRIVATE_KEY: ${{ secrets.GOERLI_OWNER_PRIVATE_KEY }}
+          GOERLI_ADMIN_PRIVATE_KEY: ${{ secrets.GOERLI_ADMIN_PRIVATE_KEY }}
+          GOERLI_USER_PRIVATE_KEY: ${{ secrets.GOERLI_USER_PRIVATE_KEY }}
           
       - name: Yarn test
         uses: borales/actions-yarn@v3.0.0

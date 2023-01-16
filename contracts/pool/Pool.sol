@@ -14,6 +14,7 @@ import "../token/PoolFDT.sol";
 
 contract Pool is PoolFDT {
     using SafeMath  for uint256;
+    using SafeMathUint for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
@@ -22,6 +23,9 @@ contract Pool is PoolFDT {
     address public poolDelegate;
     IERC20  public immutable liquidityAsset;
     uint256 private immutable liquidityAssetDecimals;
+
+    uint256 public principalOut;  // The sum of all outstanding principal on Loans.
+    address public borrower;
 
     uint256 public lockupPeriod;
     uint256 public apy;
@@ -34,18 +38,12 @@ contract Pool is PoolFDT {
 
     event PoolStateChanged(State state);
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
-
     event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
-    event CustodyTransfer(address indexed custodian, address indexed from, address indexed to, uint256 amount);
-    event CustodyAllowanceChanged(address indexed liquidityProvider, address indexed custodian, uint256 oldAllowance, uint256 newAllowance);
     event CoolDown(address indexed liquidityProvider, uint256 cooldown);
-    event DepositDateUpdated(address indexed liquidityProvider, uint256 depositDate);
-    event TotalCustodyAllowanceUpdated(address indexed liquidityProvider, uint256 newTotalAllowance);
+    event BorrowerSet(address indexed borrower);
 
     mapping(address => bool)        public poolAdmins;
     mapping(address => uint256)     public depositDate;
-    mapping(address => uint256)     public totalCustodyAllowance;
-    mapping(address => mapping(address => uint256)) public custodyAllowance;
 
     constructor(
         address _poolDelegate,
@@ -96,13 +94,12 @@ contract Pool is PoolFDT {
 
     function deposit(uint256 amount) external nonReentrant {
         require(amount > 0, "P:NEG_DEPOSIT");
-        require(_balanceOfLiquidityLocker().add(amount) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(_balanceOfLiquidityLocker().add(amount) <= principalOut, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
         require(_balanceOfLiquidityLocker().add(amount) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
 
-        //uint256 wad = _toWad(amount);
         PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), amount, msg.sender);
 
         liquidityAsset.safeTransferFrom(msg.sender, liquidityLocker, amount);
@@ -114,22 +111,48 @@ contract Pool is PoolFDT {
 
     function withdraw(uint256 amount) external nonReentrant {
         _whenProtocolNotPaused();
-        //uint256 wad = _toWad(amount);
         _canWithdraw(msg.sender, amount);
 
-        _burn(msg.sender, amount);  // Burn the corresponding PoolFDTs balance.
-        withdrawFunds();         // Transfer full entitled interest, decrement `interestSum`.
+        // Burn the corresponding PoolFDTs balance.
+        _burn(msg.sender, amount);
 
+        withdrawFunds();
+        // Transfer full entitled interest, decrement `interestSum`.
         _transferLiquidityLockerFunds(msg.sender, amount.sub(_recognizeLosses()));
 
         _emitBalanceUpdatedEvent();
+    }
+
+    function borrow(uint256 amount) external isBorrower {
+        require(amount >= principalOut, "P:INSUFFICIENT_LIQUIDITY");
+
+        principalOut = principalOut.add(amount);
+
+        ILiquidityLocker(liquidityLocker).approve(msg.sender, amount);
+
+        _transferLiquidityLockerFunds(msg.sender, amount);
+    }
+
+    function repay(uint256 principalClaim) external {
+        require(principalClaim >= principalOut, "P:NOT_ENOUGH_TO_REPAY");
+
+        uint256 interestClaim;
+
+        interestClaim = interestClaim.add(principalClaim - principalOut);   // Distribute `principalClaim` overflow as interest to LPs.
+        principalClaim = principalOut;                                      // Set `principalClaim` to `principalOut` so correct amount gets transferred.
+        principalOut   = 0;                                                 // Set `principalOut` to zero to avoid subtraction overflow.
+
+        interestSum = interestSum.add(interestClaim);
+
+        _transferLiquidityAssetFrom(msg.sender, liquidityLocker, principalClaim.add(interestClaim));
+        updateFundsReceived();
     }
 
     function decimals() public view override returns (uint8) {
         return uint8(liquidityAssetDecimals);
     }
 
-    function withdrawFunds() public override{
+    function withdrawFunds() public override {
         _whenProtocolNotPaused();
         uint256 withdrawableFunds = _prepareWithdraw();
 
@@ -143,46 +166,21 @@ contract Pool is PoolFDT {
         _updateFundsTokenBalance();
     }
 
-    function increaseCustodyAllowance(address custodian, uint256 amount) external {
-        uint256 oldAllowance      = custodyAllowance[msg.sender][custodian];
-        uint256 newAllowance      = oldAllowance.add(amount);
-        uint256 newTotalAllowance = totalCustodyAllowance[msg.sender].add(amount);
-
-        PoolLib.increaseCustodyAllowanceChecks(custodian, amount, newTotalAllowance, balanceOf(msg.sender));
-
-        custodyAllowance[msg.sender][custodian] = newAllowance;
-        totalCustodyAllowance[msg.sender]       = newTotalAllowance;
-        emit CustodyAllowanceChanged(msg.sender, custodian, oldAllowance, newAllowance);
-        emit TotalCustodyAllowanceUpdated(msg.sender, newTotalAllowance);
-    }
-
-    function transferByCustodian(address from, address to, uint256 amount) external nonReentrant {
-        uint256 oldAllowance = custodyAllowance[from][msg.sender];
-        uint256 newAllowance = oldAllowance.sub(amount);
-
-        PoolLib.transferByCustodianChecks(from, to, amount);
-
-        custodyAllowance[from][msg.sender] = newAllowance;
-        uint256 newTotalAllowance          = totalCustodyAllowance[from].sub(amount);
-        totalCustodyAllowance[from]        = newTotalAllowance;
-        emit CustodyTransfer(msg.sender, from, to, amount);
-        emit CustodyAllowanceChanged(from, msg.sender, oldAllowance, newAllowance);
-        emit TotalCustodyAllowanceUpdated(msg.sender, newTotalAllowance);
-    }
-
     function setPoolAdmin(address poolAdmin, bool allowed) external {
         _isValidDelegateAndProtocolNotPaused();
         poolAdmins[poolAdmin] = allowed;
         emit PoolAdminSet(poolAdmin, allowed);
     }
 
-    function _canWithdraw(address account, uint256 wad) internal view {
-        require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
-        require(balanceOf(account).sub(wad) >= totalCustodyAllowance[account], "P:INSUFF_TRANS_BAL");
+    function setBorrower(address _borrower) external {
+        _isValidDelegateAndProtocolNotPaused();
+        borrower = _borrower;
+        emit BorrowerSet(borrower);
     }
 
-    function _toWad(uint256 amt) internal view returns (uint256) {
-        return amt.mul(liquidityAssetDecimals).div(10 ** liquidityAssetDecimals);
+    function _canWithdraw(address account, uint256 amount) internal view {
+        require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(_balanceOfLiquidityLocker() >= amount, "P:INSUFF_TRANS_BAL");
     }
 
     function _balanceOfLiquidityLocker() internal view returns (uint256) {
@@ -201,8 +199,8 @@ contract Pool is PoolFDT {
         emit BalanceUpdated(liquidityLocker, address(liquidityAsset), _balanceOfLiquidityLocker());
     }
 
-    function _transferLiquidityAsset(address to, uint256 value) internal {
-        liquidityAsset.safeTransfer(to, value);
+    function _transferLiquidityAssetFrom(address from, address to, uint256 value) internal {
+        liquidityAsset.safeTransferFrom(from, to, value);
     }
 
     function _whenProtocolNotPaused() internal view {
@@ -216,5 +214,10 @@ contract Pool is PoolFDT {
 
     function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool){
         return ILiquidityLocker(liquidityLocker).transfer(to, value);
+    }
+
+    modifier isBorrower() {
+        require(msg.sender == borrower, "P:NOT_BORROWER");
+        _;
     }
 }

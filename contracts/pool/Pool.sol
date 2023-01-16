@@ -18,7 +18,6 @@ contract Pool is PoolFDT {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
-
     address public immutable superFactory;
     address public immutable liquidityLocker;
     address public poolDelegate;
@@ -95,7 +94,7 @@ contract Pool is PoolFDT {
 
     function deposit(uint256 amount) external nonReentrant {
         require(amount > 0, "P:NEG_DEPOSIT");
-        require(_balanceOfLiquidityLocker().add(amount) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(_balanceOfLiquidityLocker().add(amount) <= principalOut, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
         require(_balanceOfLiquidityLocker().add(amount) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
         _whenProtocolNotPaused();

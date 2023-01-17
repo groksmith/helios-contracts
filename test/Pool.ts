@@ -64,16 +64,13 @@ describe("Pool contract", function () {
 
         await IERC20Token.approve(poolContract.address, 100);
         await poolContract.deposit(100);
-        await(expect(poolContract.withdraw(100))
+        await (expect(poolContract.withdraw(100))
             .to.be.revertedWith('P:FUNDS_LOCKED'));
     });
 
-    it("Pool borrow", async function () {
+    it("Pool drawdown", async function () {
         const [, admin, investor, borrower] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
-
-        const liquidityLockerFactory = await ethers.getContractFactory("LiquidityLocker", admin);
-        const liquidityLocker = liquidityLockerFactory.attach(await poolContract.liquidityLocker());
 
         await poolContract.connect(admin).setBorrower(borrower.address);
 
@@ -84,23 +81,19 @@ describe("Pool contract", function () {
         await poolContract.connect(investor).deposit(100);
 
         await poolContract.connect(borrower).drawdown(100);
-
-        await IERC20Token.connect(borrower).approve(poolContract.address, 120);
-        await poolContract.connect(borrower).makePayment(120);
-        await time.increase(1001);
-
-        await poolContract.connect(investor).withdraw(100);
-        await poolContract.connect(investor).withdrawFunds();
-
-        const investorTotal = await IERC20Token.balanceOf(investor.address);
-        console.log("investorTotal:", investorTotal);
-
-        const liquidityLockerAmount = await IERC20Token.balanceOf(liquidityLocker.address);
-        console.log("liquidityLockerAmount:", liquidityLockerAmount);
     });
 
-    /*
-    it("Pool borrow", async function () {
+    it("Pool drawdown ", async function () {
+        const [, admin, borrower] = await ethers.getSigners();
+        const {poolContract} = await loadFixture(createPoolFixture);
+
+        await poolContract.connect(admin).setBorrower(borrower.address);
+
+        await (expect(poolContract.connect(borrower).drawdown(200))
+            .to.be.revertedWith('P:INSUFFICIENT_LIQUIDITY'));
+    });
+
+    it("Pool withdraw funds", async function () {
         const [, admin, investor1, investor2, borrower] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
 
@@ -132,13 +125,12 @@ describe("Pool contract", function () {
         await poolContract.connect(investor2).withdrawFunds();
 
         const investor1Total = await IERC20Token.balanceOf(investor1.address);
-        console.log("investor1Total:", investor1Total);
+        //console.log("investor1Total:", investor1Total);
 
         const investor2Total = await IERC20Token.balanceOf(investor2.address);
-        console.log("investor2Total:", investor2Total);
+        //console.log("investor2Total:", investor2Total);
 
         const liquidityLockerAmount = await IERC20Token.balanceOf(liquidityLocker.address);
-        console.log("liquidityLockerAmount:", liquidityLockerAmount);
+        //console.log("liquidityLockerAmount:", liquidityLockerAmount);
     });
-    */
 });

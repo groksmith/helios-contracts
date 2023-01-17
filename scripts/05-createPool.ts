@@ -1,5 +1,4 @@
 import {ethers} from "hardhat";
-import {mine} from "@nomicfoundation/hardhat-network-helpers";
 import {IERC20Metadata} from "../typechain-types";
 
 let CONTRACT_POOL_FACTORY = process.env.CONTRACT_POOL_FACTORY!;
@@ -29,7 +28,7 @@ async function main() {
         12,
         10000,
         10 * 10 ** decimals,
-        1 * 10 ** decimals);
+        10 ** decimals);
 
     await tx.wait(1);
 

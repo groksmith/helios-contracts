@@ -6,7 +6,7 @@ let CONTRACT_LIQUIDITY_LOCKER_FACTORY = process.env.CONTRACT_LIQUIDITY_LOCKER_FA
 let CONTRACT_USDC = process.env.CONTRACT_USDC!;
 
 async function main() {
-    const [owner,admin] = await ethers.getSigners();
+    const [owner, admin] = await ethers.getSigners();
 
     const heliosGlobalsFactory = await ethers.getContractFactory("HeliosGlobals", owner);
     const heliosGlobals = await heliosGlobalsFactory.attach(CONTRACT_HELIOS_GLOBALS);

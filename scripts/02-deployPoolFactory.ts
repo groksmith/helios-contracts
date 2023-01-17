@@ -10,9 +10,6 @@ async function main() {
     const poolFactory = await poolFactoryFactory.deploy(CONTRACT_HELIOS_GLOBALS);
     await poolFactory.deployed();
     console.log("CONTRACT::Pool Factory deployed to:", poolFactory.address);
-
-    // Set Pool Factory Admin
-    await poolFactory.setPoolFactoryAdmin(admin.address, true);
 }
 
 main().catch((error) => {

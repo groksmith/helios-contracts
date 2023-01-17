@@ -93,9 +93,8 @@ contract Pool is PoolFDT {
     }
 
     function deposit(uint256 amount) external nonReentrant {
-        require(amount > 0, "P:NEG_DEPOSIT");
+        require(amount >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         require(_balanceOfLiquidityLocker().add(amount) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
-        require(_balanceOfLiquidityLocker().add(amount) >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
@@ -116,15 +115,16 @@ contract Pool is PoolFDT {
         // Burn the corresponding PoolFDTs balance.
         _burn(msg.sender, amount);
 
-        withdrawFunds();
+        // We'll turn off auto distribution funds
+        // withdrawFunds();
         // Transfer full entitled interest, decrement `interestSum`.
         _transferLiquidityLockerFunds(msg.sender, amount.sub(_recognizeLosses()));
 
         _emitBalanceUpdatedEvent();
     }
 
-    function borrow(uint256 amount) external isBorrower {
-        require(amount >= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
+    function drawdown(uint256 amount) external isBorrower {
+        require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
 
         principalOut = principalOut.add(amount);
 
@@ -133,14 +133,16 @@ contract Pool is PoolFDT {
         _transferLiquidityLockerFunds(msg.sender, amount);
     }
 
-    function repay(uint256 principalClaim) external {
-        require(principalClaim >= principalOut, "P:NOT_ENOUGH_TO_REPAY");
-
+    function makePayment(uint256 principalClaim) external isBorrower {
         uint256 interestClaim;
 
-        interestClaim = interestClaim.add(principalClaim - principalOut);   // Distribute `principalClaim` overflow as interest to LPs.
-        principalClaim = principalOut;                                      // Set `principalClaim` to `principalOut` so correct amount gets transferred.
-        principalOut   = 0;                                                 // Set `principalOut` to zero to avoid subtraction overflow.
+        if (principalClaim <= principalOut) {
+            principalOut = principalOut - principalClaim;
+        } else {
+            interestClaim  = interestClaim.add(principalClaim - principalOut);  // Distribute `principalClaim` overflow as interest to LPs.
+            principalClaim = principalOut;                                      // Set `principalClaim` to `principalOut` so correct amount gets transferred.
+            principalOut   = 0;                                                 // Set `principalOut` to zero to avoid subtraction overflow.
+        }
 
         interestSum = interestSum.add(interestClaim);
 
@@ -180,7 +182,7 @@ contract Pool is PoolFDT {
 
     function _canWithdraw(address account, uint256 amount) internal view {
         require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
-        require(_balanceOfLiquidityLocker() >= amount, "P:INSUFF_TRANS_BAL");
+        require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
     }
 
     function _balanceOfLiquidityLocker() internal view returns (uint256) {

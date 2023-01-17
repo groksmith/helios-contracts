@@ -10,9 +10,6 @@ async function main() {
     const globals = await globalsFactory.deploy(owner.address, admin.address);
     await globals.deployed();
     console.log("CONTRACT::HeliosGlobals deployed to:", globals.address);
-
-    // Set Pool Delegate Allow List
-    await globals.setPoolDelegateAllowList(admin.address, true);
 }
 
 main().catch((error) => {

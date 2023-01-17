@@ -61,19 +61,23 @@ describe("Pool contract", function () {
         await poolContract.connect(investor1).deposit(100);
 
         await IERC20Token.connect(investor2).approve(poolContract.address, 100);
-        await poolContract.connect(investor2).deposit(50);
+        await poolContract.connect(investor2).deposit(100);
 
-        await poolContract.connect(borrower).borrow(150);
+        await poolContract.connect(borrower).drawdown(200);
 
-        await IERC20Token.connect(borrower).approve(poolContract.address, 300);
-        await poolContract.connect(borrower).repay(300);
+        await IERC20Token.connect(borrower).approve(poolContract.address, 220);
+        await poolContract.connect(borrower).makePayment(220);
         await time.increase(1001);
 
         await poolContract.connect(investor1).withdraw(100);
+        await poolContract.connect(investor1).withdrawFunds();
+
+        await poolContract.connect(investor2).withdraw(100);
+        await poolContract.connect(investor2).withdrawFunds();
+
         const investor1Total = await IERC20Token.balanceOf(investor1.address);
         console.log("investor1Total:", investor1Total);
 
-        await poolContract.connect(investor2).withdraw(50);
         const investor2Total = await IERC20Token.balanceOf(investor2.address);
         console.log("investor2Total:", investor2Total);
 

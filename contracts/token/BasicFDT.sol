@@ -56,10 +56,10 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
 
     function accumulativeFundsOf(address owner) public view returns (uint256) {
         return pointsPerShare
-        .mul(balanceOf(owner))
-        .toInt256Safe()
-        .add(pointsCorrection[owner])
-        .toUint256Safe() / POINTS_MULTIPLIER;
+            .mul(balanceOf(owner))
+            .toInt256Safe()
+            .add(pointsCorrection[owner])
+            .toUint256Safe() / POINTS_MULTIPLIER;
     }
 
     function decimals() public view virtual override returns (uint8) {

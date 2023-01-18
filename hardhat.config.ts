@@ -56,7 +56,8 @@ const config: HardhatUserConfig = {
             accounts: [
                 process.env.GOERLI_OWNER_PRIVATE_KEY!,
                 process.env.GOERLI_ADMIN_PRIVATE_KEY!,
-                process.env.GOERLI_USER_PRIVATE_KEY!
+                process.env.GOERLI_USER_PRIVATE_KEY!,
+                process.env.GOERLI_BORROWER_PRIVATE_KEY!
             ]
         }
     }

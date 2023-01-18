@@ -27,7 +27,7 @@ async function main() {
         10,
         12,
         10000,
-        10 * 10 ** decimals,
+        100000 * 10 ** decimals,
         10 ** decimals);
 
     await tx.wait(1);

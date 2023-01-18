@@ -63,7 +63,7 @@ export async function createPoolFixture() {
         1000,
         12,
         100,
-        1000,
+        100000,
         100);
 
     const pool = await poolFactory.pools(poolId);

@@ -15,7 +15,7 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
     using SafeMathInt    for int256;
     using SignedSafeMath for int256;
 
-    uint256 internal constant POINTS_MULTIPLIER = 2 ** 128;
+    uint256 internal constant POINTS_MULTIPLIER = 2 ** 168;
     uint256 internal pointsPerShare;
 
     mapping(address => int256)  internal pointsCorrection;

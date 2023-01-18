@@ -117,6 +117,7 @@ contract Pool is PoolFDT {
 
         // We'll turn off auto distribution funds
         // withdrawFunds();
+
         // Transfer full entitled interest, decrement `interestSum`.
         _transferLiquidityLockerFunds(msg.sender, amount.sub(_recognizeLosses()));
 
@@ -128,7 +129,7 @@ contract Pool is PoolFDT {
 
         principalOut = principalOut.add(amount);
 
-        ILiquidityLocker(liquidityLocker).approve(msg.sender, amount);
+        // _liquidityLocker().approve(msg.sender, amount);
 
         _transferLiquidityLockerFunds(msg.sender, amount);
     }
@@ -139,9 +140,12 @@ contract Pool is PoolFDT {
         if (principalClaim <= principalOut) {
             principalOut = principalOut - principalClaim;
         } else {
-            interestClaim  = interestClaim.add(principalClaim - principalOut);  // Distribute `principalClaim` overflow as interest to LPs.
-            principalClaim = principalOut;                                      // Set `principalClaim` to `principalOut` so correct amount gets transferred.
-            principalOut   = 0;                                                 // Set `principalOut` to zero to avoid subtraction overflow.
+            interestClaim = interestClaim.add(principalClaim - principalOut);
+            // Distribute `principalClaim` overflow as interest to LPs.
+            principalClaim = principalOut;
+            // Set `principalClaim` to `principalOut` so correct amount gets transferred.
+            principalOut = 0;
+            // Set `principalOut` to zero to avoid subtraction overflow.
         }
 
         interestSum = interestSum.add(interestClaim);
@@ -193,16 +197,8 @@ contract Pool is PoolFDT {
         require(poolState == _state, "P:BAD_STATE");
     }
 
-    function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
-        return IHeliosGlobals(IPoolFactory(poolFactory).globals());
-    }
-
     function _emitBalanceUpdatedEvent() internal {
         emit BalanceUpdated(liquidityLocker, address(liquidityAsset), _balanceOfLiquidityLocker());
-    }
-
-    function _transferLiquidityAssetFrom(address from, address to, uint256 value) internal {
-        liquidityAsset.safeTransferFrom(from, to, value);
     }
 
     function _whenProtocolNotPaused() internal view {
@@ -214,8 +210,20 @@ contract Pool is PoolFDT {
         _whenProtocolNotPaused();
     }
 
+    function _transferLiquidityAssetFrom(address from, address to, uint256 value) internal {
+        liquidityAsset.safeTransferFrom(from, to, value);
+    }
+
     function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool){
-        return ILiquidityLocker(liquidityLocker).transfer(to, value);
+        return _liquidityLocker().transfer(to, value);
+    }
+
+    function _liquidityLocker() internal view returns (ILiquidityLocker) {
+        return ILiquidityLocker(liquidityLocker);
+    }
+
+    function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
+        return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 
     modifier isBorrower() {

@@ -18,7 +18,10 @@
     "test-deploy-liquidity-locker": "npx hardhat run scripts/03-deployLiquidityLocker.ts --network goerli",
     "test-set-variables": "npx hardhat run scripts/04-setVariables.ts --network goerli",
     "test-create-pool": "npx hardhat run scripts/05-createPool.ts --network goerli",
-    "test-pool": "npx hardhat run scripts/06-transactionsPool.ts --network goerli",
+    "test-deposit": "npx hardhat run scripts/06-deposit.ts --network goerli",
+    "test-borrow": "npx hardhat run scripts/07-borrow.ts --network goerli",
+    "test-makePayment": "npx hardhat run scripts/08-makePayment.ts --network goerli",
+    "test-withdraw": "npx hardhat run scripts/09-withdraw.ts --network goerli",
     "export": "npx hardhat export-abi"
   },
   "devDependencies": {

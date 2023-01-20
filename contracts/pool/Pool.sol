@@ -27,11 +27,14 @@ contract Pool is PoolFDT {
     uint256 public principalOut;  // The sum of all outstanding principal on Loans.
     address public borrower;
 
-    uint256 public lockupPeriod;
-    uint256 public apy;
-    uint256 public duration;
-    uint256 public investmentPoolSize;
-    uint256 public minInvestmentAmount;
+    struct PoolInfo {
+        uint256 lockupPeriod;
+        uint256 apy;
+        uint256 duration;
+        uint256 investmentPoolSize;
+        uint256 minInvestmentAmount;
+    }
+    PoolInfo public poolInfo;
 
     enum State {Initialized, Finalized, Deactivated}
     State public poolState;
@@ -64,11 +67,15 @@ contract Pool is PoolFDT {
 
         superFactory = msg.sender;
         poolDelegate = _poolDelegate;
-        lockupPeriod = _lockupPeriod;
-        apy = _apy;
-        duration = _duration;
-        investmentPoolSize = _investmentPoolSize;
-        minInvestmentAmount = _minInvestmentAmount;
+
+        poolInfo = PoolInfo(
+            _lockupPeriod,
+            _apy,
+            _duration,
+            _investmentPoolSize,
+            _minInvestmentAmount
+        );
+
         poolState = State.Initialized;
 
         require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
@@ -93,8 +100,8 @@ contract Pool is PoolFDT {
     }
 
     function deposit(uint256 amount) external nonReentrant {
-        require(amount >= minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-        require(_balanceOfLiquidityLocker().add(amount) <= investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+        require(_balanceOfLiquidityLocker().add(amount) <= poolInfo.investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
 
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
@@ -108,6 +115,11 @@ contract Pool is PoolFDT {
         emit CoolDown(msg.sender, uint256(0));
     }
 
+    function canWithdraw(uint256 amount) external view returns (bool) {
+        _canWithdraw(msg.sender, amount);
+        return true;
+    }
+
     function withdraw(uint256 amount) external nonReentrant {
         _whenProtocolNotPaused();
         _canWithdraw(msg.sender, amount);
@@ -116,9 +128,9 @@ contract Pool is PoolFDT {
         _burn(msg.sender, amount);
 
         // We'll turn off auto distribution funds
+        // Transfer full entitled interest, decrement `interestSum`.
         // withdrawFunds();
 
-        // Transfer full entitled interest, decrement `interestSum`.
         _transferLiquidityLockerFunds(msg.sender, amount.sub(_recognizeLosses()));
 
         _emitBalanceUpdatedEvent();
@@ -129,8 +141,6 @@ contract Pool is PoolFDT {
 
         principalOut = principalOut.add(amount);
 
-        // _liquidityLocker().approve(msg.sender, amount);
-
         _transferLiquidityLockerFunds(msg.sender, amount);
     }
 
@@ -140,12 +150,14 @@ contract Pool is PoolFDT {
         if (principalClaim <= principalOut) {
             principalOut = principalOut - principalClaim;
         } else {
-            interestClaim = interestClaim.add(principalClaim - principalOut);
             // Distribute `principalClaim` overflow as interest to LPs.
-            principalClaim = principalOut;
+            interestClaim = interestClaim.add(principalClaim - principalOut);
+
             // Set `principalClaim` to `principalOut` so correct amount gets transferred.
-            principalOut = 0;
+            principalClaim = principalOut;
+
             // Set `principalOut` to zero to avoid subtraction overflow.
+            principalOut = 0;
         }
 
         interestSum = interestSum.add(interestClaim);
@@ -185,7 +197,7 @@ contract Pool is PoolFDT {
     }
 
     function _canWithdraw(address account, uint256 amount) internal view {
-        require(depositDate[account].add(lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
         require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
     }
 

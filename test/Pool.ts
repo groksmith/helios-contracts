@@ -59,6 +59,19 @@ describe("Pool contract", function () {
         expect(await IERC20Token.balanceOf(liquidityLocker.address)).equal(0);
     });
 
+    it("Pool can withdraw", async function () {
+        const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+
+        await IERC20Token.approve(poolContract.address, 100);
+        await poolContract.deposit(100);
+
+        await (expect(poolContract.canWithdraw(100))
+            .to.be.revertedWith('P:FUNDS_LOCKED'));
+
+        await time.increase(1001);
+        expect(await poolContract.canWithdraw(100)).true;
+    });
+
     it("Pool withdraw period not reached", async function () {
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
 
@@ -97,9 +110,6 @@ describe("Pool contract", function () {
         const [, admin, investor1, investor2, investor3, borrower] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
 
-        const liquidityLockerFactory = await ethers.getContractFactory("LiquidityLocker", admin);
-        const liquidityLocker = liquidityLockerFactory.attach(await poolContract.liquidityLocker());
-
         await poolContract.connect(admin).setBorrower(borrower.address);
 
         await IERC20Token.transfer(investor1.address, 10000);
@@ -130,17 +140,5 @@ describe("Pool contract", function () {
 
         await poolContract.connect(investor3).withdraw(15000);
         await poolContract.connect(investor3).withdrawFunds();
-
-        const investor1Total = await IERC20Token.balanceOf(investor1.address);
-        console.log("investor1Total:", investor1Total);
-
-        const investor2Total = await IERC20Token.balanceOf(investor2.address);
-        console.log("investor2Total:", investor2Total);
-
-        const investor3Total = await IERC20Token.balanceOf(investor3.address);
-        console.log("investor2Total:", investor3Total);
-
-        const liquidityLockerAmount = await IERC20Token.balanceOf(liquidityLocker.address);
-        console.log("liquidityLockerAmount:", liquidityLockerAmount);
     });
 });

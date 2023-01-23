@@ -5,6 +5,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-abi-exporter";
 import "hardhat-storage-layout";
 import "hardhat-contract-sizer";
+import "@nomiclabs/hardhat-etherscan";
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -60,6 +61,21 @@ const config: HardhatUserConfig = {
                 process.env.GOERLI_BORROWER_PRIVATE_KEY!
             ]
         }
+    },
+    etherscan: {
+        apiKey: {
+            goerli: process.env.ETHERSCAN_API_KEY!
+        },
+        customChains: [
+            {
+                network: "goerli",
+                chainId: 5,
+                urls: {
+                    apiURL: "https://api-goerli.etherscan.io/api",
+                    browserURL: "https://goerli.etherscan.io"
+                }
+            }
+        ]
     }
 };
 

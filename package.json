@@ -26,7 +26,6 @@
     "export": "npx hardhat export-abi"
   },
   "devDependencies": {
-    "@defi-wonderland/smock": "^2.3.4",
     "@ethersproject/abi": "^5.4.7",
     "@ethersproject/providers": "^5.4.7",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
@@ -53,7 +52,6 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.0",
-    "@types/node": "^18.11.9",
-    "uuid-tool": "^2.0.3"
+    "@types/node": "^18.11.9"
   }
 }

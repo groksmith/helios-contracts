@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../interfaces/ISubFactory.sol";
@@ -8,7 +8,7 @@ import "../interfaces/IHeliosGlobals.sol";
 contract HeliosGlobals is IHeliosGlobals {
     address public override globalAdmin;
     bool    public override protocolPaused;
-    address public override governor;
+    address public immutable override governor;
 
     mapping(address => bool) public override isValidPoolDelegate;
     mapping(address => bool) public override isValidPoolFactory;

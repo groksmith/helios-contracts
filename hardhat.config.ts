@@ -9,7 +9,7 @@ import "@nomiclabs/hardhat-etherscan";
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.8",
+        version: "0.8.16",
         settings: {
             optimizer: {
                 enabled: true,

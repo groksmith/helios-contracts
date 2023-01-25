@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -20,7 +20,7 @@ contract Pool is PoolFDT {
 
     address public immutable superFactory;
     address public immutable liquidityLocker;
-    address public poolDelegate;
+    address public immutable poolDelegate;
     IERC20  public immutable liquidityAsset;
     uint256 private immutable liquidityAssetDecimals;
 
@@ -145,13 +145,13 @@ contract Pool is PoolFDT {
     }
 
     function makePayment(uint256 principalClaim) external isBorrower {
-        uint256 interestClaim;
+        uint256 interestClaim = 0;
 
         if (principalClaim <= principalOut) {
             principalOut = principalOut - principalClaim;
         } else {
             // Distribute `principalClaim` overflow as interest to LPs.
-            interestClaim = interestClaim.add(principalClaim - principalOut);
+            interestClaim = principalClaim - principalOut;
 
             // Set `principalClaim` to `principalOut` so correct amount gets transferred.
             principalClaim = principalOut;
@@ -191,6 +191,8 @@ contract Pool is PoolFDT {
     }
 
     function setBorrower(address _borrower) external {
+        require(_borrower != address(0), "HG:ZERO_BORROWER");
+
         _isValidDelegateAndProtocolNotPaused();
         borrower = _borrower;
         emit BorrowerSet(borrower);

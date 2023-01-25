@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
@@ -11,11 +11,11 @@ library PoolLib {
 
     event DepositDateUpdated(address indexed liquidityProvider, uint256 depositDate);
 
-    function updateDepositDate(mapping(address => uint256) storage depositDate, uint256 balance, uint256 amt, address account) internal {
+    function updateDepositDate(mapping(address => uint256) storage depositDate, uint256 balance, uint256 amount, address account) internal {
         uint256 prevDate = depositDate[account];
 
-        uint256 newDate = (balance + amt) > 0
-        ? prevDate.add(block.timestamp.sub(prevDate).mul(amt).div(balance + amt))
+        uint256 newDate = (balance + amount) > 0
+        ? prevDate.add(block.timestamp.sub(prevDate).mul(amount).div(balance + amount))
         : prevDate;
 
         depositDate[account] = newDate;

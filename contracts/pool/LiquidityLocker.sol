@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -18,18 +18,9 @@ contract LiquidityLocker is ILiquidityLocker {
         pool = _pool;
     }
 
-    function transfer(address dst, uint256 amt) external override isPool returns (bool) {
+    function transfer(address dst, uint256 amount) external override isPool returns (bool) {
         require(dst != address(0), "LL:NULL_DST");
-        liquidityAsset.safeTransfer(dst, amt);
-        return true;
-    }
-
-    function balance() external view override isPool returns (uint256) {
-        return liquidityAsset.balanceOf(address(pool));
-    }
-
-    function approve(address borrower, uint256 amt) external isPool returns (bool) {
-        liquidityAsset.safeApprove(borrower, amt);
+        liquidityAsset.safeTransfer(dst, amount);
         return true;
     }
 

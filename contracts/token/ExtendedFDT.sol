@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "../math/SafeMathInt.sol";
 import "../math/SafeMathUint.sol";

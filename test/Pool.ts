@@ -4,6 +4,33 @@ import {ethers} from "hardhat";
 import {expect} from "chai";
 
 describe("Pool contract", function () {
+    it("Pool deactivate", async function () {
+        const [, admin] = await ethers.getSigners();
+        const {poolContract} = await loadFixture(createPoolFixture);
+
+        expect(await poolContract.poolState()).equal(1);
+        await poolContract.connect(admin).deactivate();
+        expect(await poolContract.poolState()).equal(2);
+    });
+
+    it("Pool decimals", async function () {
+        const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+
+        const decimals = await IERC20Token.decimals();
+        const tokenDecimals = await poolContract.decimals();
+        expect(decimals).equal(tokenDecimals);
+    });
+
+    it("Pool Set new Admin", async function () {
+        const [, admin, newAdmin] = await ethers.getSigners();
+        const {poolContract} = await loadFixture(createPoolFixture);
+
+        expect(await poolContract.poolAdmins(newAdmin.address)).false;
+        await poolContract.connect(admin).setPoolAdmin(newAdmin.address, true);
+
+        expect(await poolContract.poolAdmins(newAdmin.address)).true;
+    });
+
     it("Pool deposit", async function () {
         const [owner, admin] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
@@ -128,8 +155,11 @@ describe("Pool contract", function () {
 
         await poolContract.connect(borrower).drawdown(30000);
 
-        await IERC20Token.connect(borrower).approve(poolContract.address, 33000);
-        await poolContract.connect(borrower).makePayment(33000);
+        await IERC20Token.connect(borrower).approve(poolContract.address, 1000);
+        await poolContract.connect(borrower).makePayment(1000);
+
+        await IERC20Token.connect(borrower).approve(poolContract.address, 32000);
+        await poolContract.connect(borrower).makePayment(32000);
         await time.increase(1001);
 
         await poolContract.connect(investor1).withdraw(10000);

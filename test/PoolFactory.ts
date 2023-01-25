@@ -4,7 +4,6 @@ import {expect} from "chai";
 import {deployTokenFixture} from "./deployment";
 import {HeliosGlobals__factory} from "../typechain-types";
 
-
 const LIQUID_LOCKER_FACTORY = 1;
 
 describe("PoolFactory contract", function () {
@@ -46,7 +45,7 @@ describe("PoolFactory contract", function () {
             .to.equal(true);
     });
 
-    it("Set Pool factory Admin", async function () {
+    it("Set Pool Factory Admin", async function () {
         const {poolFactory, admin, admin2} = await loadFixture(deployTokenFixture);
         await poolFactory.setPoolFactoryAdmin(admin2.address, true);
         expect(await poolFactory.poolFactoryAdmins(admin2.address)).to.equal(true);

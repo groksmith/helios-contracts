@@ -183,82 +183,6 @@
       {
         "indexed": false,
         "internalType": "int256",
-        "name": "lossesCorrection",
-        "type": "int256"
-      }
-    ],
-    "name": "LossesCorrectionUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "by",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "lossesDistributed",
-        "type": "uint256"
-      }
-    ],
-    "name": "LossesDistributed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "lossesPerShare",
-        "type": "uint256"
-      }
-    ],
-    "name": "LossesPerShareUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "by",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "lossesRecognized",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "totalLossesRecognized",
-        "type": "uint256"
-      }
-    ],
-    "name": "LossesRecognized",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "int256",
         "name": "pointsCorrection",
         "type": "int256"
       }
@@ -345,25 +269,6 @@
       }
     ],
     "name": "accumulativeFundsOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "accumulativeLossesOf",
     "outputs": [
       {
         "internalType": "uint256",
@@ -646,19 +551,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "lossesBalance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -751,19 +643,6 @@
   },
   {
     "inputs": [],
-    "name": "poolLosses",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "poolState",
     "outputs": [
       {
@@ -778,44 +657,6 @@
   {
     "inputs": [],
     "name": "principalOut",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "recognizableLossesOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "recognizedLossesOf",
     "outputs": [
       {
         "internalType": "uint256",
@@ -952,13 +793,6 @@
   {
     "inputs": [],
     "name": "updateFundsReceived",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "updateLossesReceived",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

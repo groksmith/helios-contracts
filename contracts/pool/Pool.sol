@@ -127,16 +127,16 @@ contract Pool is PoolFDT {
         // Burn the corresponding PoolFDTs balance.
         _burn(msg.sender, amount);
 
-        // We'll turn off auto distribution funds
         // Transfer full entitled interest, decrement `interestSum`.
+        // We'll turn off auto distribution funds
         // withdrawFunds();
 
-        _transferLiquidityLockerFunds(msg.sender, amount.sub(_recognizeLosses()));
+        _transferLiquidityLockerFunds(msg.sender, amount);
 
         _emitBalanceUpdatedEvent();
     }
 
-    function drawdown(uint256 amount) external isBorrower {
+    function drawdown(uint256 amount) external isBorrower nonReentrant {
         require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
 
         principalOut = principalOut.add(amount);
@@ -144,7 +144,7 @@ contract Pool is PoolFDT {
         _transferLiquidityLockerFunds(msg.sender, amount);
     }
 
-    function makePayment(uint256 principalClaim) external isBorrower {
+    function makePayment(uint256 principalClaim) external isBorrower nonReentrant {
         uint256 interestClaim = 0;
 
         if (principalClaim <= principalOut) {

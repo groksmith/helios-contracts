@@ -106,10 +106,10 @@ contract Pool is PoolFDT {
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
 
-        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), amount, msg.sender);
-
-        liquidityAsset.safeTransferFrom(msg.sender, liquidityLocker, amount);
         _mint(msg.sender, amount);
+
+        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), amount, msg.sender);
+        liquidityAsset.safeTransferFrom(msg.sender, liquidityLocker, amount);
 
         _emitBalanceUpdatedEvent();
         emit CoolDown(msg.sender, uint256(0));

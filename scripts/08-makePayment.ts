@@ -24,8 +24,11 @@ async function main() {
     const balance = toWad(balanceBeforeBN, decimals);
 
     const amount = 15 * 10 ** decimals;
-    await IERC20Token.approve(poolContract.address, amount);
-    await poolContract.connect(borrower).makePayment(amount);
+    const txApprove = await IERC20Token.approve(poolContract.address, amount);
+    await txApprove.wait(1);
+
+    const txMakePayment = await poolContract.connect(borrower).makePayment(amount);
+    await txMakePayment.wait(1);
 
     const balanceAfterBN = await IERC20Token.balanceOf(borrower.address);
     const balanceAfter = toWad(balanceAfterBN, decimals);

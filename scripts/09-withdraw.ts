@@ -23,10 +23,12 @@ async function main() {
     const balanceBeforeBN = await IERC20Token.balanceOf(user.address);
     const balance = toWad(balanceBeforeBN, decimals);
 
-    await poolContract.connect(user).withdrawFunds();
+    const txWithdrawFunds = await poolContract.connect(user).withdrawFunds();
+    await txWithdrawFunds.wait(1);
 
     const amount = 10 * 10 ** decimals;
-    await poolContract.connect(user).withdraw(amount);
+    const txWithdraw = await poolContract.connect(user).withdraw(amount);
+    await txWithdraw.wait(1);
 
     const balanceAfterBN = await IERC20Token.balanceOf(user.address);
     const balanceAfter = toWad(balanceAfterBN, decimals);

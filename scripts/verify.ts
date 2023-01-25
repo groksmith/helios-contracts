@@ -43,6 +43,15 @@ async function main() {
 
     try {
         await hre.run("verify:verify", {
+            address: CONTRACT_LIQUIDITY_LOCKER_FACTORY,
+            constructorArguments: [],
+        });
+    } catch (error) {
+        console.log(error)
+    }
+
+    try {
+        await hre.run("verify:verify", {
             address: CONTRACT_POOL,
             constructorArguments: [
                 ACCOUNT_ADMIN,

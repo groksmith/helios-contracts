@@ -17,7 +17,8 @@ async function main() {
     const poolFactory = await ethers.getContractFactory("Pool", admin);
     const poolContract = poolFactory.attach(pool) as Pool;
 
-    await poolContract.setBorrower(borrower.address);
+    const txSetBorrower = await poolContract.setBorrower(borrower.address);
+    await txSetBorrower.wait(1);
 
     const IERC20Token = await ethers.getContractAt("IERC20Metadata", CONTRACT_USDC, borrower) as IERC20Metadata;
     const decimals = await IERC20Token.decimals();
@@ -26,7 +27,8 @@ async function main() {
     const balance = toWad(balanceBeforeBN, decimals);
 
     const amount = 5 * 10 ** decimals;
-    await poolContract.connect(borrower).drawdown(amount);
+    const txDrawdown = await poolContract.connect(borrower).drawdown(amount);
+    await txDrawdown.wait(1);
 
     const balanceAfterBN = await IERC20Token.balanceOf(borrower.address);
     const balanceAfter = toWad(balanceAfterBN, decimals);

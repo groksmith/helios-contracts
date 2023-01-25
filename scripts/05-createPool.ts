@@ -31,12 +31,17 @@ async function main() {
         10 ** decimals);
 
     await tx.wait(1);
+    console.log("VARIABLES::POOL_ID:", POOL_ID);
 
     // Retrieve Pool Contract
     const pool = await poolFactoryContract.pools(POOL_ID);
     const poolFactory = await ethers.getContractFactory("Pool", admin);
     const poolContract = poolFactory.attach(pool);
-    await poolContract.finalize();
+    console.log("VARIABLES::POOL_ADDRESS:", poolContract.address);
+
+    const txFinalize = await poolContract.finalize();
+    console.log("VARIABLES::POOL_FINALIZED: yes");
+    await txFinalize.wait(1);
 }
 
 main().catch((error) => {

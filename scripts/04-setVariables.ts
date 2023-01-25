@@ -18,16 +18,27 @@ async function main() {
     const liquidityLockerFactory = await liquidityLockerFactoryFactory.attach(CONTRACT_LIQUIDITY_LOCKER_FACTORY);
 
     // Set Pool Delegate Allow List
-    await heliosGlobals.connect(owner).setPoolDelegateAllowList(admin.address, true);
+    const txSetPoolDelegateAllowList = await heliosGlobals.connect(owner).setPoolDelegateAllowList(admin.address, true);
+    await txSetPoolDelegateAllowList.wait(1);
+    console.log("VARIABLES::SetPoolDelegateAllowList:", admin.address);
 
     // Set Pool Factory Admin
-    await poolFactoryContract.connect(owner).setPoolFactoryAdmin(admin.address, true);
+    const txSetPoolFactoryAdmin = await poolFactoryContract.connect(owner).setPoolFactoryAdmin(admin.address, true);
+    await txSetPoolFactoryAdmin.wait(1);
+    console.log("VARIABLES::SetPoolFactoryAdmin:", admin.address);
 
-    await heliosGlobals.connect(owner).setValidPoolFactory(CONTRACT_POOL_FACTORY, true);
-    await heliosGlobals.connect(owner).setValidSubFactory(CONTRACT_POOL_FACTORY, liquidityLockerFactory.address, true);
+    const txSetValidPoolFactory = await heliosGlobals.connect(owner).setValidPoolFactory(CONTRACT_POOL_FACTORY, true);
+    await txSetValidPoolFactory.wait(1);
+    console.log("VARIABLES::SetValidPoolFactory:", CONTRACT_POOL_FACTORY);
+
+    const txSetValidSubFactory = await heliosGlobals.connect(owner).setValidSubFactory(CONTRACT_POOL_FACTORY, liquidityLockerFactory.address, true);
+    await txSetValidSubFactory.wait(1);
+    console.log("VARIABLES::SetValidSubFactory:", liquidityLockerFactory.address);
 
     // Set LiquidityAsset(s)
-    await heliosGlobals.connect(owner).setLiquidityAsset(CONTRACT_USDC, true);
+    const txSetLiquidityAsset = await heliosGlobals.connect(owner).setLiquidityAsset(CONTRACT_USDC, true);
+    await txSetLiquidityAsset.wait(1);
+    console.log("VARIABLES::SetLiquidityAsset:", CONTRACT_USDC);
 }
 
 main().catch((error) => {

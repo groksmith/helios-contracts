@@ -62,7 +62,7 @@ export async function createPoolFixture() {
         liquidityLockerFactory.address,
         1000,
         12,
-        100,
+        1000,
         100000,
         100);
 

@@ -12,20 +12,21 @@ import "../interfaces/IHeliosGlobals.sol";
 import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
 
+// Pool maintains all accounting and functionality related to Pools
 contract Pool is PoolFDT {
     using SafeMath  for uint256;
     using SafeMathUint for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
-    address public immutable superFactory;
-    address public immutable liquidityLocker;
-    address public immutable poolDelegate;
-    IERC20  public immutable liquidityAsset;
-    uint256 private immutable liquidityAssetDecimals;
+    address public immutable superFactory;              // The factory that deployed this Pool
+    address public immutable liquidityLocker;           // The LiquidityLocker owned by this contract
+    address public immutable poolDelegate;              // The Pool Delegate address, maintains full authority over the Pool
+    IERC20  public immutable liquidityAsset;            // The asset deposited by Lenders into the LiquidityLocker
+    uint256 private immutable liquidityAssetDecimals;   // The precision for the Liquidity Asset (i.e. `decimals()`)
 
-    uint256 public principalOut;  // The sum of all outstanding principal on Loans.
-    address public borrower;
+    uint256 public principalOut;                        // The sum of all outstanding principal on Loans.
+    address public borrower;                            // Address of borrower for this Pool.
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -45,8 +46,8 @@ contract Pool is PoolFDT {
     event CoolDown(address indexed liquidityProvider, uint256 cooldown);
     event BorrowerSet(address indexed borrower);
 
-    mapping(address => bool)        public poolAdmins;
-    mapping(address => uint256)     public depositDate;
+    mapping(address => bool)    public poolAdmins;  // The Pool Admin addresses that have permission to do certain operations in case of disaster management
+    mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
 
     constructor(
         address _poolDelegate,
@@ -85,6 +86,7 @@ contract Pool is PoolFDT {
         emit PoolStateChanged(poolState);
     }
 
+    // Finalizes the Pool, enabling deposits. Only the Pool Delegate can call this function
     function finalize() external {
         _isValidDelegateAndProtocolNotPaused();
         _isValidState(State.Initialized);
@@ -92,6 +94,7 @@ contract Pool is PoolFDT {
         emit PoolStateChanged(poolState);
     }
 
+    // Triggers deactivation, permanently shutting down the Pool. Only the Pool Delegate can call this function
     function deactivate() external {
         _isValidDelegateAndProtocolNotPaused();
         _isValidState(State.Finalized);
@@ -106,10 +109,10 @@ contract Pool is PoolFDT {
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
 
-        _mint(msg.sender, amount);
-
         PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), amount, msg.sender);
         liquidityAsset.safeTransferFrom(msg.sender, liquidityLocker, amount);
+
+        _mint(msg.sender, amount);
 
         _emitBalanceUpdatedEvent();
         emit CoolDown(msg.sender, uint256(0));
@@ -184,12 +187,14 @@ contract Pool is PoolFDT {
         _updateFundsTokenBalance();
     }
 
+    // Sets a Pool Admin. Only the Pool Delegate can call this function
     function setPoolAdmin(address poolAdmin, bool allowed) external {
         _isValidDelegateAndProtocolNotPaused();
         poolAdmins[poolAdmin] = allowed;
         emit PoolAdminSet(poolAdmin, allowed);
     }
 
+    // Sets a Borrower. Only the Pool Delegate can call this function
     function setBorrower(address _borrower) external {
         require(_borrower != address(0), "HG:ZERO_BORROWER");
 
@@ -203,43 +208,53 @@ contract Pool is PoolFDT {
         require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
     }
 
+    // Get LiquidityLocker balance
     function _balanceOfLiquidityLocker() internal view returns (uint256) {
         return liquidityAsset.balanceOf(liquidityLocker);
     }
 
+    // Checks that the current state of Pool matches the provided state
     function _isValidState(State _state) internal view {
         require(poolState == _state, "P:BAD_STATE");
     }
 
+    // Emits a `BalanceUpdated` event for LiquidityLocker
     function _emitBalanceUpdatedEvent() internal {
         emit BalanceUpdated(liquidityLocker, address(liquidityAsset), _balanceOfLiquidityLocker());
     }
 
+    // Checks that the protocol is not in a paused state
     function _whenProtocolNotPaused() internal view {
         require(!_globals(superFactory).protocolPaused(), "P:PROTO_PAUSED");
     }
 
+    // Checks that `msg.sender` is the Pool Delegate and not paused
     function _isValidDelegateAndProtocolNotPaused() internal view {
         require(msg.sender == poolDelegate, "P:NOT_DEL");
         _whenProtocolNotPaused();
     }
 
+    // Transfers Liquidity Asset to given `to` address
     function _transferLiquidityAssetFrom(address from, address to, uint256 value) internal {
         liquidityAsset.safeTransferFrom(from, to, value);
     }
 
+    // Transfers Liquidity Locker assets to given `to` address
     function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool){
         return _liquidityLocker().transfer(to, value);
     }
 
+    // Returns the LiquidityLocker instance
     function _liquidityLocker() internal view returns (ILiquidityLocker) {
         return ILiquidityLocker(liquidityLocker);
     }
 
+    // Returns the HeliosGlobals instance
     function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
         return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 
+    // Checks that `msg.sender` is the Borrower
     modifier isBorrower() {
         require(msg.sender == borrower, "P:NOT_BORROWER");
         _;

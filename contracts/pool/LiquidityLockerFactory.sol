@@ -5,6 +5,7 @@ import "./LiquidityLocker.sol";
 import "../interfaces/ISubFactory.sol";
 import "../interfaces/ILiquidityLockerFactory.sol";
 
+// LiquidityLockerFactory instantiates LiquidityLockers
 contract LiquidityLockerFactory is ILiquidityLockerFactory {
     uint8 constant LIQ_LOCKER_FACTORY = 1;
 
@@ -17,6 +18,7 @@ contract LiquidityLockerFactory is ILiquidityLockerFactory {
 
     event LiquidityLockerCreated(address indexed owner, address liquidityLocker, address liquidityAsset);
 
+    // Instantiates a LiquidityLocker contract
     function newLocker(address liquidityAsset) external override returns (address liquidityLocker) {
         liquidityLocker = address(new LiquidityLocker(liquidityAsset, msg.sender));
         owner[liquidityLocker] = msg.sender;

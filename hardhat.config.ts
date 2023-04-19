@@ -48,7 +48,8 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             chainId: 31337,
-            forking:{
+            forking: {
+                enabled: true,
                 url: process.env.MAIN_NET_FORK_API_KEY!,
             }
         },
@@ -60,7 +61,7 @@ const config: HardhatUserConfig = {
                 process.env.GOERLI_USER_PRIVATE_KEY!,
                 process.env.GOERLI_BORROWER_PRIVATE_KEY!
             ]
-        }
+        },
     },
     etherscan: {
         apiKey: {
@@ -77,6 +78,6 @@ const config: HardhatUserConfig = {
             }
         ]
     }
-};
+}
 
-export default config;
+    export default config;

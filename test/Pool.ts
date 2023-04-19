@@ -2,6 +2,7 @@ import {loadFixture, time} from "@nomicfoundation/hardhat-network-helpers";
 import {createPoolFixture} from "./deployment";
 import {ethers} from "hardhat";
 import {expect} from "chai";
+import {fork_network} from "./utils/NetworkFork";
 
 describe("Pool contract", function () {
     it("Pool deactivate", async function () {
@@ -36,6 +37,14 @@ describe("Pool contract", function () {
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
 
         const amountBefore = await IERC20Token.balanceOf(owner.address);
+        console.log("amountBefore", amountBefore.toString());
+
+        await IERC20Token.approve(owner.address, 10000);
+        await IERC20Token.transfer(owner.address, 10000);
+
+        const amountAfter = await IERC20Token.balanceOf(owner.address);
+        console.log("amountAfter", amountAfter.toString());
+
         await IERC20Token.approve(poolContract.address, 100);
         await poolContract.deposit(100);
         await time.increase(1001);

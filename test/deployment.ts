@@ -11,6 +11,7 @@ import {
     PoolFactory,
     PoolFactory__factory
 } from "../typechain-types";
+import {changeUSDCOwnership} from "./utils/Account";
 
 const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
@@ -25,7 +26,8 @@ export async function deployTokenFixture() {
 
     [owner, admin, admin2, ...address] = await ethers.getSigners();
 
-    const IERC20Token = await ethers.getContractAt("IERC20Metadata", USDC, owner);
+    const IERC20Token = await ethers.getContractAt("IUSDC", USDC, owner);
+    await changeUSDCOwnership(owner.address, USDC);
 
     const heliosGlobalsFactory = (await ethers.getContractFactory("HeliosGlobals", owner)) as HeliosGlobals__factory;
     heliosGlobals = await heliosGlobalsFactory.deploy(owner.address, admin.address);
@@ -64,11 +66,11 @@ export async function createPoolFixture() {
         12,
         1000,
         100000,
-        100);
+        99);
 
     const pool = await poolFactory.pools(poolId);
     const poolContractFactory = await ethers.getContractFactory("Pool") as Pool__factory;
     const poolContract = poolContractFactory.attach(pool);
     await poolContract.connect(admin).finalize();
-    return {IERC20Token, poolContract};
+    return {IERC20Token, USDC, poolContract};
 }

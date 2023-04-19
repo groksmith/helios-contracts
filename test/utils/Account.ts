@@ -1,14 +1,15 @@
 import {ethers} from "hardhat";
 import {expect} from "chai";
+import {Contract} from "ethers";
 
-function getSlot(userAddress: any, mappingSlot: any) {
+function getSlot(userAddress: string, mappingSlot: number | undefined) {
     return ethers.utils.solidityKeccak256(
         ["uint256", "uint256"],
         [userAddress, mappingSlot]
     );
 }
 
-async function checkSlot(erc20: any, mappingSlot: any) {
+async function checkSlot(erc20: Contract, mappingSlot: number) {
     const contractAddress = erc20.address;
     const userAddress = ethers.constants.AddressZero;
 
@@ -18,6 +19,7 @@ async function checkSlot(erc20: any, mappingSlot: any) {
 
     // storage value must be 32 bytes long padded with leading zeros hex string
     const value = 0xDEADBEEF;
+    // @ts-ignore
     const storageValue = ethers.utils.hexlify(ethers.utils.zeroPad(value, 32));
 
     await ethers.provider.send(
@@ -32,7 +34,7 @@ async function checkSlot(erc20: any, mappingSlot: any) {
     return await erc20.balanceOf(userAddress) == value;
 }
 
-async function findBalanceSlot(erc20: any) {
+async function findBalanceSlot (erc20: Contract) {
     const snapshot = await ethers.provider.send("evm_snapshot", []);
     for (let slotNumber = 0; slotNumber < 100; slotNumber++) {
         try {
@@ -49,13 +51,12 @@ async function findBalanceSlot(erc20: any) {
 export async function changeUSDCOwnership(signerAddress: string, usdcAddress: string) {
     const usdc = await ethers.getContractAt("IERC20Metadata", usdcAddress);
     const mappingSlot = await findBalanceSlot(usdc);
-    console.log("Found USDC.balanceOf slot: ", mappingSlot);
 
     // calculate balanceOf[signerAddress] slot
     const signerBalanceSlot = getSlot(signerAddress, mappingSlot);
 
     // set it to the value
-    const value = 123456789;
+    const value = ethers.utils.hexlify(123456789);
     await ethers.provider.send(
         "hardhat_setStorageAt",
         [

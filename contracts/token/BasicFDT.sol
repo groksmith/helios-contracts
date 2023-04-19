@@ -105,6 +105,8 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
 
     function withdrawFunds() public virtual {}
 
+    function withdrawFundsAmount(uint256 amount) public virtual {}
+
     function _updateFundsTokenBalance() internal virtual returns (int256);
 
     function updateFundsReceived() public virtual {

@@ -187,6 +187,21 @@ contract Pool is PoolFDT {
         _updateFundsTokenBalance();
     }
 
+    function withdrawFundsAmount(uint256 amount) public override {
+        _whenProtocolNotPaused();
+        uint256 withdrawableFunds = _prepareWithdraw();
+        require(amount <= withdrawableFunds, "P:INSUFFICIENT_WITHDRAWABLE_FUNDS");
+
+        if (withdrawableFunds == uint256(0)) return;
+
+        _transferLiquidityLockerFunds(msg.sender, amount);
+        _emitBalanceUpdatedEvent();
+
+        interestSum = interestSum.sub(amount);
+
+        _updateFundsTokenBalance();
+    }
+
     // Sets a Pool Admin. Only the Pool Delegate can call this function
     function setPoolAdmin(address poolAdmin, bool allowed) external {
         _isValidDelegateAndProtocolNotPaused();

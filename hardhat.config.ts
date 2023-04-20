@@ -53,6 +53,16 @@ const config: HardhatUserConfig = {
                 url: process.env.MAIN_NET_FORK_API_KEY!,
             }
         },
+        alfajores: {
+            url: process.env.CELO_API_KEY,
+            accounts: [
+                process.env.CELO_OWNER_PRIVATE_KEY!,
+                process.env.CELO_ADMIN_PRIVATE_KEY!,
+                process.env.CELO_USER_PRIVATE_KEY!,
+                process.env.CELO_BORROWER_PRIVATE_KEY!,
+            ],
+            chainId: 44787,
+        },
         goerli: {
             url: process.env.GOERLI_API_KEY,
             accounts: [

@@ -58,7 +58,8 @@ export async function createPoolFixture() {
 
     await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
     const poolId = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
-    await poolFactory.connect(admin).createPool(
+
+    await expect(poolFactory.connect(admin).createPool(
         poolId,
         USDC,
         liquidityLockerFactory.address,
@@ -66,11 +67,22 @@ export async function createPoolFixture() {
         12,
         1000,
         100000,
-        99);
+        99))
+        .to.emit(poolFactory, "PoolCreated");
 
     const pool = await poolFactory.pools(poolId);
     const poolContractFactory = await ethers.getContractFactory("Pool") as Pool__factory;
     const poolContract = poolContractFactory.attach(pool);
-    await poolContract.connect(admin).finalize();
+
+    // Expect PoolState: 0 = Pending
+    expect(await poolContract.poolState()).equal(0);
+
+    // Expect PoolState: 1 = Finalized
+    await expect(poolContract.connect(admin).finalize())
+        .to.emit(poolContract, "PoolStateChanged")
+        .withArgs(1);
+
+    expect(await poolContract.poolState()).equal(1);
+
     return {IERC20Token, USDC, poolContract};
 }

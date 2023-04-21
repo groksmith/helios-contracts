@@ -51,6 +51,7 @@ const config: HardhatUserConfig = {
             forking: {
                 enabled: true,
                 url: process.env.MAIN_NET_FORK_API_KEY!,
+                blockNumber: 17090000
             }
         },
         alfajores: {

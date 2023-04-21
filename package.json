@@ -10,7 +10,7 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
-    "clean": "npx hardhat clean --network alfajores",
+    "clean": "npx hardhat clean",
     "analyze": "slither .",
     "size": "npx hardhat size-contracts",
     "verify-goerli": "npx hardhat run scripts/verify_goerli.ts --network goerli",

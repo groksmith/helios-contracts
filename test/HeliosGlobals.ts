@@ -37,6 +37,7 @@ describe("HeliosGlobals contract", function () {
         it("Set Global Admin Success", async function () {
             const {heliosGlobals, admin2} = await loadFixture(deployTokenFixture);
 
+            expect(await heliosGlobals.globalAdmin()).not.to.equal(admin2.address);
             await heliosGlobals.setGlobalAdmin(admin2.address);
             expect(await heliosGlobals.globalAdmin()).to.equal(admin2.address);
         });
@@ -59,6 +60,7 @@ describe("HeliosGlobals contract", function () {
         it("Set Valid Pool Delegate", async function () {
             const {heliosGlobals, address} = await loadFixture(deployTokenFixture);
 
+            expect(await heliosGlobals.isValidPoolDelegate(address[0].address)).to.equal(false);
             await heliosGlobals.setPoolDelegateAllowList(address[0].address, true);
             expect(await heliosGlobals.isValidPoolDelegate(address[0].address)).to.equal(true);
             expect(await heliosGlobals.isValidPoolDelegate(address[1].address)).to.equal(false);

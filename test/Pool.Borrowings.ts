@@ -19,7 +19,7 @@ describe("Pool Borrowing", async function () {
     it("Pool drawdown fails insufficient liquidity", async function () {
         const {poolContract, borrower} = await loadFixture(createBorrowerFixture);
         await (expect(poolContract.connect(borrower).drawdown(200))
-            .to.be.revertedWith('P:INSUFFICIENT_LIQUIDITY'));
+            .to.be.revertedWith('P:INSUFFICIENT_TOTAL_SUPPLY'));
     });
 
     it("Pool make payment principal", async function () {
@@ -70,5 +70,47 @@ describe("Pool Borrowing", async function () {
             .withArgs(borrower.address, 700, 0);
 
         expect(await poolContract.principalOut()).equal(300);
+    });
+
+    it("Pool drawdown after payment", async function () {
+        const {poolContract, IERC20Token, investor, borrower} = await loadFixture(createBorrowerFixture);
+
+        await IERC20Token.transfer(investor.address, 1000);
+        await IERC20Token.connect(investor).approve(poolContract.address, 1000);
+        await poolContract.connect(investor).deposit(1000);
+
+        await poolContract.connect(borrower).drawdown(1000);
+
+        await IERC20Token.transfer(borrower.address, 1000);
+        await IERC20Token.connect(borrower).approve(poolContract.address, 2000);
+        await expect(poolContract.connect(borrower).makePayment(2000))
+            .to.emit(poolContract, "Payment")
+            .withArgs(borrower.address, 1000, 1000);
+
+        expect(await poolContract.principalOut()).equal(0);
+
+        await poolContract.connect(borrower).drawdown(1000);
+    });
+
+    it("Pool drawdown more than totalSupply after payment", async function () {
+        const {poolContract, IERC20Token, investor, borrower} = await loadFixture(createBorrowerFixture);
+
+        await IERC20Token.transfer(investor.address, 1000);
+        await IERC20Token.connect(investor).approve(poolContract.address, 1000);
+        await poolContract.connect(investor).deposit(1000);
+
+        await poolContract.connect(borrower).drawdown(1000);
+
+        await IERC20Token.transfer(borrower.address, 1000);
+        await IERC20Token.connect(borrower).approve(poolContract.address, 2000);
+        await expect(poolContract.connect(borrower).makePayment(2000))
+            .to.emit(poolContract, "Payment")
+            .withArgs(borrower.address, 1000, 1000);
+
+        expect(await poolContract.principalOut()).equal(0);
+
+        await (expect(poolContract.connect(borrower).drawdown(1001))
+            .to.be.revertedWith('P:INSUFFICIENT_TOTAL_SUPPLY'));
+
     });
 });

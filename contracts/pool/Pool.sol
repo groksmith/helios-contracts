@@ -35,6 +35,7 @@ contract Pool is PoolFDT {
         uint256 investmentPoolSize;
         uint256 minInvestmentAmount;
     }
+
     PoolInfo public poolInfo;
 
     enum State {Initialized, Finalized, Deactivated}
@@ -125,6 +126,10 @@ contract Pool is PoolFDT {
         return true;
     }
 
+    function totalDeposited() external view returns (uint256) {
+        return totalMinted;
+    }
+
     function withdraw(uint256 amount) external nonReentrant {
         _whenProtocolNotPaused();
         _canWithdraw(msg.sender, amount);
@@ -141,8 +146,13 @@ contract Pool is PoolFDT {
         _emitBalanceUpdatedEvent();
     }
 
+    function drawdownAmount() external view returns (uint256) {
+        return _drawdownAmount();
+    }
+
     function drawdown(uint256 amount) external isBorrower nonReentrant {
-        require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
+        require(amount > 0, "P:INVALID_AMOUNT");
+        require(amount <= _drawdownAmount(), "P:INSUFFICIENT_TOTAL_SUPPLY");
 
         principalOut = principalOut.add(amount);
 
@@ -225,7 +235,13 @@ contract Pool is PoolFDT {
 
     function _canWithdraw(address account, uint256 amount) internal view {
         require(depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(balanceOf(account) >= amount, "P:INSUFFICIENT_BALANCE");
         require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
+    }
+
+    // Get drawdown available amount
+    function _drawdownAmount() internal view returns (uint256) {
+        return totalSupply() - principalOut;
     }
 
     // Get LiquidityLocker balance

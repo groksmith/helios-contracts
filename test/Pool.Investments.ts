@@ -155,12 +155,46 @@ describe("Pool Investments", function () {
         await time.increase(1001);
 
         await poolContract.connect(investor1).withdraw(50000);
-        await poolContract.connect(investor1).withdrawFundsAmount(4999);
+        await poolContract.connect(investor1).withdrawFundsAmount(5000);
 
         await poolContract.connect(investor2).withdraw(35000);
-        await poolContract.connect(investor2).withdrawFundsAmount(3499);
+        await poolContract.connect(investor2).withdrawFundsAmount(3500);
 
         await poolContract.connect(investor3).withdraw(15000);
-        await poolContract.connect(investor3).withdrawFundsAmount(1499);
+        await poolContract.connect(investor3).withdrawFundsAmount(1500);
+    });
+
+    it("Pool total Deposited", async function () {
+        const [owner, admin, investor1, investor2, investor3, borrower] = await ethers.getSigners();
+        const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+
+        await poolContract.connect(admin).setBorrower(borrower.address);
+
+        await IERC20Token.transfer(investor1.address, 50000);
+        await IERC20Token.transfer(investor2.address, 35000);
+        await IERC20Token.transfer(investor3.address, 15000);
+        await IERC20Token.transfer(borrower.address, 110000);
+
+        await IERC20Token.connect(investor1).approve(poolContract.address, 50000);
+        await poolContract.connect(investor1).deposit(50000);
+
+        await IERC20Token.connect(investor2).approve(poolContract.address, 35000);
+        await poolContract.connect(investor2).deposit(35000);
+
+        await IERC20Token.connect(investor3).approve(poolContract.address, 15000);
+        await poolContract.connect(investor3).deposit(15000);
+
+        await poolContract.connect(borrower).drawdown(100000);
+
+        await IERC20Token.connect(borrower).approve(poolContract.address, 110000);
+        await poolContract.connect(borrower).makePayment(110000);
+        await time.increase(1001);
+
+        expect(await poolContract.totalDeposited()).equal(100000);
+
+        await (expect(poolContract.connect(borrower).drawdown(100001)))
+            .to.be.revertedWith('P:INSUFFICIENT_TOTAL_SUPPLY');
+
+        await (expect(poolContract.connect(borrower).drawdown(10000)));
     });
 });

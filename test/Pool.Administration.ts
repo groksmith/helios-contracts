@@ -37,5 +37,33 @@ describe("Pool Administration", function () {
             .withArgs(newAdmin.address, true);
 
         expect(await poolContract.poolAdmins(newAdmin.address)).true;
+
+        await expect(await poolContract.connect(admin).setPoolAdmin(newAdmin.address, false))
+            .to.emit(poolContract, "PoolAdminSet")
+            .withArgs(newAdmin.address, false);
+
+        expect(await poolContract.poolAdmins(newAdmin.address)).false;
+
+    });
+
+    it("Pool set borrower", async function () {
+        const [, admin, borrower] = await ethers.getSigners();
+        const {poolContract} = await loadFixture(createPoolFixture);
+
+        await expect(poolContract.connect(admin).setBorrower(borrower.address))
+            .to.emit(poolContract, "BorrowerSet")
+            .withArgs(borrower.address);
+
+        expect(await poolContract.borrower()).be.equal(borrower.address);
+    });
+
+    it("Pool set invalid borrower", async function () {
+        const [, admin, borrower] = await ethers.getSigners();
+        const {poolContract} = await loadFixture(createPoolFixture);
+
+        await expect(poolContract.connect(admin).setBorrower(ethers.constants.AddressZero))
+            .revertedWith("P:ZERO_BORROWER");
+
+        expect(await poolContract.borrower()).not.to.be.equal(borrower.address);
     });
 });

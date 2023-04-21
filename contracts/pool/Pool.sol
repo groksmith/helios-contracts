@@ -42,9 +42,11 @@ contract Pool is PoolFDT {
 
     event PoolStateChanged(State state);
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
+    event BorrowerSet(address indexed borrower);
     event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
     event CoolDown(address indexed liquidityProvider, uint256 cooldown);
-    event BorrowerSet(address indexed borrower);
+    event Drawdown(address indexed borrower, uint256 amount, uint256 principalOut);
+    event Payment(address indexed borrower, uint256 amount, uint256 principalOut);
 
     mapping(address => bool)    public poolAdmins;  // The Pool Admin addresses that have permission to do certain operations in case of disaster management
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
@@ -115,7 +117,7 @@ contract Pool is PoolFDT {
         _mint(msg.sender, amount);
 
         _emitBalanceUpdatedEvent();
-        emit CoolDown(msg.sender, uint256(0));
+        emit CoolDown(msg.sender, amount);
     }
 
     function canWithdraw(uint256 amount) external view returns (bool) {
@@ -145,6 +147,7 @@ contract Pool is PoolFDT {
         principalOut = principalOut.add(amount);
 
         _transferLiquidityLockerFunds(msg.sender, amount);
+        emit Drawdown(msg.sender, amount, principalOut);
     }
 
     function makePayment(uint256 principalClaim) external isBorrower nonReentrant {
@@ -167,6 +170,8 @@ contract Pool is PoolFDT {
 
         _transferLiquidityAssetFrom(msg.sender, liquidityLocker, principalClaim.add(interestClaim));
         updateFundsReceived();
+
+        emit Payment(msg.sender, principalClaim, interestSum);
     }
 
     function decimals() public view override returns (uint8) {
@@ -211,7 +216,7 @@ contract Pool is PoolFDT {
 
     // Sets a Borrower. Only the Pool Delegate can call this function
     function setBorrower(address _borrower) external {
-        require(_borrower != address(0), "HG:ZERO_BORROWER");
+        require(_borrower != address(0), "P:ZERO_BORROWER");
 
         _isValidDelegateAndProtocolNotPaused();
         borrower = _borrower;

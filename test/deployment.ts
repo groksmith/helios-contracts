@@ -12,6 +12,7 @@ import {
     PoolFactory__factory
 } from "../typechain-types";
 import {changeUSDCOwnership} from "./utils/Account";
+import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
 
 const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
@@ -86,3 +87,13 @@ export async function createPoolFixture() {
 
     return {IERC20Token, USDC, poolContract};
 }
+
+export async function createBorrowerFixture() {
+    const [, admin, investor, borrower] = await ethers.getSigners();
+    const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+    await expect(poolContract.connect(admin).setBorrower(borrower.address))
+        .to.emit(poolContract, "BorrowerSet")
+        .withArgs(borrower.address);
+    return {poolContract, IERC20Token, investor, borrower};
+}
+

@@ -8,10 +8,14 @@ const LIQUID_LOCKER_FACTORY = 1;
 
 describe("PoolFactory contract", function () {
     it("Pause/Un-pause", async function () {
-        const {poolFactory} = await loadFixture(deployTokenFixture);
+        const {owner, poolFactory} = await loadFixture(deployTokenFixture);
         await poolFactory.pause();
         expect(await poolFactory.paused()).to.equal(true);
-        await poolFactory.unpause();
+
+        expect(await poolFactory.unpause())
+            .to.emit(poolFactory, "Paused")
+            .withArgs(1);
+
         expect(await poolFactory.paused()).to.equal(false);
     });
 
@@ -26,6 +30,7 @@ describe("PoolFactory contract", function () {
         const heliosGlobalsFactory = (await ethers.getContractFactory("HeliosGlobals", owner)) as HeliosGlobals__factory;
         const heliosGlobals2 = await heliosGlobalsFactory.deploy(owner.address, admin.address);
 
+        expect(await poolFactory.globals()).not.to.equal(heliosGlobals2.address);
         await poolFactory.setGlobals(heliosGlobals2.address);
         expect(await poolFactory.globals()).to.equal(heliosGlobals2.address);
         expect(await poolFactory.globals()).to.not.equal(heliosGlobals.address);
@@ -47,6 +52,8 @@ describe("PoolFactory contract", function () {
 
     it("Set Pool Factory Admin", async function () {
         const {poolFactory, admin, admin2} = await loadFixture(deployTokenFixture);
+
+        expect(await poolFactory.poolFactoryAdmins(admin2.address)).not.to.equal(true);
         await poolFactory.setPoolFactoryAdmin(admin2.address, true);
         expect(await poolFactory.poolFactoryAdmins(admin2.address)).to.equal(true);
 

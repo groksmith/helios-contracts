@@ -11,6 +11,8 @@ import {
     PoolFactory,
     PoolFactory__factory
 } from "../typechain-types";
+import {changeUSDCOwnership} from "./utils/Account";
+import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
 
 const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
@@ -26,6 +28,7 @@ export async function deployTokenFixture() {
     [owner, admin, admin2, ...address] = await ethers.getSigners();
 
     const IERC20Token = await ethers.getContractAt("IERC20Metadata", USDC, owner);
+    await changeUSDCOwnership(owner.address, USDC);
 
     const heliosGlobalsFactory = (await ethers.getContractFactory("HeliosGlobals", owner)) as HeliosGlobals__factory;
     heliosGlobals = await heliosGlobalsFactory.deploy(owner.address, admin.address);
@@ -56,7 +59,8 @@ export async function createPoolFixture() {
 
     await heliosGlobals.setPoolDelegateAllowList(admin.address, true);
     const poolId = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
-    await poolFactory.connect(admin).createPool(
+
+    await expect(poolFactory.connect(admin).createPool(
         poolId,
         USDC,
         liquidityLockerFactory.address,
@@ -64,11 +68,32 @@ export async function createPoolFixture() {
         12,
         1000,
         100000,
-        100);
+        99))
+        .to.emit(poolFactory, "PoolCreated");
 
     const pool = await poolFactory.pools(poolId);
     const poolContractFactory = await ethers.getContractFactory("Pool") as Pool__factory;
     const poolContract = poolContractFactory.attach(pool);
-    await poolContract.connect(admin).finalize();
-    return {IERC20Token, poolContract};
+
+    // Expect PoolState: 0 = Pending
+    expect(await poolContract.poolState()).equal(0);
+
+    // Expect PoolState: 1 = Finalized
+    await expect(poolContract.connect(admin).finalize())
+        .to.emit(poolContract, "PoolStateChanged")
+        .withArgs(1);
+
+    expect(await poolContract.poolState()).equal(1);
+
+    return {IERC20Token, USDC, poolContract};
 }
+
+export async function createBorrowerFixture() {
+    const [, admin, investor, borrower] = await ethers.getSigners();
+    const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+    await expect(poolContract.connect(admin).setBorrower(borrower.address))
+        .to.emit(poolContract, "BorrowerSet")
+        .withArgs(borrower.address);
+    return {poolContract, IERC20Token, investor, borrower};
+}
+

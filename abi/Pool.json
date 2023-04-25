@@ -133,6 +133,31 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "borrower",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "principalOut",
+        "type": "uint256"
+      }
+    ],
+    "name": "Drawdown",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "by",
         "type": "address"
       },
@@ -169,6 +194,31 @@
       }
     ],
     "name": "FundsWithdrawn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "borrower",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "principalOut",
+        "type": "uint256"
+      }
+    ],
+    "name": "Payment",
     "type": "event"
   },
   {
@@ -469,6 +519,19 @@
   },
   {
     "inputs": [],
+    "name": "drawdownAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "finalize",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -726,6 +789,19 @@
   },
   {
     "inputs": [],
+    "name": "totalDeposited",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "totalSupply",
     "outputs": [
       {
@@ -813,6 +889,19 @@
   {
     "inputs": [],
     "name": "withdrawFunds",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawFundsAmount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

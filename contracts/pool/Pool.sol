@@ -35,6 +35,7 @@ contract Pool is PoolFDT {
         uint256 investmentPoolSize;
         uint256 minInvestmentAmount;
     }
+
     PoolInfo public poolInfo;
 
     enum State {Initialized, Finalized, Deactivated}
@@ -42,9 +43,11 @@ contract Pool is PoolFDT {
 
     event PoolStateChanged(State state);
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
+    event BorrowerSet(address indexed borrower);
     event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
     event CoolDown(address indexed liquidityProvider, uint256 cooldown);
-    event BorrowerSet(address indexed borrower);
+    event Drawdown(address indexed borrower, uint256 amount, uint256 principalOut);
+    event Payment(address indexed borrower, uint256 amount, uint256 principalOut);
 
     mapping(address => bool)    public poolAdmins;  // The Pool Admin addresses that have permission to do certain operations in case of disaster management
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
@@ -104,7 +107,7 @@ contract Pool is PoolFDT {
 
     function deposit(uint256 amount) external nonReentrant {
         require(amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-        require(_balanceOfLiquidityLocker().add(amount) <= poolInfo.investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(totalMinted + amount <= poolInfo.investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
 
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
@@ -115,12 +118,16 @@ contract Pool is PoolFDT {
         _mint(msg.sender, amount);
 
         _emitBalanceUpdatedEvent();
-        emit CoolDown(msg.sender, uint256(0));
+        emit CoolDown(msg.sender, amount);
     }
 
     function canWithdraw(uint256 amount) external view returns (bool) {
         _canWithdraw(msg.sender, amount);
         return true;
+    }
+
+    function totalDeposited() external view returns (uint256) {
+        return totalMinted;
     }
 
     function withdraw(uint256 amount) external nonReentrant {
@@ -139,12 +146,18 @@ contract Pool is PoolFDT {
         _emitBalanceUpdatedEvent();
     }
 
+    function drawdownAmount() external view returns (uint256) {
+        return _drawdownAmount();
+    }
+
     function drawdown(uint256 amount) external isBorrower nonReentrant {
-        require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
+        require(amount > 0, "P:INVALID_AMOUNT");
+        require(amount <= _drawdownAmount(), "P:INSUFFICIENT_TOTAL_SUPPLY");
 
         principalOut = principalOut.add(amount);
 
         _transferLiquidityLockerFunds(msg.sender, amount);
+        emit Drawdown(msg.sender, amount, principalOut);
     }
 
     function makePayment(uint256 principalClaim) external isBorrower nonReentrant {
@@ -167,6 +180,8 @@ contract Pool is PoolFDT {
 
         _transferLiquidityAssetFrom(msg.sender, liquidityLocker, principalClaim.add(interestClaim));
         updateFundsReceived();
+
+        emit Payment(msg.sender, principalClaim, interestSum);
     }
 
     function decimals() public view override returns (uint8) {
@@ -187,6 +202,21 @@ contract Pool is PoolFDT {
         _updateFundsTokenBalance();
     }
 
+    function withdrawFundsAmount(uint256 amount) public override {
+        _whenProtocolNotPaused();
+        uint256 withdrawableFunds = _prepareWithdraw();
+        require(amount <= withdrawableFunds, "P:INSUFFICIENT_WITHDRAWABLE_FUNDS");
+
+        if (withdrawableFunds == uint256(0)) return;
+
+        _transferLiquidityLockerFunds(msg.sender, amount);
+        _emitBalanceUpdatedEvent();
+
+        interestSum = interestSum.sub(amount);
+
+        _updateFundsTokenBalance();
+    }
+
     // Sets a Pool Admin. Only the Pool Delegate can call this function
     function setPoolAdmin(address poolAdmin, bool allowed) external {
         _isValidDelegateAndProtocolNotPaused();
@@ -196,7 +226,7 @@ contract Pool is PoolFDT {
 
     // Sets a Borrower. Only the Pool Delegate can call this function
     function setBorrower(address _borrower) external {
-        require(_borrower != address(0), "HG:ZERO_BORROWER");
+        require(_borrower != address(0), "P:ZERO_BORROWER");
 
         _isValidDelegateAndProtocolNotPaused();
         borrower = _borrower;
@@ -205,7 +235,13 @@ contract Pool is PoolFDT {
 
     function _canWithdraw(address account, uint256 amount) internal view {
         require(depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(balanceOf(account) >= amount, "P:INSUFFICIENT_BALANCE");
         require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
+    }
+
+    // Get drawdown available amount
+    function _drawdownAmount() internal view returns (uint256) {
+        return totalSupply() - principalOut;
     }
 
     // Get LiquidityLocker balance

@@ -6,6 +6,7 @@ import "hardhat-abi-exporter";
 import "hardhat-storage-layout";
 import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
+import "hardhat-deploy";
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -21,6 +22,12 @@ const config: HardhatUserConfig = {
                 },
             }
         },
+    },
+    namedAccounts: {
+        owner: 0,
+        admin: 1,
+        user: 2,
+        borrower: 3
     },
     gasReporter: {
         enabled: true,
@@ -48,9 +55,21 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             chainId: 31337,
-            forking:{
+            forking: {
+                enabled: true,
                 url: process.env.MAIN_NET_FORK_API_KEY!,
+                blockNumber: 17090000
             }
+        },
+        alfajores: {
+            url: process.env.CELO_API_KEY,
+            accounts: [
+                process.env.CELO_OWNER_PRIVATE_KEY!,
+                process.env.CELO_ADMIN_PRIVATE_KEY!,
+                process.env.CELO_USER_PRIVATE_KEY!,
+                process.env.CELO_BORROWER_PRIVATE_KEY!,
+            ],
+            chainId: 44787,
         },
         goerli: {
             url: process.env.GOERLI_API_KEY,
@@ -60,7 +79,7 @@ const config: HardhatUserConfig = {
                 process.env.GOERLI_USER_PRIVATE_KEY!,
                 process.env.GOERLI_BORROWER_PRIVATE_KEY!
             ]
-        }
+        },
     },
     etherscan: {
         apiKey: {
@@ -77,6 +96,6 @@ const config: HardhatUserConfig = {
             }
         ]
     }
-};
+}
 
-export default config;
+    export default config;

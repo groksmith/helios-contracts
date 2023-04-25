@@ -9,14 +9,17 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../math/SafeMathUint.sol";
 import "../math/SafeMathInt.sol";
 
+//import "hardhat/console.sol";
+
 abstract contract BasicFDT is ERC20, ReentrancyGuard {
     using SafeMath       for uint256;
     using SafeMathUint   for uint256;
     using SafeMathInt    for int256;
     using SignedSafeMath for int256;
 
-    uint256 internal constant POINTS_MULTIPLIER = 2 ** 168;
+    uint256 internal constant POINTS_MULTIPLIER = 1e18;
     uint256 internal pointsPerShare;
+    uint256 internal totalMinted;
 
     mapping(address => int256)  internal pointsCorrection;
     mapping(address => uint256) internal withdrawnFunds;
@@ -82,6 +85,8 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
     function _mint(address account, uint256 value) internal virtual override {
         super._mint(account, value);
 
+        totalMinted = totalMinted.add(value);
+
         int256 _pointsCorrection = pointsCorrection[account].sub(
             (pointsPerShare.mul(value)).toInt256Safe()
         );
@@ -104,6 +109,8 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
     }
 
     function withdrawFunds() public virtual {}
+
+    function withdrawFundsAmount(uint256 amount) public virtual {}
 
     function _updateFundsTokenBalance() internal virtual returns (int256);
 

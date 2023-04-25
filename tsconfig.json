@@ -13,6 +13,6 @@
     "skipLibCheck": true
   },
   "exclude": ["dist", "node_modules"],
-  "include": ["./test", "./src", "./scripts"],
+  "include": ["./hardhat.config.ts", "./scripts", "./deploy", "./test"],
   "files": ["./hardhat.config.ts"]
 }

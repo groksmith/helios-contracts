@@ -6,6 +6,7 @@ import "hardhat-abi-exporter";
 import "hardhat-storage-layout";
 import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
+import "hardhat-deploy";
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -21,6 +22,12 @@ const config: HardhatUserConfig = {
                 },
             }
         },
+    },
+    namedAccounts: {
+        owner: 0,
+        admin: 1,
+        user: 2,
+        borrower: 3
     },
     gasReporter: {
         enabled: true,

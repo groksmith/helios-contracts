@@ -13,16 +13,15 @@
     "clean": "npx hardhat clean",
     "analyze": "slither .",
     "size": "npx hardhat size-contracts",
-    "verify-goerli": "npx hardhat run scripts/verify_goerli.ts --network goerli",
-    "verify-celo": "npx hardhat --network alfajores sourcify",
+    "verify": "npx hardhat --network alfajores sourcify",
     "export": "npx hardhat export-abi",
     "test-deploy": "npx hardhat --network alfajores deploy",
-    "test-set-variables": "npx hardhat run scripts/01-setVariables.ts --network goerli",
-    "test-create-pool": "npx hardhat run scripts/05-createPool.ts --network goerli",
-    "test-deposit": "npx hardhat run scripts/06-deposit.ts --network goerli",
-    "test-borrow": "npx hardhat run scripts/07-borrow.ts --network goerli",
-    "test-makePayment": "npx hardhat run scripts/08-makePayment.ts --network goerli",
-    "test-withdraw": "npx hardhat run scripts/09-withdraw.ts --network goerli"
+    "test-set-variables": "npx hardhat run scripts/01-setVariables.ts --network alfajores",
+    "test-create-pool": "npx hardhat run scripts/05-createPool.ts --network alfajores",
+    "test-deposit": "npx hardhat run scripts/06-deposit.ts --network alfajores",
+    "test-borrow": "npx hardhat run scripts/07-borrow.ts --network alfajores",
+    "test-makePayment": "npx hardhat run scripts/08-makePayment.ts --network alfajores",
+    "test-withdraw": "npx hardhat run scripts/09-withdraw.ts --network alfajores"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",

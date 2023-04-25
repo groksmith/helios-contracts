@@ -1,4 +1,4 @@
-import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
+import {loadFixture, time} from "@nomicfoundation/hardhat-network-helpers";
 import {createBorrowerFixture} from "./deployment";
 import {expect} from "chai";
 
@@ -121,6 +121,16 @@ describe("Pool Borrowing", async function () {
 
         await (expect(poolContract.connect(borrower).drawdown(1001))
             .to.be.revertedWith('P:INSUFFICIENT_TOTAL_SUPPLY'));
+    });
 
+    it("Pool available to withdraw after drawdown", async function () {
+        const {poolContract, IERC20Token, borrower} = await loadFixture(createBorrowerFixture);
+
+        await IERC20Token.approve(poolContract.address, 100);
+        await poolContract.deposit(100);
+        await poolContract.connect(borrower).drawdown(50);
+
+        await time.increase(1001);
+        expect(await poolContract.availableToWithdraw()).equal(50);
     });
 });

@@ -126,6 +126,12 @@ contract Pool is PoolFDT {
         return true;
     }
 
+    function availableToWithdraw() external view returns (uint256) {
+        require(depositDate[msg.sender].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+
+        return _balanceOfLiquidityLocker();
+    }
+
     function totalDeposited() external view returns (uint256) {
         return totalMinted;
     }
@@ -136,10 +142,6 @@ contract Pool is PoolFDT {
 
         // Burn the corresponding PoolFDTs balance.
         _burn(msg.sender, amount);
-
-        // Transfer full entitled interest, decrement `interestSum`.
-        // We'll turn off auto distribution funds
-        // withdrawFunds();
 
         _transferLiquidityLockerFunds(msg.sender, amount);
 

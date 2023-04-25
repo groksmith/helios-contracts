@@ -232,4 +232,17 @@ describe("Pool Investments", function () {
 
         await (expect(poolContract.connect(borrower).drawdown(10000)));
     });
+
+    it("Pool available to withdraw", async function () {
+        const [, , investor1, , , borrower] = await ethers.getSigners();
+        const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+
+        await IERC20Token.transfer(investor1.address, 50000);
+
+        await IERC20Token.connect(investor1).approve(poolContract.address, 50000);
+        await poolContract.connect(investor1).deposit(50000);
+        await time.increase(1001);
+        expect(await poolContract.availableToWithdraw()).equal(50000);
+        await poolContract.connect(investor1).withdraw(await poolContract.availableToWithdraw());
+    });
 });

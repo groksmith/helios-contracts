@@ -3,6 +3,16 @@ import {createBorrowerFixture} from "./deployment";
 import {expect} from "chai";
 
 describe("Pool Borrowing", async function () {
+    it("Pool drawdown amount", async function () {
+        const {poolContract, IERC20Token, investor, borrower} = await loadFixture(createBorrowerFixture);
+        await IERC20Token.transfer(investor.address, 100);
+        await IERC20Token.transfer(borrower.address, 200);
+
+        await IERC20Token.connect(investor).approve(poolContract.address, 100);
+        await poolContract.connect(investor).deposit(100);
+
+        expect(await poolContract.connect(borrower).drawdownAmount()).equal(100);
+    });
     it("Pool drawdown", async function () {
         const {poolContract, IERC20Token, investor, borrower} = await loadFixture(createBorrowerFixture);
         await IERC20Token.transfer(investor.address, 100);

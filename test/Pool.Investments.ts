@@ -51,6 +51,41 @@ describe("Pool Investments", function () {
             .to.be.revertedWith('ERC20: transfer amount exceeds allowance');
     });
 
+    it("Pool deposit revert: deposit amount exceeds investment pool size", async function () {
+        const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+
+        await IERC20Token.approve(poolContract.address, 70000);
+        await poolContract.deposit(70000);
+        await time.increase(1001);
+        await poolContract.withdraw(20000);
+
+        await IERC20Token.approve(poolContract.address, 30000);
+        await poolContract.deposit(30000);
+
+        await IERC20Token.approve(poolContract.address, 1000);
+        await (expect(poolContract.deposit(1000)))
+            .to.be.revertedWith('P:DEP_AMT_EXCEEDS_POOL_SIZE');
+    });
+
+    it("Pool deposit revert: deactivated state", async function () {
+        const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+        const [, admin] = await ethers.getSigners();
+
+        await IERC20Token.approve(poolContract.address, 1000);
+        await poolContract.deposit(1000);
+
+        await poolContract.connect(admin).deactivate();
+
+        expect(await poolContract.poolState()).equal(2);
+
+        await time.increase(1001);
+        await poolContract.withdraw(1000);
+        await IERC20Token.approve(poolContract.address, 1000);
+        await (expect(poolContract.deposit(1000)))
+            .to.be.revertedWith('P:BAD_STATE');
+    });
+
+
     it("Pool withdraw", async function () {
         const [, admin] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
@@ -165,7 +200,7 @@ describe("Pool Investments", function () {
     });
 
     it("Pool total Deposited", async function () {
-        const [owner, admin, investor1, investor2, investor3, borrower] = await ethers.getSigners();
+        const [, admin, investor1, investor2, investor3, borrower] = await ethers.getSigners();
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
 
         await poolContract.connect(admin).setBorrower(borrower.address);

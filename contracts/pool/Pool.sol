@@ -107,7 +107,7 @@ contract Pool is PoolFDT {
 
     function deposit(uint256 amount) external nonReentrant {
         require(amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-        require(_balanceOfLiquidityLocker().add(amount) <= poolInfo.investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(totalMinted + amount <= poolInfo.investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
 
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);

@@ -35,7 +35,11 @@ jobs:
           GOERLI_OWNER_PRIVATE_KEY: ${{ secrets.GOERLI_OWNER_PRIVATE_KEY }}
           GOERLI_ADMIN_PRIVATE_KEY: ${{ secrets.GOERLI_ADMIN_PRIVATE_KEY }}
           GOERLI_USER_PRIVATE_KEY: ${{ secrets.GOERLI_USER_PRIVATE_KEY }}
-          
+          CELO_API_KEY: ${{ secrets.CELO_API_KEY }}
+          CELO_OWNER_PRIVATE_KEY: ${{ secrets.CELO_OWNER_PRIVATE_KEY }}
+          CELO_ADMIN_PRIVATE_KEY: ${{ secrets.CELO_ADMIN_PRIVATE_KEY }}
+          CELO_USER_PRIVATE_KEY: ${{ secrets.CELO_USER_PRIVATE_KEY }}
+          CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }}
       - name: Yarn test
         uses: borales/actions-yarn@v3.0.0
         with:

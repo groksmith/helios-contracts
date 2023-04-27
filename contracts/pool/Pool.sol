@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILiquidityLockerFactory.sol";
@@ -11,6 +12,8 @@ import "../interfaces/ILiquidityLocker.sol";
 import "../interfaces/IHeliosGlobals.sol";
 import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
+
+import "hardhat/console.sol";
 
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is PoolFDT {
@@ -129,7 +132,7 @@ contract Pool is PoolFDT {
     function availableToWithdraw() external view returns (uint256) {
         require(depositDate[msg.sender].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
 
-        return _balanceOfLiquidityLocker();
+        return Math.min(liquidityAsset.balanceOf(liquidityLocker), this.balanceOf(msg.sender));
     }
 
     function totalDeposited() external view returns (uint256) {

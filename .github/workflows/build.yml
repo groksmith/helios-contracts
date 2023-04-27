@@ -6,7 +6,20 @@ on:
   pull_request:
     branches:
       - "**"
-      
+env:
+  COIN_MARKET_CAP: ${{ secrets.COIN_MARKET_CAP }}
+  MAIN_NET_FORK_API_KEY: ${{ secrets.MAIN_NET_FORK_API_KEY }}
+  GOERLI_API_KEY: ${{ secrets.GOERLI_API_KEY }}
+  GOERLI_OWNER_PRIVATE_KEY: ${{ secrets.GOERLI_OWNER_PRIVATE_KEY }}
+  GOERLI_ADMIN_PRIVATE_KEY: ${{ secrets.GOERLI_ADMIN_PRIVATE_KEY }}
+  GOERLI_USER_PRIVATE_KEY: ${{ secrets.GOERLI_USER_PRIVATE_KEY }}
+  GOERLI_BORROWER_PRIVATE_KEY: ${{ secrets.GOERLI_BORROWER_PRIVATE_KEY }}
+  CELO_API_KEY: ${{ secrets.CELO_API_KEY }}
+  CELO_OWNER_PRIVATE_KEY: ${{ secrets.CELO_OWNER_PRIVATE_KEY }}
+  CELO_ADMIN_PRIVATE_KEY: ${{ secrets.CELO_ADMIN_PRIVATE_KEY }}
+  CELO_USER_PRIVATE_KEY: ${{ secrets.CELO_USER_PRIVATE_KEY }}
+  CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }}
+
 defaults:
   run:
     working-directory: packages/helios-contracts
@@ -27,53 +40,16 @@ jobs:
       - name: Yarn compile        
         uses: borales/actions-yarn@v3.0.0
         with:
-          cmd: compile
-        env:
-          COIN_MARKET_CAP: ${{ secrets.COIN_MARKET_CAP }}
-          MAIN_NET_FORK_API_KEY: ${{ secrets.MAIN_NET_FORK_API_KEY }}
-          GOERLI_API_KEY: ${{ secrets.GOERLI_API_KEY }}
-          GOERLI_OWNER_PRIVATE_KEY: ${{ secrets.GOERLI_OWNER_PRIVATE_KEY }}
-          GOERLI_ADMIN_PRIVATE_KEY: ${{ secrets.GOERLI_ADMIN_PRIVATE_KEY }}
-          GOERLI_USER_PRIVATE_KEY: ${{ secrets.GOERLI_USER_PRIVATE_KEY }}
-          GOERLI_BORROWER_PRIVATE_KEY: ${{ secrets.GOERLI_BORROWER_PRIVATE_KEY }}
-          CELO_API_KEY: ${{ secrets.CELO_API_KEY }}
-          CELO_OWNER_PRIVATE_KEY: ${{ secrets.CELO_OWNER_PRIVATE_KEY }}
-          CELO_ADMIN_PRIVATE_KEY: ${{ secrets.CELO_ADMIN_PRIVATE_KEY }}
-          CELO_USER_PRIVATE_KEY: ${{ secrets.CELO_USER_PRIVATE_KEY }}
-          CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }}          
+          cmd: compile       
       - name: Yarn test
         uses: borales/actions-yarn@v3.0.0
         with:
           cmd: test
-        env:
-          COIN_MARKET_CAP: ${{ secrets.COIN_MARKET_CAP }}
-          MAIN_NET_FORK_API_KEY: ${{ secrets.MAIN_NET_FORK_API_KEY }}
-          GOERLI_API_KEY: ${{ secrets.GOERLI_API_KEY }}
-          GOERLI_OWNER_PRIVATE_KEY: ${{ secrets.GOERLI_OWNER_PRIVATE_KEY }}
-          GOERLI_ADMIN_PRIVATE_KEY: ${{ secrets.GOERLI_ADMIN_PRIVATE_KEY }}
-          GOERLI_USER_PRIVATE_KEY: ${{ secrets.GOERLI_USER_PRIVATE_KEY }}
-          GOERLI_BORROWER_PRIVATE_KEY: ${{ secrets.GOERLI_BORROWER_PRIVATE_KEY }}
-          CELO_API_KEY: ${{ secrets.CELO_API_KEY }}
-          CELO_OWNER_PRIVATE_KEY: ${{ secrets.CELO_OWNER_PRIVATE_KEY }}
-          CELO_ADMIN_PRIVATE_KEY: ${{ secrets.CELO_ADMIN_PRIVATE_KEY }}
-          CELO_USER_PRIVATE_KEY: ${{ secrets.CELO_USER_PRIVATE_KEY }}
-          CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }}  
+
       - name: Yarn Generate abi
         uses: borales/actions-yarn@v3.0.0
         with:
           cmd: export
-        env:
-          COIN_MARKET_CAP: ${{ secrets.COIN_MARKET_CAP }}
-          MAIN_NET_FORK_API_KEY: ${{ secrets.MAIN_NET_FORK_API_KEY }}
-          GOERLI_API_KEY: ${{ secrets.GOERLI_API_KEY }}
-          GOERLI_OWNER_PRIVATE_KEY: ${{ secrets.GOERLI_OWNER_PRIVATE_KEY }}
-          GOERLI_ADMIN_PRIVATE_KEY: ${{ secrets.GOERLI_ADMIN_PRIVATE_KEY }}
-          GOERLI_USER_PRIVATE_KEY: ${{ secrets.GOERLI_USER_PRIVATE_KEY }}
-          GOERLI_BORROWER_PRIVATE_KEY: ${{ secrets.GOERLI_BORROWER_PRIVATE_KEY }}
-          CELO_API_KEY: ${{ secrets.CELO_API_KEY }}
-          CELO_OWNER_PRIVATE_KEY: ${{ secrets.CELO_OWNER_PRIVATE_KEY }}
-          CELO_ADMIN_PRIVATE_KEY: ${{ secrets.CELO_ADMIN_PRIVATE_KEY }}
-          CELO_USER_PRIVATE_KEY: ${{ secrets.CELO_USER_PRIVATE_KEY }}
           CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }} 
 
 

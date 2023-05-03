@@ -132,7 +132,7 @@ contract Pool is PoolFDT {
     function availableToWithdraw() external view returns (uint256) {
         require(depositDate[msg.sender].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
 
-        return Math.min(liquidityAsset.balanceOf(liquidityLocker), this.balanceOf(msg.sender));
+        return Math.min(liquidityAsset.balanceOf(liquidityLocker), this.balanceOf(msg.sender).add(this.withdrawableFundsOf(msg.sender)));
     }
 
     function totalDeposited() external view returns (uint256) {
@@ -209,7 +209,7 @@ contract Pool is PoolFDT {
 
     function withdrawFundsAmount(uint256 amount) public override {
         _whenProtocolNotPaused();
-        uint256 withdrawableFunds = _prepareWithdraw();
+        uint256 withdrawableFunds = _prepareWithdraw(amount);
         require(amount <= withdrawableFunds, "P:INSUFFICIENT_WITHDRAWABLE_FUNDS");
 
         if (withdrawableFunds == uint256(0)) return;

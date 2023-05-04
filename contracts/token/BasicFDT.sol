@@ -49,6 +49,15 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
         emit FundsWithdrawn(msg.sender, withdrawableDividend, _withdrawnFunds);
     }
 
+    function _prepareWithdraw(uint256 amount) internal returns (uint256 withdrawableDividend) {
+        withdrawableDividend = withdrawableFundsOf(msg.sender);
+        require(amount <= withdrawableDividend, "FDT:INSUFFICIENT_FUNDS");
+        uint256 _withdrawnFunds = withdrawnFunds[msg.sender].add(amount);
+        withdrawnFunds[msg.sender] = _withdrawnFunds;
+
+        emit FundsWithdrawn(msg.sender, withdrawableDividend, _withdrawnFunds);
+    }
+
     function withdrawableFundsOf(address owner) public view returns (uint256) {
         return accumulativeFundsOf(owner).sub(withdrawnFunds[owner]);
     }

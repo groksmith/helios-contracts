@@ -23,6 +23,7 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
 
     mapping(address => int256)  internal pointsCorrection;
     mapping(address => uint256) internal withdrawnFunds;
+    mapping(address => uint256) internal accumulativeMintedFor;
 
     event PointsPerShareUpdated(uint256 pointsPerShare);
     event PointsCorrectionUpdated(address indexed account, int256 pointsCorrection);
@@ -66,6 +67,10 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
         return withdrawnFunds[owner];
     }
 
+    function totalMintedFor(address owner) external view returns (uint256) {
+        return accumulativeMintedFor[owner];
+    }
+
     function accumulativeFundsOf(address owner) public view returns (uint256) {
         return pointsPerShare
             .mul(balanceOf(owner))
@@ -95,6 +100,7 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
         super._mint(account, value);
 
         totalMinted = totalMinted.add(value);
+        accumulativeMintedFor[account] = accumulativeMintedFor[account].add(value);
 
         int256 _pointsCorrection = pointsCorrection[account].sub(
             (pointsPerShare.mul(value)).toInt256Safe()

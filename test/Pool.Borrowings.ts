@@ -65,6 +65,38 @@ describe("Pool Borrowing", async function () {
         expect(await poolContract.principalOut()).equal(0);
     });
 
+    it("Pool make payment after principal repayment", async function () {
+        const {poolContract, IERC20Token, investor, borrower} = await loadFixture(createBorrowerFixture);
+        await IERC20Token.transfer(investor.address, 1000);
+        await IERC20Token.connect(investor).approve(poolContract.address, 1000);
+        await poolContract.connect(investor).deposit(1000);
+
+        await time.increase(1001);
+
+        await poolContract.connect(borrower).drawdown(1000);
+
+        expect(await poolContract.withdrawableOf(investor.address)).equal(0);
+
+        await IERC20Token.transfer(borrower.address, 2000);
+
+        await IERC20Token.connect(borrower).approve(poolContract.address, 1100);
+        await expect(poolContract.connect(borrower).makePayment(1100))
+            .to.emit(poolContract, "Payment")
+            .withArgs(borrower.address, 1000, 100);
+
+        expect(await poolContract.principalOut()).equal(0);
+
+        expect(await poolContract.withdrawableFundsOf(investor.address)).equal(100);
+        await poolContract.connect(investor).withdrawFunds();
+
+        await IERC20Token.connect(borrower).approve(poolContract.address, 1000);
+        await expect(poolContract.connect(borrower).makePayment(1000))
+            .to.emit(poolContract, "Payment")
+            .withArgs(borrower.address, 0, 1000);
+
+        expect(await poolContract.withdrawableOf(investor.address)).equal(1000);
+    });
+
     it("Pool make payment less than principalOut", async function () {
         const {poolContract, IERC20Token, investor, borrower} = await loadFixture(createBorrowerFixture);
 
@@ -124,13 +156,14 @@ describe("Pool Borrowing", async function () {
     });
 
     it("Pool available to withdraw after drawdown", async function () {
-        const {poolContract, IERC20Token, borrower} = await loadFixture(createBorrowerFixture);
+        const {poolContract, IERC20Token, investor, borrower} = await loadFixture(createBorrowerFixture);
 
-        await IERC20Token.approve(poolContract.address, 100);
-        await poolContract.deposit(100);
+        await IERC20Token.transfer(investor.address, 100);
+        await IERC20Token.connect(investor).approve(poolContract.address, 100);
+        await poolContract.connect(investor).deposit(100);
         await poolContract.connect(borrower).drawdown(50);
 
         await time.increase(1001);
-        expect(await poolContract.availableToWithdraw()).equal(50);
+        expect(await poolContract.withdrawableOf(investor.address)).equal(50);
     });
 });

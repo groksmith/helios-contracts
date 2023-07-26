@@ -129,10 +129,10 @@ contract Pool is PoolFDT {
         return true;
     }
 
-    function availableToWithdraw() external view returns (uint256) {
-        require(depositDate[msg.sender].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+    function withdrawableOf(address owner) external view returns (uint256) {
+        require(depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
 
-        return Math.min(liquidityAsset.balanceOf(liquidityLocker), this.balanceOf(msg.sender).add(this.withdrawableFundsOf(msg.sender)));
+        return Math.min(liquidityAsset.balanceOf(liquidityLocker), super.balanceOf(owner));
     }
 
     function totalDeposited() external view returns (uint256) {

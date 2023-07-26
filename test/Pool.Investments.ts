@@ -67,6 +67,7 @@ describe("Pool Investments", function () {
             .to.be.revertedWith('P:DEP_AMT_EXCEEDS_POOL_SIZE');
     });
 
+
     it("Pool deposit revert: deactivated state", async function () {
         const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
         const [, admin] = await ethers.getSigners();
@@ -122,6 +123,36 @@ describe("Pool Investments", function () {
         await poolContract.deposit(100);
         await (expect(poolContract.withdraw(100))
             .to.be.revertedWith('P:FUNDS_LOCKED'));
+    });
+
+    it("Pool total minted", async function () {
+        const [, , investor1, investor2] = await ethers.getSigners();
+        const {poolContract, IERC20Token} = await loadFixture(createPoolFixture);
+
+        await IERC20Token.transfer(investor1.address, 50000);
+        await IERC20Token.transfer(investor2.address, 50000);
+
+        await IERC20Token.connect(investor1).approve(poolContract.address, 10000);
+        await poolContract.connect(investor1).deposit(10000);
+
+        expect(await poolContract.totalMintedFor(investor1.address)).equal(10000);
+
+        await IERC20Token.connect(investor2).approve(poolContract.address, 20000);
+        await poolContract.connect(investor2).deposit(20000);
+
+        expect(await poolContract.totalMintedFor(investor1.address)).equal(10000);
+
+        await IERC20Token.connect(investor1).approve(poolContract.address, 30000);
+        await poolContract.connect(investor1).deposit(30000);
+
+        expect(await poolContract.totalMintedFor(investor1.address)).equal(40000);
+
+        await time.increase(1001);
+
+        await poolContract.connect(investor1).withdraw(40000);
+        await poolContract.connect(investor1).withdrawFunds();
+
+        expect(await poolContract.totalMintedFor(investor1.address)).equal(40000);
     });
 
     it("Pool withdraw funds", async function () {
@@ -246,8 +277,8 @@ describe("Pool Investments", function () {
         await poolContract.connect(investor2).deposit(10000);
 
         await time.increase(1001);
-        expect(await poolContract.connect(investor1).availableToWithdraw()).equal(50000);
-        await poolContract.connect(investor1).withdraw(await poolContract.connect(investor1).availableToWithdraw());
+        expect(await poolContract.withdrawableOf(investor1.address)).equal(50000);
+        await poolContract.connect(investor1).withdraw(await poolContract.withdrawableOf(investor1.address));
     });
 
     it("Pool available to withdraw", async function () {
@@ -273,13 +304,16 @@ describe("Pool Investments", function () {
         await IERC20Token.connect(borrower).approve(poolContract.address, 6000);
         await poolContract.connect(borrower).makePayment(6000);
 
-        expect(await poolContract.connect(investor1).availableToWithdraw()).equal(5500);
+        expect(await poolContract.withdrawableOf(investor1.address)).equal(5000);
+        expect(await poolContract.withdrawableFundsOf(investor1.address)).equal(500);
 
         await poolContract.connect(investor1).withdraw(4000);
         await poolContract.connect(investor1).withdrawFundsAmount(400);
-        expect(await poolContract.connect(investor1).availableToWithdraw()).equal(1100);
+        expect(await poolContract.withdrawableOf(investor1.address)).equal(1000);
+        expect(await poolContract.withdrawableFundsOf(investor1.address)).equal(100);
 
         await poolContract.connect(investor2).withdrawFundsAmount(300);
-        expect(await poolContract.connect(investor2).availableToWithdraw()).equal(5200);
+        expect(await poolContract.withdrawableOf(investor2.address)).equal(5000);
+        expect(await poolContract.withdrawableFundsOf(investor2.address)).equal(200);
     });
 });

@@ -114,17 +114,17 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "liquidityProvider",
+        "name": "investor",
         "type": "address"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "cooldown",
+        "name": "amount",
         "type": "uint256"
       }
     ],
-    "name": "CoolDown",
+    "name": "Deposit",
     "type": "event"
   },
   {

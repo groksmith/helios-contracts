@@ -48,7 +48,7 @@ contract Pool is PoolFDT {
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
     event BorrowerSet(address indexed borrower);
     event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
-    event CoolDown(address indexed liquidityProvider, uint256 cooldown);
+    event Deposit(address indexed investor, uint256 amount);
     event Drawdown(address indexed borrower, uint256 amount, uint256 principalOut);
     event Payment(address indexed borrower, uint256 amount, uint256 principalOut);
 
@@ -121,7 +121,7 @@ contract Pool is PoolFDT {
         _mint(msg.sender, amount);
 
         _emitBalanceUpdatedEvent();
-        emit CoolDown(msg.sender, amount);
+        emit Deposit(msg.sender, amount);
     }
 
     function canWithdraw(uint256 amount) external view returns (bool) {

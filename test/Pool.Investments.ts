@@ -15,7 +15,7 @@ describe("Pool Investments", function () {
         await expect(poolContract.deposit(100))
             .to.emit(poolContract, "BalanceUpdated")
             .and
-            .to.emit(poolContract, "CoolDown")
+            .to.emit(poolContract, "Deposit")
             .withArgs(owner.address, 100);
 
         await time.increase(1001);

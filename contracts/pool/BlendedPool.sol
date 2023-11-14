@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -32,8 +32,7 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
 
     uint256 public principalOut; // The sum of all outstanding principal on Loans.
     address public borrower; // Address of borrower for this Pool.
-    mapping(address => uint) public investors;
-    address[] public investorsLuT;
+    mapping(address => bool) public pools; //TODO
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -134,10 +133,6 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         return totalMinted;
     }
 
-    function withdraw(uint256 amount) external whenNotPaused() nonReentrant {
-        // TODO
-    }
-
     function drawdownAmount() external view returns (uint256) {
         return _drawdownAmount();
     }
@@ -186,29 +181,22 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         return uint8(liquidityAssetDecimals);
     }
 
-    function withdrawFunds() public override {
-        _whenProtocolNotPaused();
-        uint256 withdrawableFunds = _prepareWithdraw();
-
-        if (withdrawableFunds == uint256(0)) return;
-
-        _transferLiquidityLockerFunds(msg.sender, withdrawableFunds);
-        _emitBalanceUpdatedEvent();
-
-        interestSum = interestSum.sub(withdrawableFunds);
-
-        _updateFundsTokenBalance();
+    function withdrawFunds() public override whenNotPaused {
+        withdrawableDividend = withdrawableFundsOf(msg.sender);
+        withdrawFundsAmount(withdrawableDividend);
     }
 
-    function withdrawFundsAmount(uint256 amount) public override {
-        _whenProtocolNotPaused();
+    function withdrawFundsAmount(uint256 amount) public override whenNotPaused {
+        require(
+            depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp,
+            "P:FUNDS_LOCKED"
+        );
+        require(withdrawableFundsOf(msg.sender) > 0, "P:NOT_INVESTOR");
         uint256 withdrawableFunds = _prepareWithdraw(amount);
         require(
             amount <= withdrawableFunds,
             "P:INSUFFICIENT_WITHDRAWABLE_FUNDS"
         );
-
-        if (withdrawableFunds == uint256(0)) return;
 
         _transferLiquidityLockerFunds(msg.sender, amount);
         _emitBalanceUpdatedEvent();
@@ -218,6 +206,28 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         _updateFundsTokenBalance();
     }
 
+    //TODO implement check
+    //TODO how do we assume if there is enough or not LA assets?
+    /// @notice Used by Regional Pools to return LA to investors. Only RegPools can call it
+    /// @param to investor's address
+    /// @param value amount of LA the investor wants to withdraw
+    function transferLiquidityLockerFunds(
+        address to,
+        uint value
+    ) external onlyPool returns (bool) {
+
+        //TODO implement check of LA
+        _transferLiquidityLockerFunds(to, value);
+    }
+
+    // Transfers Liquidity Locker assets to given `to` address
+    function _transferLiquidityLockerFunds(
+        address to,
+        uint256 value
+    ) internal returns (bool) {
+        return _liquidityLocker().transfer(to, value);
+    }
+
     // Emits a `BalanceUpdated` event for LiquidityLocker
     function _emitBalanceUpdatedEvent() internal {
         emit BalanceUpdated(
@@ -225,5 +235,15 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
             address(liquidityAsset),
             _balanceOfLiquidityLocker()
         );
+    }
+
+    //TODO used for unhappy path
+    function finishWithdrawalProcess() external onlyOwner {
+
+    }
+
+    modifier onlyPool() {
+        require(pools[msg.sender], "P:NOT_POOL");
+        _;
     }
 }

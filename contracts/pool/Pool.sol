@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 import "../interfaces/IPoolFactory.sol";
-import "../interfaces/ILiquidityLockerFactory.sol";
-import "../interfaces/ILiquidityLocker.sol";
 import "../interfaces/IHeliosGlobals.sol";
 import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
@@ -17,19 +16,19 @@ import "hardhat/console.sol";
 
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is PoolFDT {
-    using SafeMath  for uint256;
+    using SafeMath for uint256;
     using SafeMathUint for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
-    address public immutable superFactory;              // The factory that deployed this Pool
-    address public immutable liquidityLocker;           // The LiquidityLocker owned by this contract
-    address public immutable poolDelegate;              // The Pool Delegate address, maintains full authority over the Pool
-    IERC20  public immutable liquidityAsset;            // The asset deposited by Lenders into the LiquidityLocker
-    uint256 private immutable liquidityAssetDecimals;   // The precision for the Liquidity Asset (i.e. `decimals()`)
+    address public immutable superFactory; // The factory that deployed this Pool
+    address public immutable poolDelegate; // The Pool Delegate address, maintains full authority over the Pool
+    uint256 private immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
 
-    uint256 public principalOut;                        // The sum of all outstanding principal on Loans.
-    address public borrower;                            // Address of borrower for this Pool.
+    uint256 public principalOut; // The sum of all outstanding principal on Loans.
+    address public borrower; // Address of borrower for this Pool.
+    address public blendedPool; // Address of borrower for this Pool.
+    address public liquidityLocker; // Address of the liquidityLocker
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -41,30 +40,47 @@ contract Pool is PoolFDT {
 
     PoolInfo public poolInfo;
 
-    enum State {Initialized, Finalized, Deactivated}
+    enum State {
+        Initialized,
+        Finalized,
+        Deactivated
+    }
     State public poolState;
 
     event PoolStateChanged(State state);
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
     event BorrowerSet(address indexed borrower);
-    event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
+    event BalanceUpdated(
+        address indexed liquidityProvider,
+        address indexed token,
+        uint256 balance
+    );
     event Deposit(address indexed investor, uint256 amount);
-    event Drawdown(address indexed borrower, uint256 amount, uint256 principalOut);
-    event Payment(address indexed borrower, uint256 amount, uint256 principalOut);
+    event Drawdown(
+        address indexed borrower,
+        uint256 amount,
+        uint256 principalOut
+    );
+    event Payment(
+        address indexed borrower,
+        uint256 amount,
+        uint256 principalOut
+    );
 
-    mapping(address => bool)    public poolAdmins;  // The Pool Admin addresses that have permission to do certain operations in case of disaster management
+    mapping(address => bool) public poolAdmins; // The Pool Admin addresses that have permission to do certain operations in case of disaster management
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
 
     constructor(
         address _poolDelegate,
         address _liquidityAsset,
         address _llFactory,
+        address _blendedPool,
         uint256 _lockupPeriod,
         uint256 _apy,
         uint256 _duration,
         uint256 _investmentPoolSize,
         uint256 _minInvestmentAmount
-    ) PoolFDT(PoolLib.NAME, PoolLib.SYMBOL){
+    ) PoolFDT(PoolLib.NAME, PoolLib.SYMBOL) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
@@ -74,6 +90,7 @@ contract Pool is PoolFDT {
 
         superFactory = msg.sender;
         poolDelegate = _poolDelegate;
+        blendedPool = _blendedPool;
 
         poolInfo = PoolInfo(
             _lockupPeriod,
@@ -85,9 +102,14 @@ contract Pool is PoolFDT {
 
         poolState = State.Initialized;
 
-        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
+        require(
+            _globals(superFactory).isValidLiquidityAsset(_liquidityAsset),
+            "P:INVALID_LIQ_ASSET"
+        );
 
-        liquidityLocker = address(ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
+        liquidityLocker = address(
+            ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset)
+        );
 
         emit PoolStateChanged(poolState);
     }
@@ -110,12 +132,20 @@ contract Pool is PoolFDT {
 
     function deposit(uint256 amount) external nonReentrant {
         require(amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-        require(totalMinted + amount <= poolInfo.investmentPoolSize, "P:DEP_AMT_EXCEEDS_POOL_SIZE");
+        require(
+            totalMinted + amount <= poolInfo.investmentPoolSize,
+            "P:DEP_AMT_EXCEEDS_POOL_SIZE"
+        );
 
         _whenProtocolNotPaused();
         _isValidState(State.Finalized);
 
-        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), amount, msg.sender);
+        PoolLib.updateDepositDate(
+            depositDate,
+            balanceOf(msg.sender),
+            amount,
+            msg.sender
+        );
         liquidityAsset.safeTransferFrom(msg.sender, liquidityLocker, amount);
 
         _mint(msg.sender, amount);
@@ -130,9 +160,16 @@ contract Pool is PoolFDT {
     }
 
     function withdrawableOf(address owner) external view returns (uint256) {
-        require(depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(
+            depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp,
+            "P:FUNDS_LOCKED"
+        );
 
-        return Math.min(liquidityAsset.balanceOf(liquidityLocker), super.balanceOf(owner));
+        return
+            Math.min(
+                liquidityAsset.balanceOf(liquidityLocker),
+                super.balanceOf(owner)
+            );
     }
 
     function totalDeposited() external view returns (uint256) {
@@ -165,25 +202,46 @@ contract Pool is PoolFDT {
         emit Drawdown(msg.sender, amount, principalOut);
     }
 
-    function makePayment(uint256 principalClaim) external isBorrower nonReentrant {
-        uint256 interestClaim = 0;
+    //NEW
+    function distributePayments(
+        uint256 principalClaim
+    ) external onlyOwner nonReentrant {
+        require(principalClaim > 0, "P:ZERO_CLAIM");
+        uint balance = totalSupply();
 
-        if (principalClaim <= principalOut) {
-            principalOut = principalOut - principalClaim;
-        } else {
-            // Distribute `principalClaim` overflow as interest to LPs.
-            interestClaim = principalClaim - principalOut;
 
-            // Set `principalClaim` to `principalOut` so correct amount gets transferred.
-            principalClaim = principalOut;
-
-            // Set `principalOut` to zero to avoid subtraction overflow.
-            principalOut = 0;
+        if (balance < principalClaim) {
+            uint256 amountNeeded = principalClaim - balance;
+            blendedPool.requestLiquidityAssets(amountNeeded);
+            laOwedToBlendedPool += amountNeeded;
+            uint lpAmount = amountNeeded / ORACLE_VALUE; //TODO
+            _mint(blendedPool, lpAmount);
+            // Handle the blendedPool becoming a holder in this pool
+            // This could be by minting LP tokens to blendedPool, or another method
+            return;
         }
 
-        interestSum = interestSum.add(interestClaim);
+        // NOTE: HAPPY PATH
+        if (principalClaim <= liquidityLocker.assetsAvailable()) {
+            for (uint256 i = 0; i < holders.length; i++) {
+                address holder = holders[i];
+                uint256 holderBalance = balanceOf(holder);
+                uint256 holderShare = (totalAmount * holderBalance) /
+                    totalSupply;
 
-        _transferLiquidityAssetFrom(msg.sender, liquidityLocker, principalClaim.add(interestClaim));
+                require(
+                    distributionAsset.transfer(holder, holderShare),
+                    "Distribution failed"
+                );
+            }
+            return;
+        }
+
+        _transferLiquidityAssetFrom(
+            msg.sender,
+            liquidityLocker,
+            principalClaim
+        );
         updateFundsReceived();
 
         emit Payment(msg.sender, principalClaim, interestSum);
@@ -193,26 +251,22 @@ contract Pool is PoolFDT {
         return uint8(liquidityAssetDecimals);
     }
 
-    function withdrawFunds() public override {
-        _whenProtocolNotPaused();
-        uint256 withdrawableFunds = _prepareWithdraw();
-
-        if (withdrawableFunds == uint256(0)) return;
-
-        _transferLiquidityLockerFunds(msg.sender, withdrawableFunds);
-        _emitBalanceUpdatedEvent();
-
-        interestSum = interestSum.sub(withdrawableFunds);
-
-        _updateFundsTokenBalance();
+    function withdrawFunds() public override whenNotPaused {
+        withdrawableDividend = withdrawableFundsOf(msg.sender);
+        withdrawFundsAmount(withdrawableDividend);
     }
 
-    function withdrawFundsAmount(uint256 amount) public override {
-        _whenProtocolNotPaused();
+    function withdrawFundsAmount(uint256 amount) public override whenNotPaused {
+        require(
+            depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp,
+            "P:FUNDS_LOCKED"
+        );
+        require(withdrawableFundsOf(msg.sender) > 0, "P:NOT_INVESTOR");
         uint256 withdrawableFunds = _prepareWithdraw(amount);
-        require(amount <= withdrawableFunds, "P:INSUFFICIENT_WITHDRAWABLE_FUNDS");
-
-        if (withdrawableFunds == uint256(0)) return;
+        require(
+            amount <= withdrawableFunds,
+            "P:INSUFFICIENT_WITHDRAWABLE_FUNDS"
+        );
 
         _transferLiquidityLockerFunds(msg.sender, amount);
         _emitBalanceUpdatedEvent();
@@ -239,9 +293,15 @@ contract Pool is PoolFDT {
     }
 
     function _canWithdraw(address account, uint256 amount) internal view {
-        require(depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(
+            depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp,
+            "P:FUNDS_LOCKED"
+        );
         require(balanceOf(account) >= amount, "P:INSUFFICIENT_BALANCE");
-        require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
+        require(
+            amount <= _balanceOfLiquidityLocker(),
+            "P:INSUFFICIENT_LIQUIDITY"
+        );
     }
 
     // Get drawdown available amount
@@ -261,7 +321,11 @@ contract Pool is PoolFDT {
 
     // Emits a `BalanceUpdated` event for LiquidityLocker
     function _emitBalanceUpdatedEvent() internal {
-        emit BalanceUpdated(liquidityLocker, address(liquidityAsset), _balanceOfLiquidityLocker());
+        emit BalanceUpdated(
+            liquidityLocker,
+            address(liquidityAsset),
+            _balanceOfLiquidityLocker()
+        );
     }
 
     // Checks that the protocol is not in a paused state
@@ -276,22 +340,32 @@ contract Pool is PoolFDT {
     }
 
     // Transfers Liquidity Asset to given `to` address
-    function _transferLiquidityAssetFrom(address from, address to, uint256 value) internal {
+    function _transferLiquidityAssetFrom(
+        address from,
+        address to,
+        uint256 value
+    ) internal {
         liquidityAsset.safeTransferFrom(from, to, value);
     }
 
     // Transfers Liquidity Locker assets to given `to` address
-    function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool){
+    function _transferLiquidityLockerFunds(
+        address to,
+        uint256 value
+    ) internal returns (bool) {
         return _liquidityLocker().transfer(to, value);
     }
 
-    // Returns the LiquidityLocker instance
-    function _liquidityLocker() internal view returns (ILiquidityLocker) {
-        return ILiquidityLocker(liquidityLocker);
-    }
+    // TODO: cut
+    // // Returns the LiquidityLocker instance
+    // function _liquidityLocker() internal view returns (ILiquidityLocker) {
+    //     return ILiquidityLocker(liquidityLocker);
+    // }
 
     // Returns the HeliosGlobals instance
-    function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
+    function _globals(
+        address poolFactory
+    ) internal view returns (IHeliosGlobals) {
         return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 

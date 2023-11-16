@@ -150,46 +150,16 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         emit Drawdown(msg.sender, amount, principalOut);
     }
 
-    function makePayment(
-        uint256 principalClaim
-    ) external isBorrower nonReentrant {
-        uint256 interestClaim = 0;
-
-        if (principalClaim <= principalOut) {
-            principalOut = principalOut - principalClaim;
-        } else {
-            // Distribute `principalClaim` overflow as interest to LPs.
-            interestClaim = principalClaim - principalOut;
-
-            // Set `principalClaim` to `principalOut` so correct amount gets transferred.
-            principalClaim = principalOut;
-
-            // Set `principalOut` to zero to avoid subtraction overflow.
-            principalOut = 0;
-        }
-
-        interestSum = interestSum.add(interestClaim);
-
-        _transferLiquidityAssetFrom(
-            msg.sender,
-            address(liquidityLocker),
-            principalClaim.add(interestClaim)
-        );
-        updateFundsReceived();
-
-        emit Payment(msg.sender, principalClaim, interestSum);
-    }
-
     function decimals() public view override returns (uint8) {
         return uint8(liquidityAssetDecimals);
     }
 
-    function withdrawFunds() public override whenNotPaused {
+    function withdrawFunds() public override onlyOwner() whenNotPaused {
         withdrawableDividend = withdrawableFundsOf(msg.sender);
         withdrawFundsAmount(withdrawableDividend);
     }
 
-    function withdrawFundsAmount(uint256 amount) public override whenNotPaused {
+    function withdrawFundsAmount(uint256 amount) public onlyOwner() override whenNotPaused {
         require(
             depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp,
             "P:FUNDS_LOCKED"

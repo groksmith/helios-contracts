@@ -11,6 +11,7 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IHeliosGlobals.sol";
 import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
+import "./BlendedPool.sol";
 
 import "hardhat/console.sol";
 
@@ -27,8 +28,10 @@ contract Pool is PoolFDT {
 
     uint256 public principalOut; // The sum of all outstanding principal on Loans.
     address public borrower; // Address of borrower for this Pool.
-    address public blendedPool; // Address of borrower for this Pool.
+    BlendedPool public blendedPool; // Address of Blended Pool
     address public liquidityLocker; // Address of the liquidityLocker
+
+    mapping(address => uint) public rewards;
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -67,6 +70,8 @@ contract Pool is PoolFDT {
         uint256 principalOut
     );
 
+    event Reward(address indexed receiver, uint256 amount);
+
     mapping(address => bool) public poolAdmins; // The Pool Admin addresses that have permission to do certain operations in case of disaster management
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
 
@@ -90,7 +95,7 @@ contract Pool is PoolFDT {
 
         superFactory = msg.sender;
         poolDelegate = _poolDelegate;
-        blendedPool = _blendedPool;
+        blendedPool = BlendedPool(_blendedPool);
 
         poolInfo = PoolInfo(
             _lockupPeriod,
@@ -202,49 +207,57 @@ contract Pool is PoolFDT {
         emit Drawdown(msg.sender, amount, principalOut);
     }
 
-    //NEW
+    /// @notice Used to distribute payment among investors
+    /// @param  principalClaim the amount to be divided among investors
+    /// @param  holders the investors
+    /// @param  bpHolders the investors of the Blended Pool
     function distributePayments(
-        uint256 principalClaim
+        uint256 principalClaim,
+        address[] holders,
+        address[] bpHolder
     ) external onlyOwner nonReentrant {
         require(principalClaim > 0, "P:ZERO_CLAIM");
-        uint balance = totalSupply();
+        uint balance = liquidityLocker.totalSupply();
 
-
+        //UNHAPPY PATH - not enough LA tokens in the Regional Pool
         if (balance < principalClaim) {
-            uint256 amountNeeded = principalClaim - balance;
-            blendedPool.requestLiquidityAssets(amountNeeded);
-            laOwedToBlendedPool += amountNeeded;
-            uint lpAmount = amountNeeded / ORACLE_VALUE; //TODO
-            _mint(blendedPool, lpAmount);
-            // Handle the blendedPool becoming a holder in this pool
-            // This could be by minting LP tokens to blendedPool, or another method
-            return;
+            // Request the missing LA in the blendedPool and make it the holder in this pool
+            uint256 amountMissing = principalClaim - balance;
+            require(
+                blendedPool.totalSupplyLA() >= amountMissing,
+                "P:NOT_ENOUGH_LA_IN_BOTH_POOLS"
+            );
+            blendedPool.requestLiquidityAssets(amountMissing);
+            _mint(blendedPool, amountMissing);
         }
 
-        // NOTE: HAPPY PATH
-        if (principalClaim <= liquidityLocker.assetsAvailable()) {
-            for (uint256 i = 0; i < holders.length; i++) {
-                address holder = holders[i];
-                uint256 holderBalance = balanceOf(holder);
-                uint256 holderShare = (totalAmount * holderBalance) /
-                    totalSupply;
+        for (uint256 i = 0; i < holders.length; i++) {
+            address holder = holders[i];
 
-                require(
-                    distributionAsset.transfer(holder, holderShare),
-                    "Distribution failed"
-                );
+            uint256 holderBalance = balanceOf(holder);
+            uint256 holderShare = (principalClaim * holderBalance) /
+                totalSupply;
+            if (holder != address(blendedPool)) {
+                rewards[holder] += holderShare;
             }
-            return;
+
+            if (holder == address(blendedPool)) {
+                blendedPool.distributePayments(holderShare, bpHolder);
+            }
         }
+    }
 
-        _transferLiquidityAssetFrom(
-            msg.sender,
-            liquidityLocker,
-            principalClaim
+    /// @notice Used to transfer the investor's rewards to him
+    function claimReward() external {
+        uint256 callerRewards = rewards[msg.sender];
+        require(callerRewards >= 0, "P:NOT_HOLDER");
+
+        require(
+            _transferLiquidityLockerFunds(msg.sender, callerRewards),
+            "P:ERROR_TRANSFERRING_REWARD"
         );
-        updateFundsReceived();
 
-        emit Payment(msg.sender, principalClaim, interestSum);
+        emit Reward(msg.sender, callerRewards);
     }
 
     function decimals() public view override returns (uint8) {
@@ -274,13 +287,6 @@ contract Pool is PoolFDT {
         interestSum = interestSum.sub(amount);
 
         _updateFundsTokenBalance();
-    }
-
-    // Sets a Pool Admin. Only the Pool Delegate can call this function
-    function setPoolAdmin(address poolAdmin, bool allowed) external {
-        _isValidDelegateAndProtocolNotPaused();
-        poolAdmins[poolAdmin] = allowed;
-        emit PoolAdminSet(poolAdmin, allowed);
     }
 
     // Sets a Borrower. Only the Pool Delegate can call this function
@@ -339,15 +345,6 @@ contract Pool is PoolFDT {
         _whenProtocolNotPaused();
     }
 
-    // Transfers Liquidity Asset to given `to` address
-    function _transferLiquidityAssetFrom(
-        address from,
-        address to,
-        uint256 value
-    ) internal {
-        liquidityAsset.safeTransferFrom(from, to, value);
-    }
-
     // Transfers Liquidity Locker assets to given `to` address
     function _transferLiquidityLockerFunds(
         address to,
@@ -356,11 +353,10 @@ contract Pool is PoolFDT {
         return _liquidityLocker().transfer(to, value);
     }
 
-    // TODO: cut
-    // // Returns the LiquidityLocker instance
-    // function _liquidityLocker() internal view returns (ILiquidityLocker) {
-    //     return ILiquidityLocker(liquidityLocker);
-    // }
+    // Returns the LiquidityLocker instance
+    function _liquidityLocker() internal view returns (ILiquidityLocker) {
+        return ILiquidityLocker(liquidityLocker);
+    }
 
     // Returns the HeliosGlobals instance
     function _globals(

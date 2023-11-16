@@ -16,7 +16,7 @@ import "../token/USDX.sol";
 
 import "hardhat/console.sol";
 
-// BlendedPool maintains all accounting and functionality related to Pools
+/// @title Blended Pool
 contract BlendedPool is PoolFDT, Ownable, Pausable {
     using SafeMath for uint256;
     using SafeMathUint for uint256;
@@ -24,7 +24,7 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
     using SafeERC20 for IERC20;
 
     address public immutable superFactory; // The factory that deployed this Pool
-    address public immutable liquidityLocker; // The LiquidityLocker owned by this contractLiqui //note: to be removed
+    LiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contractLiqui //note: to be removed
     address public immutable poolDelegate; // The Pool Delegate address, maintains full authority over the Pool
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     IERC20 public immutable rewardToken; // The asset which represents reward token i.e. real world money
@@ -33,6 +33,7 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
     uint256 public principalOut; // The sum of all outstanding principal on Loans.
     address public borrower; // Address of borrower for this Pool.
     mapping(address => bool) public pools; //TODO
+    mapping(address => uint) public rewards;
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -61,6 +62,8 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         uint256 amount,
         uint256 principalOut
     );
+
+    event RegPoolDeposit(address indexed regPool, uint256 amount);
 
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
 
@@ -94,7 +97,7 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
             "P:INVALID_LIQ_ASSET"
         );
 
-        liquidityLocker = address(
+        liquidityLocker = liquidityLocker(
             ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset)
         );
     }
@@ -169,7 +172,7 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
 
         _transferLiquidityAssetFrom(
             msg.sender,
-            liquidityLocker,
+            address(liquidityLocker),
             principalClaim.add(interestClaim)
         );
         updateFundsReceived();
@@ -206,21 +209,50 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         _updateFundsTokenBalance();
     }
 
-    //TODO implement check
-    //TODO how do we assume if there is enough or not LA assets?
-    /// @notice Used by Regional Pools to return LA to investors. Only RegPools can call it
-    /// @param to investor's address
-    /// @param value amount of LA the investor wants to withdraw
-    function transferLiquidityLockerFunds(
-        address to,
-        uint value
-    ) external onlyPool returns (bool) {
+    /// @notice Used to distribute payment among investors
+    /// @param  principalClaim the amount to be divided among investors
+    /// @param  holders the investors
+    function distributePayments(
+        uint256 principalClaim,
+        address[] holders
+    ) external onlyOwner nonReentrant {
+        require(principalClaim > 0, "P:ZERO_CLAIM");
+        uint balance = liquidityLocker.totalSupply();
 
-        //TODO implement check of LA
-        _transferLiquidityLockerFunds(to, value);
+        require(balance < principalClaim, "P:NOT_ENOUGH_BALANCE_IN_BPOOL");
+
+        for (uint256 i = 0; i < holders.length; i++) {
+            address holder = holders[i];
+
+            uint256 holderBalance = balanceOf(holder);
+            uint256 holderShare = (principalClaim * holderBalance) /
+                totalSupply;
+            rewards[holder] += holderShare;
+        }
     }
 
-    // Transfers Liquidity Locker assets to given `to` address
+    /// @notice Used to transfer the investor's rewards to him
+    function claimReward() external {
+        uint256 callerRewards = rewards[msg.sender];
+        require(callerRewards >= 0, "P:NOT_HOLDER");
+
+        require(
+            _transferLiquidityLockerFunds(msg.sender, callerRewards),
+            "P:ERROR_TRANSFERRING_REWARD"
+        );
+
+        emit Reward(msg.sender, callerRewards);
+    }
+
+    /// @notice Called by a RegPool when it doesn't have enough LA
+    function requestLiquidityAssets(uint256 amountMissing) external onlyPool {
+        require(amountMissing > 0, "P:INVALID_INPUT");
+        require(totalSupplyLA() >= amountMissing, "P:NOT_ENOUGH_LA_BP");
+        liquidityLocker.transfer(msg.sender, amountMissing);
+        emit RegPoolDeposit(msg.sender, amountMissing);
+    }
+
+    /// @notice  Transfers Liquidity Locker assets to given `to` address
     function _transferLiquidityLockerFunds(
         address to,
         uint256 value
@@ -237,9 +269,34 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         );
     }
 
-    //TODO used for unhappy path
-    function finishWithdrawalProcess() external onlyOwner {
+    // Returns the LiquidityLocker instance
+    function _liquidityLocker() internal view returns (ILiquidityLocker) {
+        return ILiquidityLocker(liquidityLocker);
+    }
 
+    /// @notice Get the amount of Liquidity Assets in the Blended Pool
+    function totalSupplyLA() external view returns (uint256) {
+        return liquidityLocker.totalSupply();
+    }
+
+    /// @notice Used for unhappy path during payment failure TODO
+    function finishWithdrawalProcess() external onlyOwner {}
+
+    /// @notice Register a new pool to the Blended Pool
+    function addPool(address _pool) external onlyOwner {
+        pools[_pool] = true;
+    }
+
+    /// @notice Register new pools in batch to the Blended Pool
+    function addPools(address[] _pools) external onlyOwner {
+        for (uint256 i = 0; i < _pools.length; i++) {
+            pools[_pools[i]] = true;
+        }
+    }
+
+    /// @notice Remove a pool when it's no longer actual
+    function removePool(address _pool) external onlyOwner {
+        pools[_pool] = false;
     }
 
     modifier onlyPool() {

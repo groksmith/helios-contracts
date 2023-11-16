@@ -27,7 +27,7 @@ contract LiquidityLocker is ILiquidityLocker {
     }
 
     //NEW
-    function assetsAvailable() external view returns (uint256) {
+    function totalSupply() external view returns (uint256) {
         return liquidityAsset.balanceOf(address(this));
     }
 

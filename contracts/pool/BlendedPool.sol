@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.22;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILiquidityLockerFactory.sol";
@@ -12,19 +13,17 @@ import "../interfaces/ILiquidityLocker.sol";
 import "../interfaces/IHeliosGlobals.sol";
 import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
-import "../token/USDX.sol";
 
 import "hardhat/console.sol";
 
 /// @title Blended Pool
 contract BlendedPool is PoolFDT, Ownable, Pausable {
-    using SafeMath for uint256;
     using SafeMathUint for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
     address public immutable superFactory; // The factory that deployed this Pool
-    LiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contractLiqui //note: to be removed
+    ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contractLiqui //note: to be removed
     address public immutable poolDelegate; // The Pool Delegate address, maintains full authority over the Pool
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     IERC20 public immutable rewardToken; // The asset which represents reward token i.e. real world money
@@ -63,6 +62,8 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         uint256 principalOut
     );
 
+    event Reward(address indexed recipient, uint256 amount);
+
     event RegPoolDeposit(address indexed regPool, uint256 amount);
 
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
@@ -74,16 +75,14 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         uint256 _apy,
         uint256 _duration,
         uint256 _minInvestmentAmount
-    ) PoolFDT(PoolLib.NAME, PoolLib.SYMBOL) {
+    ) PoolFDT(PoolLib.NAME, PoolLib.SYMBOL) Ownable(msg.sender) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
-        require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
 
         superFactory = msg.sender;
-        poolDelegate = _poolDelegate;
 
         poolInfo = PoolInfo(
             _lockupPeriod,
@@ -92,12 +91,7 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
             _minInvestmentAmount
         );
 
-        require(
-            _globals(superFactory).isValidLiquidityAsset(_liquidityAsset),
-            "P:INVALID_LIQ_ASSET"
-        );
-
-        liquidityLocker = liquidityLocker(
+        liquidityLocker = ILiquidityLocker(
             ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset)
         );
     }
@@ -119,16 +113,16 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         emit Deposit(msg.sender, amount);
     }
 
-    function withdrawableOf(address owner) external view returns (uint256) {
+    function withdrawableOf(address _holder) external view returns (uint256) {
         require(
-            depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp,
+            depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp,
             "P:FUNDS_LOCKED"
         );
 
         return
             Math.min(
-                liquidityAsset.balanceOf(liquidityLocker),
-                super.balanceOf(owner)
+                liquidityAsset.balanceOf(address(liquidityLocker)),
+                super.balanceOf(_holder)
             );
     }
 
@@ -136,67 +130,51 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
         return totalMinted;
     }
 
-    function drawdownAmount() external view returns (uint256) {
-        return _drawdownAmount();
-    }
-
-    function drawdown(uint256 amount) external isBorrower nonReentrant {
-        require(amount > 0, "P:INVALID_AMOUNT");
-        require(amount <= _drawdownAmount(), "P:INSUFFICIENT_TOTAL_SUPPLY");
-
-        principalOut = principalOut.add(amount);
-
-        _transferLiquidityLockerFunds(msg.sender, amount);
-        emit Drawdown(msg.sender, amount, principalOut);
-    }
-
     function decimals() public view override returns (uint8) {
         return uint8(liquidityAssetDecimals);
     }
 
-    function withdrawFunds() public override onlyOwner() whenNotPaused {
-        withdrawableDividend = withdrawableFundsOf(msg.sender);
-        withdrawFundsAmount(withdrawableDividend);
-    }
-
-    function withdrawFundsAmount(uint256 amount) public onlyOwner() override whenNotPaused {
+    function withdrawFundsAmount(
+        uint256 _amount,
+        address _holder
+    ) public onlyOwner whenNotPaused {
         require(
-            depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp,
+            depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp,
             "P:FUNDS_LOCKED"
         );
         require(withdrawableFundsOf(msg.sender) > 0, "P:NOT_INVESTOR");
-        uint256 withdrawableFunds = _prepareWithdraw(amount);
+        uint256 withdrawableFunds = _prepareWithdraw(_amount);
         require(
-            amount <= withdrawableFunds,
+            _amount <= withdrawableFunds,
             "P:INSUFFICIENT_WITHDRAWABLE_FUNDS"
         );
 
-        _transferLiquidityLockerFunds(msg.sender, amount);
+        _transferLiquidityLockerFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();
 
-        interestSum = interestSum.sub(amount);
+        interestSum = interestSum - _amount;
 
         _updateFundsTokenBalance();
     }
 
     /// @notice Used to distribute payment among investors
-    /// @param  principalClaim the amount to be divided among investors
+    /// @param  _principalClaim the amount to be divided among investors
     /// @param  holders the investors
     function distributePayments(
-        uint256 principalClaim,
-        address[] holders
+        uint256 _principalClaim,
+        address[] memory holders
     ) external onlyOwner nonReentrant {
-        require(principalClaim > 0, "P:ZERO_CLAIM");
+        require(_principalClaim > 0, "P:ZERO_CLAIM");
         uint balance = liquidityLocker.totalSupply();
 
-        require(balance < principalClaim, "P:NOT_ENOUGH_BALANCE_IN_BPOOL");
+        require(balance < _principalClaim, "P:NOT_ENOUGH_BALANCE_IN_BPOOL");
 
         for (uint256 i = 0; i < holders.length; i++) {
             address holder = holders[i];
 
             uint256 holderBalance = balanceOf(holder);
-            uint256 holderShare = (principalClaim * holderBalance) /
-                totalSupply;
+            uint256 holderShare = (_principalClaim * holderBalance) /
+                balance;
             rewards[holder] += holderShare;
         }
     }
@@ -233,9 +211,9 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
     // Emits a `BalanceUpdated` event for LiquidityLocker
     function _emitBalanceUpdatedEvent() internal {
         emit BalanceUpdated(
-            liquidityLocker,
+            address(liquidityLocker),
             address(liquidityAsset),
-            _balanceOfLiquidityLocker()
+            liquidityLocker.totalSupply()
         );
     }
 
@@ -245,7 +223,7 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
     }
 
     /// @notice Get the amount of Liquidity Assets in the Blended Pool
-    function totalSupplyLA() external view returns (uint256) {
+    function totalSupplyLA() public view returns (uint256) {
         return liquidityLocker.totalSupply();
     }
 
@@ -258,7 +236,7 @@ contract BlendedPool is PoolFDT, Ownable, Pausable {
     }
 
     /// @notice Register new pools in batch to the Blended Pool
-    function addPools(address[] _pools) external onlyOwner {
+    function addPools(address[] memory _pools) external onlyOwner {
         for (uint256 i = 0; i < _pools.length; i++) {
             pools[_pools[i]] = true;
         }

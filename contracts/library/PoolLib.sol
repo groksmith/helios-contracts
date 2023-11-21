@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
-
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+pragma solidity 0.8.22;
 
 // PoolLib is a library of utility functions used by Pool.
 library PoolLib {
-    using SafeMath for uint256;
 
     string public constant NAME = "Helios TKN Pool";
     string public constant SYMBOL = "HLS-P";
@@ -18,7 +15,7 @@ library PoolLib {
         uint256 prevDate = depositDate[account];
 
         uint256 newDate = (balance + amount) > 0
-        ? prevDate.add(block.timestamp.sub(prevDate).mul(amount).div(balance + amount))
+        ? prevDate + (block.timestamp - prevDate * amount/ (balance + amount))
         : prevDate;
 
         depositDate[account] = newDate;

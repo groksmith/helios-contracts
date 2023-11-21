@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.22;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IHeliosGlobals.sol";
@@ -16,9 +16,7 @@ import "./BlendedPool.sol";
 import "hardhat/console.sol";
 
 // Pool maintains all accounting and functionality related to Pools
-contract Pool is PoolFDT {
-    using SafeMath for uint256;
-    using SafeMathUint for uint256;
+contract Pool is PoolFDT, Ownable, Pausable {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
@@ -30,6 +28,8 @@ contract Pool is PoolFDT {
     address public borrower; // Address of borrower for this Pool.
     BlendedPool public blendedPool; // Address of Blended Pool
     address public liquidityLocker; // Address of the liquidityLocker
+    IERC20 public liquidityAsset; // Address of the liquidityAsset
+
 
     mapping(address => uint) public rewards;
 
@@ -76,7 +76,6 @@ contract Pool is PoolFDT {
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
 
     constructor(
-        address _poolDelegate,
         address _liquidityAsset,
         address _llFactory,
         address _blendedPool,
@@ -85,16 +84,14 @@ contract Pool is PoolFDT {
         uint256 _duration,
         uint256 _investmentPoolSize,
         uint256 _minInvestmentAmount
-    ) PoolFDT(PoolLib.NAME, PoolLib.SYMBOL) {
+    ) PoolFDT(PoolLib.NAME, PoolLib.SYMBOL) Ownable(msg.sender) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
-        require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
 
         superFactory = msg.sender;
-        poolDelegate = _poolDelegate;
         blendedPool = BlendedPool(_blendedPool);
 
         poolInfo = PoolInfo(
@@ -164,16 +161,16 @@ contract Pool is PoolFDT {
         return true;
     }
 
-    function withdrawableOf(address owner) external view returns (uint256) {
+    function withdrawableOf(address _holder) external view returns (uint256) {
         require(
-            depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp,
+            depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp,
             "P:FUNDS_LOCKED"
         );
 
         return
             Math.min(
                 liquidityAsset.balanceOf(liquidityLocker),
-                super.balanceOf(owner)
+                super.balanceOf(_holder)
             );
     }
 
@@ -201,7 +198,7 @@ contract Pool is PoolFDT {
         require(amount > 0, "P:INVALID_AMOUNT");
         require(amount <= _drawdownAmount(), "P:INSUFFICIENT_TOTAL_SUPPLY");
 
-        principalOut = principalOut.add(amount);
+        principalOut = principalOut + amount;
 
         _transferLiquidityLockerFunds(msg.sender, amount);
         emit Drawdown(msg.sender, amount, principalOut);
@@ -210,14 +207,14 @@ contract Pool is PoolFDT {
     /// @notice Used to distribute payment among investors
     /// @param  principalClaim the amount to be divided among investors
     /// @param  holders the investors
-    /// @param  bpHolders the investors of the Blended Pool
+    /// @param  bpHolder the investors of the Blended Pool
     function distributePayments(
         uint256 principalClaim,
-        address[] holders,
-        address[] bpHolder
+        address[] memory holders,
+        address[] memory bpHolder
     ) external onlyOwner nonReentrant {
         require(principalClaim > 0, "P:ZERO_CLAIM");
-        uint balance = liquidityLocker.totalSupply();
+        uint balance = ILiquidityLocker(liquidityLocker).totalSupply();
 
         //UNHAPPY PATH - not enough LA tokens in the Regional Pool
         if (balance < principalClaim) {
@@ -264,14 +261,9 @@ contract Pool is PoolFDT {
         return uint8(liquidityAssetDecimals);
     }
 
-    function withdrawFunds() public override whenNotPaused {
-        withdrawableDividend = withdrawableFundsOf(msg.sender);
-        withdrawFundsAmount(withdrawableDividend);
-    }
-
     function withdrawFundsAmount(uint256 amount) public override whenNotPaused {
         require(
-            depositDate[owner].add(poolInfo.lockupPeriod) <= block.timestamp,
+            depositDate[msg.sender] + poolInfo.lockupPeriod <= block.timestamp,
             "P:FUNDS_LOCKED"
         );
         require(withdrawableFundsOf(msg.sender) > 0, "P:NOT_INVESTOR");
@@ -284,7 +276,7 @@ contract Pool is PoolFDT {
         _transferLiquidityLockerFunds(msg.sender, amount);
         _emitBalanceUpdatedEvent();
 
-        interestSum = interestSum.sub(amount);
+        interestSum = interestSum - amount;
 
         _updateFundsTokenBalance();
     }
@@ -300,7 +292,7 @@ contract Pool is PoolFDT {
 
     function _canWithdraw(address account, uint256 amount) internal view {
         require(
-            depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp,
+            depositDate[account] + poolInfo.lockupPeriod <= block.timestamp,
             "P:FUNDS_LOCKED"
         );
         require(balanceOf(account) >= amount, "P:INSUFFICIENT_BALANCE");

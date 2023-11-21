@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.22;
 
-import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./Pool.sol";
 import "../interfaces/IHeliosGlobals.sol";
@@ -51,7 +51,6 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
-            msg.sender,
             liquidityAsset,
             llFactory,
             lockupPeriod,

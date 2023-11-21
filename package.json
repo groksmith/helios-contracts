@@ -2,7 +2,10 @@
   "name": "helios-contracts",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "https://traqel@github.com/groksmith/helios-contracts.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://traqel@github.com/groksmith/helios-contracts.git"
+  },
   "author": "Tigran Arakelyan <tigran@groksmith.co>",
   "license": "UNLICENSED",
   "private": true,
@@ -52,5 +55,14 @@
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.0",
     "@types/node": "^18.11.9"
-  }
+  },
+  "description": "",
+  "bugs": {
+    "url": "https://github.com/groksmith/helios-contracts/issues"
+  },
+  "homepage": "https://github.com/groksmith/helios-contracts#readme",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": []
 }

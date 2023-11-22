@@ -26,6 +26,10 @@ contract LiquidityLocker is ILiquidityLocker {
         return true;
     }
 
+    function totalBalance() external view returns (uint256) {
+        return IERC20(liquidityAsset).totalSupply();
+    }
+
     // Checks that `msg.sender` is the Pool
     modifier isPool() {
         require(msg.sender == pool, "LL:NOT_P");

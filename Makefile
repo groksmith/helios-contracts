@@ -7,9 +7,14 @@ all: clean remove install update build
 # Clean the repo
 clean-all:
 	forge clean
+	rm -rf coverage_report
+	rm -rf lcov.info
+	rm -rf typechain-types
+	rm -rf artifacts
+	rm -rf out
 
 # Remove modules
-remove:
+remove_modules:
 	rm -rf .gitmodules
 	rm -rf .git/modules/*
 	rm -rf lib
@@ -20,7 +25,6 @@ remove:
 # Install the Modules
 install:
 	forge install foundry-rs/forge-std
-	forge install OpenZeppelin/openzeppelin-contracts
 
 # Update Dependencies
 update:
@@ -45,4 +49,6 @@ test-all:
 	forge test -vvvvv
 
 coverage-all:
-	forge coverage --report debug
+	forge coverage --report lcov
+	genhtml -o coverage_report --branch-coverage lcov.info --ignore-errors category
+

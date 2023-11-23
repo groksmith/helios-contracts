@@ -46,7 +46,7 @@ format:
 	forge fmt
 
 test-all:
-	forge test -vvvvv
+	forge test -vvv
 
 coverage-all:
 	forge coverage --report lcov

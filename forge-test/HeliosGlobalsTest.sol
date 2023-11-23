@@ -5,6 +5,13 @@ import {FixtureContract} from "./FixtureContract.sol";
 
 contract HeliosGlobalsTest is Test, FixtureContract {
 
+    event ProtocolPaused(bool pause);
+    event GlobalAdminSet(address indexed newGlobalAdmin);
+    event PoolDelegateSet(address indexed delegate, bool valid);
+    event LiquidityAssetSet(address asset, uint256 decimals, string symbol, bool valid);
+    event ValidPoolFactorySet(address indexed poolFactory, bool valid);
+    event ValidSubFactorySet(address indexed superFactory, address indexed subFactory, bool valid);
+
     function setUp() public {
         fixture();
     }
@@ -15,12 +22,16 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         //Asserts if initial state of contract is paused
         assertEq(heliosGlobals.protocolPaused(), false);
 
+        vm.expectEmit();
+        emit ProtocolPaused(true);
         //Sets contract paused
         heliosGlobals.setProtocolPause(true);
 
         //Asserts if after pausing contract paused
         assertEq(heliosGlobals.protocolPaused(), true);
 
+        vm.expectEmit();
+        emit ProtocolPaused(false);
         heliosGlobals.setProtocolPause(false);
 
         assertEq(heliosGlobals.protocolPaused(), false);
@@ -49,6 +60,10 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         address poolFactoryAddress = address(poolFactory);
+
+        vm.expectEmit();
+        emit ValidPoolFactorySet(poolFactoryAddress, true);
+
         heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
         assertEq(heliosGlobals.isValidPoolFactory(poolFactoryAddress), true);
 
@@ -71,6 +86,10 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         assertEq(heliosGlobals.isValidPoolDelegate(poolDelegate), false);
+
+        vm.expectEmit();
+        emit PoolDelegateSet(poolDelegate, true);
+
         heliosGlobals.setPoolDelegateAllowList(poolDelegate, true);
         assertEq(heliosGlobals.isValidPoolDelegate(poolDelegate), true);
 
@@ -93,6 +112,10 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         assertNotEq(heliosGlobals.globalAdmin(), newAdmin);
 
         vm.startPrank(OWNER_ADDRESS);
+
+        vm.expectEmit();
+        emit GlobalAdminSet(newAdmin);
+
         heliosGlobals.setGlobalAdmin(newAdmin);
         vm.stopPrank();
         assertEq(heliosGlobals.globalAdmin(), newAdmin);
@@ -140,6 +163,10 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         address liquidityAssetAddress = address(liquidityAsset);
+
+        vm.expectEmit();
+        emit LiquidityAssetSet(liquidityAssetAddress, liquidityAsset.decimals(), liquidityAsset.symbol(), true);
+
         heliosGlobals.setLiquidityAsset(liquidityAssetAddress, true);
         assertEq(heliosGlobals.isValidLiquidityAsset(liquidityAssetAddress), true);
 
@@ -165,6 +192,10 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         address liquidityLockerFactoryAddress = address(liquidityLockerFactory);
 
         heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
+
+        vm.expectEmit();
+        emit ValidSubFactorySet(poolFactoryAddress, liquidityLockerFactoryAddress, true);
+
         heliosGlobals.setValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, true);
         assertEq(heliosGlobals.isValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, 1), true);
         assertEq(heliosGlobals.isValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, 2), false);
@@ -187,5 +218,4 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         heliosGlobals.setValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, true);
         vm.stopPrank();
     }
-
 }

@@ -21,6 +21,8 @@ contract HeliosGlobals is IHeliosGlobals {
     event GlobalAdminSet(address indexed newGlobalAdmin);
     event PoolDelegateSet(address indexed delegate, bool valid);
     event LiquidityAssetSet(address asset, uint256 decimals, string symbol, bool valid);
+    event ValidPoolFactorySet(address indexed poolFactory, bool valid);
+    event ValidSubFactorySet(address indexed superFactory, address indexed subFactory, bool valid);
 
     // Checks that `msg.sender` is the Governor
     modifier isGovernor() {
@@ -54,6 +56,7 @@ contract HeliosGlobals is IHeliosGlobals {
     // Sets the validity of a PoolFactory. Only the Governor can call this function
     function setValidPoolFactory(address poolFactory, bool valid) external isGovernor {
         isValidPoolFactory[poolFactory] = valid;
+        emit ValidPoolFactorySet(poolFactory, valid);
     }
 
     // Sets the validity of a Pool Delegate (those allowed to create Pools). Only the Governor can call this function
@@ -66,6 +69,7 @@ contract HeliosGlobals is IHeliosGlobals {
     function setValidSubFactory(address superFactory, address subFactory, bool valid) external isGovernor {
         require(isValidPoolFactory[superFactory], "HG:INV_SUPER_F");
         validSubFactories[superFactory][subFactory] = valid;
+        emit ValidSubFactorySet(superFactory, subFactory, valid);
     }
 
     // Sets the validity of an asset for liquidity in Pools. Only the Governor can call this function

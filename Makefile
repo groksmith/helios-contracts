@@ -42,9 +42,7 @@ format:
 	forge fmt
 
 test-all:
-	forge test -vvv --gas-report
+	forge test -vvvvv
+
+coverage-all:
 	forge coverage
-
-
-
-

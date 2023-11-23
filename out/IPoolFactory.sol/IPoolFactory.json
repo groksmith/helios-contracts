@@ -1,0 +1,232 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "name": "globals",
+      "outputs": [
+        {
+          "internalType": "contract IHeliosGlobals",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "globals()": "c3124525"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.16+commit.07a7930e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"globals\",\"outputs\":[{\"internalType\":\"contract IHeliosGlobals\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/interfaces/IPoolFactory.sol\":\"IPoolFactory\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@openzeppelin/=node_modules/@openzeppelin/\",\":ds-test/=lib/forge-std/lib/ds-test/src/\",\":eth-gas-reporter/=node_modules/eth-gas-reporter/\",\":forge-std/=lib/forge-std/src/\",\":hardhat-deploy/=node_modules/hardhat-deploy/\",\":hardhat/=node_modules/hardhat/\"]},\"sources\":{\"contracts/interfaces/IHeliosGlobals.sol\":{\"keccak256\":\"0x624f8763317d15efa8113b760745c5ae02a74ebadab1863e4a639b737de34f42\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://02fc662e50932bd602cdfbc2f5e05c8f8fa1ddf39e9489eb887c4e12d055653c\",\"dweb:/ipfs/QmbPQKgU52xwPtU6StSVYzAmKR73ppLA4DaxftY6ZWkJNY\"]},\"contracts/interfaces/IPoolFactory.sol\":{\"keccak256\":\"0xd86e72aaee44202cf17873b72b3943211131c05688f9571c0099f1726bfa70a2\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://306157924a3a3e2529f04d7e60d1b25c863f127d4272f9014f31fa77080743df\",\"dweb:/ipfs/QmSiAHo24RxQKwHMGa8LPpnHQdGyqMixuidNtz9ULktKkC\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.16+commit.07a7930e"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "globals",
+          "outputs": [
+            {
+              "internalType": "contract IHeliosGlobals",
+              "name": "",
+              "type": "address"
+            }
+          ]
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        "@openzeppelin/=node_modules/@openzeppelin/",
+        "ds-test/=lib/forge-std/lib/ds-test/src/",
+        "eth-gas-reporter/=node_modules/eth-gas-reporter/",
+        "forge-std/=lib/forge-std/src/",
+        "hardhat-deploy/=node_modules/hardhat-deploy/",
+        "hardhat/=node_modules/hardhat/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "compilationTarget": {
+        "contracts/interfaces/IPoolFactory.sol": "IPoolFactory"
+      },
+      "libraries": {}
+    },
+    "sources": {
+      "contracts/interfaces/IHeliosGlobals.sol": {
+        "keccak256": "0x624f8763317d15efa8113b760745c5ae02a74ebadab1863e4a639b737de34f42",
+        "urls": [
+          "bzz-raw://02fc662e50932bd602cdfbc2f5e05c8f8fa1ddf39e9489eb887c4e12d055653c",
+          "dweb:/ipfs/QmbPQKgU52xwPtU6StSVYzAmKR73ppLA4DaxftY6ZWkJNY"
+        ],
+        "license": "MIT"
+      },
+      "contracts/interfaces/IPoolFactory.sol": {
+        "keccak256": "0xd86e72aaee44202cf17873b72b3943211131c05688f9571c0099f1726bfa70a2",
+        "urls": [
+          "bzz-raw://306157924a3a3e2529f04d7e60d1b25c863f127d4272f9014f31fa77080743df",
+          "dweb:/ipfs/QmSiAHo24RxQKwHMGa8LPpnHQdGyqMixuidNtz9ULktKkC"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "contracts/interfaces/IPoolFactory.sol",
+    "id": 382,
+    "exportedSymbols": {
+      "IHeliosGlobals": [
+        341
+      ],
+      "IPoolFactory": [
+        381
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:147:4",
+    "nodes": [
+      {
+        "id": 373,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:4",
+        "nodes": [],
+        "literals": [
+          "solidity",
+          "0.8",
+          ".16"
+        ]
+      },
+      {
+        "id": 374,
+        "nodeType": "ImportDirective",
+        "src": "57:30:4",
+        "nodes": [],
+        "absolutePath": "contracts/interfaces/IHeliosGlobals.sol",
+        "file": "./IHeliosGlobals.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 382,
+        "sourceUnit": 342,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 381,
+        "nodeType": "ContractDefinition",
+        "src": "89:89:4",
+        "nodes": [
+          {
+            "id": 380,
+            "nodeType": "FunctionDefinition",
+            "src": "118:58:4",
+            "nodes": [],
+            "functionSelector": "c3124525",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "globals",
+            "nameLocation": "127:7:4",
+            "parameters": {
+              "id": 375,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "134:2:4"
+            },
+            "returnParameters": {
+              "id": 379,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 378,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 380,
+                  "src": "160:14:4",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IHeliosGlobals_$341",
+                    "typeString": "contract IHeliosGlobals"
+                  },
+                  "typeName": {
+                    "id": 377,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 376,
+                      "name": "IHeliosGlobals",
+                      "nameLocations": [
+                        "160:14:4"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 341,
+                      "src": "160:14:4"
+                    },
+                    "referencedDeclaration": 341,
+                    "src": "160:14:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IHeliosGlobals_$341",
+                      "typeString": "contract IHeliosGlobals"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "159:16:4"
+            },
+            "scope": 381,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "IPoolFactory",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          381
+        ],
+        "name": "IPoolFactory",
+        "nameLocation": "99:12:4",
+        "scope": 382,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 4
+}

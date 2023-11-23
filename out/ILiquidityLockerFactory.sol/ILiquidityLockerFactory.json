@@ -1,0 +1,308 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "name": "factoryType",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "liquidityAsset",
+          "type": "address"
+        }
+      ],
+      "name": "newLocker",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "liquidityLocker",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "factoryType()": "64e1fd55",
+    "newLocker(address)": "19eb783a"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.16+commit.07a7930e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"factoryType\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"liquidityAsset\",\"type\":\"address\"}],\"name\":\"newLocker\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"liquidityLocker\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/interfaces/ILiquidityLockerFactory.sol\":\"ILiquidityLockerFactory\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@openzeppelin/=node_modules/@openzeppelin/\",\":ds-test/=lib/forge-std/lib/ds-test/src/\",\":eth-gas-reporter/=node_modules/eth-gas-reporter/\",\":forge-std/=lib/forge-std/src/\",\":hardhat-deploy/=node_modules/hardhat-deploy/\",\":hardhat/=node_modules/hardhat/\"]},\"sources\":{\"contracts/interfaces/ILiquidityLockerFactory.sol\":{\"keccak256\":\"0xeb728ca7a6fef8487a32c59fcf689a7627432cf30c78ec3397eeb787e50e7ea1\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://780a06ae8d48ea0528f03a633ed5b5fd4d2e52c05ab701ec2ab643982605e693\",\"dweb:/ipfs/QmVGaJapM4sUThyTpEMTYMdzzTR1YNfQgCASvReT9iYgWC\"]},\"contracts/interfaces/ISubFactory.sol\":{\"keccak256\":\"0xbcb38d91a1242bb194f78e158e1bf86f7ee41c40715e2a214ca074d5fb053b50\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://fe919c11577c03464c0612c84e353febf0354a29e689cc6236b178de17ffa5ae\",\"dweb:/ipfs/QmUoEkLWGWQ9nDP9jiSZi4NwR6JtSQYdMNuWppF5tVDfX5\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.16+commit.07a7930e"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [],
+          "stateMutability": "pure",
+          "type": "function",
+          "name": "factoryType",
+          "outputs": [
+            {
+              "internalType": "uint8",
+              "name": "",
+              "type": "uint8"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "liquidityAsset",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "newLocker",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "liquidityLocker",
+              "type": "address"
+            }
+          ]
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        "@openzeppelin/=node_modules/@openzeppelin/",
+        "ds-test/=lib/forge-std/lib/ds-test/src/",
+        "eth-gas-reporter/=node_modules/eth-gas-reporter/",
+        "forge-std/=lib/forge-std/src/",
+        "hardhat-deploy/=node_modules/hardhat-deploy/",
+        "hardhat/=node_modules/hardhat/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "compilationTarget": {
+        "contracts/interfaces/ILiquidityLockerFactory.sol": "ILiquidityLockerFactory"
+      },
+      "libraries": {}
+    },
+    "sources": {
+      "contracts/interfaces/ILiquidityLockerFactory.sol": {
+        "keccak256": "0xeb728ca7a6fef8487a32c59fcf689a7627432cf30c78ec3397eeb787e50e7ea1",
+        "urls": [
+          "bzz-raw://780a06ae8d48ea0528f03a633ed5b5fd4d2e52c05ab701ec2ab643982605e693",
+          "dweb:/ipfs/QmVGaJapM4sUThyTpEMTYMdzzTR1YNfQgCASvReT9iYgWC"
+        ],
+        "license": "MIT"
+      },
+      "contracts/interfaces/ISubFactory.sol": {
+        "keccak256": "0xbcb38d91a1242bb194f78e158e1bf86f7ee41c40715e2a214ca074d5fb053b50",
+        "urls": [
+          "bzz-raw://fe919c11577c03464c0612c84e353febf0354a29e689cc6236b178de17ffa5ae",
+          "dweb:/ipfs/QmUoEkLWGWQ9nDP9jiSZi4NwR6JtSQYdMNuWppF5tVDfX5"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "contracts/interfaces/ILiquidityLockerFactory.sol",
+    "id": 372,
+    "exportedSymbols": {
+      "ILiquidityLockerFactory": [
+        371
+      ],
+      "ISubFactory": [
+        389
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:198:3",
+    "nodes": [
+      {
+        "id": 360,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:3",
+        "nodes": [],
+        "literals": [
+          "solidity",
+          "0.8",
+          ".16"
+        ]
+      },
+      {
+        "id": 361,
+        "nodeType": "ImportDirective",
+        "src": "57:27:3",
+        "nodes": [],
+        "absolutePath": "contracts/interfaces/ISubFactory.sol",
+        "file": "./ISubFactory.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 372,
+        "sourceUnit": 390,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 371,
+        "nodeType": "ContractDefinition",
+        "src": "86:143:3",
+        "nodes": [
+          {
+            "id": 370,
+            "nodeType": "FunctionDefinition",
+            "src": "141:86:3",
+            "nodes": [],
+            "functionSelector": "19eb783a",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "newLocker",
+            "nameLocation": "150:9:3",
+            "parameters": {
+              "id": 366,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 365,
+                  "mutability": "mutable",
+                  "name": "liquidityAsset",
+                  "nameLocation": "168:14:3",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 370,
+                  "src": "160:22:3",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 364,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "160:7:3",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "159:24:3"
+            },
+            "returnParameters": {
+              "id": 369,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 368,
+                  "mutability": "mutable",
+                  "name": "liquidityLocker",
+                  "nameLocation": "210:15:3",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 370,
+                  "src": "202:23:3",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 367,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "202:7:3",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "201:25:3"
+            },
+            "scope": 371,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [
+          {
+            "baseName": {
+              "id": 362,
+              "name": "ISubFactory",
+              "nameLocations": [
+                "123:11:3"
+              ],
+              "nodeType": "IdentifierPath",
+              "referencedDeclaration": 389,
+              "src": "123:11:3"
+            },
+            "id": 363,
+            "nodeType": "InheritanceSpecifier",
+            "src": "123:11:3"
+          }
+        ],
+        "canonicalName": "ILiquidityLockerFactory",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          371,
+          389
+        ],
+        "name": "ILiquidityLockerFactory",
+        "nameLocation": "96:23:3",
+        "scope": 372,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 3
+}

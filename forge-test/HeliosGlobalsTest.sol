@@ -23,6 +23,10 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         //Asserts if after pausing contract paused
         assertEq(heliosGlobals.protocolPaused(), true);
 
+        heliosGlobals.setProtocolPause(false);
+
+        assertEq(heliosGlobals.protocolPaused(), false);
+
         vm.stopPrank();
     }
 
@@ -99,4 +103,35 @@ contract HeliosGlobalsTest is Test, FixtureContract {
 
         assertEq(heliosGlobals.globalAdmin(), globalAdmin);
     }
+
+    function test_when_paused_setGlobalAdmin() public {
+        address globalAdmin = address(1);
+
+        vm.startPrank(ADMIN_ADDRESS);
+        heliosGlobals.setProtocolPause(true);
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        vm.expectRevert(bytes("HG:PROTO_PAUSED"));
+        heliosGlobals.setGlobalAdmin(globalAdmin);
+        vm.stopPrank();
+
+        vm.startPrank(ADMIN_ADDRESS);
+        heliosGlobals.setProtocolPause(false);
+        vm.stopPrank();
+    }
+
+    function test_when_not_owner_setGlobalAdmin(address user) public {
+        address globalAdmin = address(1);
+
+        assertNotEq(heliosGlobals.globalAdmin(), globalAdmin);
+
+        vm.startPrank(user);
+        vm.expectRevert(bytes("HG:NOT_GOV_OR_ADM"));
+        heliosGlobals.setGlobalAdmin(globalAdmin);
+        vm.stopPrank();
+
+        assertNotEq(heliosGlobals.globalAdmin(), globalAdmin);
+    }
+
 }

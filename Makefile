@@ -45,4 +45,4 @@ test-all:
 	forge test -vvvvv
 
 coverage-all:
-	forge coverage
+	forge coverage --report debug

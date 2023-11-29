@@ -20,7 +20,6 @@ contract BlendedPool is AbstractPool {
 
     address public immutable superFactory; // The factory that deployed this Pool
 
-    uint256 public principalOut; // The sum of all outstanding principal on Loans. TODO ??
     address public borrower; // Address of borrower for this Pool.
     mapping(address => bool) public pools;
 
@@ -78,7 +77,7 @@ contract BlendedPool is AbstractPool {
     /// @notice Used to transfer the investor's rewards to him
     function claimReward() external override returns (bool) {
         uint256 callerRewards = rewards[msg.sender];
-        require(callerRewards >= 0, "P:NOT_HOLDER");
+        require(callerRewards >= 0, "P:ZERO_REWARDS");
         uint256 totalBalance = liquidityLocker.totalBalance();
         rewards[msg.sender] = 0;
 
@@ -101,10 +100,12 @@ contract BlendedPool is AbstractPool {
     function requestLiquidityAssets(uint256 _amountMissing) external onlyPool {
         require(_amountMissing > 0, "P:INVALID_INPUT");
         require(totalSupplyLA() >= _amountMissing, "P:NOT_ENOUGH_LA_BP");
+        address poolLL = AbstractPool(msg.sender).getLL();
         require(
-            liquidityLocker.transfer(msg.sender, _amountMissing),
+            _transferLiquidityLockerFunds(poolLL, _amountMissing),
             "P:REQUEST_FROM_BP_FAIL"
         );
+
         emit RegPoolDeposit(msg.sender, _amountMissing);
     }
 

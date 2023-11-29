@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import "../token/PoolFDT.sol";
-
+import "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "../interfaces/ILiquidityLockerFactory.sol";
@@ -17,6 +17,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contractLiqui //note: to be removed
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     uint256 internal immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
+    uint256 public principalOut;
 
     mapping(address => uint) public rewards;
     mapping(address => uint) public pendingWithdrawals;
@@ -107,8 +108,8 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
          * Maybe we should check cumulative withdrawals amount
          */
         if (_amount > poolInfo.withdrawThreshold) {
-            revert("P:THRESHOLD_REACHED");
             emit WithdrawalOverThreshold(msg.sender, _amount);
+            revert("P:THRESHOLD_REACHED");
         }
 
         _burn(msg.sender, _amount);
@@ -186,17 +187,27 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     }
 
     /// @notice  Use the pool's money for investment
-    function adminWithdraw(address _to, uint _amount) external onlyOwner {
-        _transferLiquidityLockerFunds(_to, _amount);
+    function drawdown(address _to) external onlyOwner {
+        uint256 amount = _drawdownAmount();
+        _transferLiquidityLockerFunds(_to, amount);
     }
 
     /// @notice  Deposit LA without minimal threshold or getting LP in return
     function adminDeposit(uint _amount) external onlyOwner {
+        require(
+            liquidityAsset.balanceOf(msg.sender) > _amount,
+            "P:NOT_ENOUGH_BALANCE!!"
+        );
+
         liquidityAsset.safeTransferFrom(
             msg.sender,
             address(liquidityLocker),
             _amount
         );
+    }
+
+    function getLL() external view returns (address) {
+        return address(liquidityLocker);
     }
 
     function claimReward() external virtual returns (bool);
@@ -207,6 +218,11 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         uint256 value
     ) internal returns (bool) {
         return liquidityLocker.transfer(to, value);
+    }
+
+    // Get drawdown available amount
+    function _drawdownAmount() internal view returns (uint256) {
+        return totalSupply() - principalOut;
     }
 
     // Emits a `BalanceUpdated` event for LiquidityLocker

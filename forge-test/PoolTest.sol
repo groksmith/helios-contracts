@@ -12,7 +12,10 @@ import {FixtureContract} from "./FixtureContract.sol";
 
 contract BlendedPoolTest is Test, FixtureContract {
     event PendingReward(address indexed recipient, uint256 indexed amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
+    event WithdrawalOverThreshold(
+        address indexed caller,
+        uint256 indexed amount
+    );
 
     function setUp() public {
         fixture();
@@ -275,7 +278,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         // now let's deplete the pool's balance
         vm.prank(poolAdmin);
-        blendedPool.adminWithdraw(poolAdmin, 100);
+        blendedPool.drawdown(poolAdmin);
 
         //..and claim rewards as user1
         vm.startPrank(OWNER_ADDRESS);
@@ -346,23 +349,27 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //the admin distributes rewards and takes all the LA, emptying the pool
         vm.startPrank(pool.owner());
+
         address[] memory holders = new address[](1);
         holders[0] = OWNER_ADDRESS;
         pool.distributeRewards(100, holders);
-        pool.adminWithdraw(pool.owner(), 100);
+        pool.drawdown(pool.owner());
         vm.stopPrank();
 
         //now let's deposit LA to the blended pool
-        vm.startPrank(blendedPool.owner());
-        liquidityAssetElevated.mint(blendedPool.owner(), 1000);
-        liquidityAsset.increaseAllowance(address(blendedPool), 1000);
-        blendedPool.adminDeposit(200);
+
+        address bpOwner = blendedPool.owner();
+        vm.startPrank(bpOwner);
+        blendedPool.addPool(poolAddress);
+        liquidityAssetElevated.mint(bpOwner, 1003);
+        liquidityAsset.increaseAllowance(address(blendedPool), 1005);
+        blendedPool.adminDeposit(100);
         vm.stopPrank();
 
         //now let's claim reward. The blended pool will help
         vm.startPrank(OWNER_ADDRESS);
+        liquidityAssetElevated.increaseAllowance(poolAddress, 10000);
         pool.claimReward();
-        vm.stopPrank();
     }
 
     function test_withdrawOverThreshold() external {
@@ -439,9 +446,6 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.reinvest(user1Deposit - 1);
         uint userBalanceNow = blendedPool.balanceOf(OWNER_ADDRESS);
         uint expected = user1Deposit + userRewards;
-        assertEq(
-            blendedPool.balanceOf(OWNER_ADDRESS),
-            user1Deposit + userRewards
-        );
+        assertEq(userBalanceNow, expected);
     }
 }

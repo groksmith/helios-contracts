@@ -14,8 +14,6 @@ import "../library/PoolLib.sol";
 import "./AbstractPool.sol";
 import "./BlendedPool.sol";
 
-import "hardhat/console.sol";
-
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is AbstractPool {
     using SafeMath for uint256;
@@ -27,27 +25,12 @@ contract Pool is AbstractPool {
     address public immutable poolDelegate; // The Pool Delegate address, maintains full authority over the Pool
     BlendedPool public blendedPool;
 
-    uint256 public principalOut; // The sum of all outstanding principal on Loans.
-    address public borrower; // Address of borrower for this Pool.
-
     enum State {
         Initialized,
         Finalized,
         Deactivated
     }
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
-    event BorrowerSet(address indexed borrower);
-    event Drawdown(
-        address indexed borrower,
-        uint256 amount,
-        uint256 principalOut
-    );
-    event Payment(
-        address indexed borrower,
-        uint256 amount,
-        uint256 principalOut
-    );
-
     mapping(address => bool) public poolAdmins; // The Pool Admin addresses that have permission to do certain operations in case of disaster management
 
     constructor(
@@ -92,10 +75,8 @@ contract Pool is AbstractPool {
                 emit PendingReward(msg.sender, callerRewards);
                 return false;
             }
-
             blendedPool.requestLiquidityAssets(amountMissing);
             _mint(address(blendedPool), amountMissing);
-
             require(
                 _transferLiquidityLockerFunds(msg.sender, callerRewards),
                 "P:ERROR_TRANSFERRING_REWARD"
@@ -190,11 +171,6 @@ contract Pool is AbstractPool {
         );
     }
 
-    // Get drawdown available amount
-    function _drawdownAmount() internal view returns (uint256) {
-        return totalSupply() - principalOut;
-    }
-
     // Get LiquidityLocker balance
     function _balanceOfLiquidityLocker() internal view returns (uint256) {
         return liquidityAsset.balanceOf(address(liquidityLocker));
@@ -224,11 +200,5 @@ contract Pool is AbstractPool {
         address poolFactory
     ) internal view returns (IHeliosGlobals) {
         return IHeliosGlobals(IPoolFactory(poolFactory).globals());
-    }
-
-    // Checks that `msg.sender` is the Borrower
-    modifier isBorrower() {
-        require(msg.sender == borrower, "P:NOT_BORROWER");
-        _;
     }
 }

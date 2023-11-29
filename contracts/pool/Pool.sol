@@ -35,9 +35,6 @@ contract Pool is AbstractPool {
         Finalized,
         Deactivated
     }
-    State public poolState;
-
-    event PoolStateChanged(State state);
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
     event BorrowerSet(address indexed borrower);
     event Drawdown(
@@ -78,31 +75,6 @@ contract Pool is AbstractPool {
 
         superFactory = msg.sender;
         poolDelegate = _poolDelegate;
-
-        poolState = State.Initialized;
-
-        // require(
-        //     _globals(superFactory).isValidLiquidityAsset(_liquidityAsset),
-        //     "P:INVALID_LIQ_ASSET"
-        // );
-
-        emit PoolStateChanged(poolState);
-    }
-
-    // Finalizes the Pool, enabling deposits. Only the Pool Delegate can call this function
-    function finalize() external {
-        _isValidDelegateAndProtocolNotPaused();
-        _isValidState(State.Initialized);
-        poolState = State.Finalized;
-        emit PoolStateChanged(poolState);
-    }
-
-    // Triggers deactivation, permanently shutting down the Pool. Only the Pool Delegate can call this function
-    function deactivate() external {
-        _isValidDelegateAndProtocolNotPaused();
-        _isValidState(State.Finalized);
-        poolState = State.Deactivated;
-        emit PoolStateChanged(poolState);
     }
 
     /// @notice Used to transfer the investor's rewards to him
@@ -164,50 +136,6 @@ contract Pool is AbstractPool {
         return totalMinted;
     }
 
-    function drawdownAmount() external view returns (uint256) {
-        return _drawdownAmount();
-    }
-
-    function drawdown(uint256 amount) external isBorrower nonReentrant {
-        require(amount > 0, "P:INVALID_AMOUNT");
-        require(amount <= _drawdownAmount(), "P:INSUFFICIENT_TOTAL_SUPPLY");
-
-        principalOut = principalOut.add(amount);
-
-        _transferLiquidityLockerFunds(msg.sender, amount);
-        emit Drawdown(msg.sender, amount, principalOut);
-    }
-
-    function makePayment(
-        uint256 principalClaim
-    ) external isBorrower nonReentrant {
-        uint256 interestClaim = 0;
-
-        if (principalClaim <= principalOut) {
-            principalOut = principalOut - principalClaim;
-        } else {
-            // Distribute `principalClaim` overflow as interest to LPs.
-            interestClaim = principalClaim - principalOut;
-
-            // Set `principalClaim` to `principalOut` so correct amount gets transferred.
-            principalClaim = principalOut;
-
-            // Set `principalOut` to zero to avoid subtraction overflow.
-            principalOut = 0;
-        }
-
-        interestSum = interestSum.add(interestClaim);
-
-        _transferLiquidityAssetFrom(
-            msg.sender,
-            address(liquidityLocker),
-            principalClaim.add(interestClaim)
-        );
-        updateFundsReceived();
-
-        emit Payment(msg.sender, principalClaim, interestSum);
-    }
-
     function decimals() public view override returns (uint8) {
         return uint8(liquidityAssetDecimals);
     }
@@ -246,23 +174,6 @@ contract Pool is AbstractPool {
         _updateFundsTokenBalance();
     }
 
-    // Sets a Pool Admin. Only the Pool Delegate can call this function
-    function setPoolAdmin(address poolAdmin, bool allowed) external {
-        _isValidDelegateAndProtocolNotPaused();
-        poolAdmins[poolAdmin] = allowed;
-        emit PoolAdminSet(poolAdmin, allowed);
-    }
-
-    //TODO to be deactivated
-    // Sets a Borrower. Only the Pool Delegate can call this function
-    function setBorrower(address _borrower) external {
-        require(_borrower != address(0), "P:ZERO_BORROWER");
-
-        _isValidDelegateAndProtocolNotPaused();
-        borrower = _borrower;
-        emit BorrowerSet(borrower);
-    }
-
     function setBlendedPool(address _blendedPool) external onlyOwner {
         blendedPool = BlendedPool(_blendedPool);
     }
@@ -289,20 +200,9 @@ contract Pool is AbstractPool {
         return liquidityAsset.balanceOf(address(liquidityLocker));
     }
 
-    // Checks that the current state of Pool matches the provided state
-    function _isValidState(State _state) internal view {
-        require(poolState == _state, "P:BAD_STATE");
-    }
-
     // Checks that the protocol is not in a paused state
     function _whenProtocolNotPaused() internal view {
         require(!_globals(superFactory).protocolPaused(), "P:PROTO_PAUSED");
-    }
-
-    // Checks that `msg.sender` is the Pool Delegate and not paused
-    function _isValidDelegateAndProtocolNotPaused() internal view {
-        require(msg.sender == poolDelegate, "P:NOT_DEL");
-        _whenProtocolNotPaused();
     }
 
     // Transfers Liquidity Asset to given `to` address

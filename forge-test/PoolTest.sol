@@ -170,6 +170,73 @@ contract BlendedPoolTest is Test, FixtureContract {
         );
     }
 
+    /// @notice Test complete scenario of depositing, distribution of rewards and claim
+    function test_distributeRewardsAndClaimRegPool() external {
+        //firstly the users need to deposit before withdrawing
+        address poolAddress = mockPoolFactory.createPool(
+            "1",
+            address(liquidityAssetElevated),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            100000,
+            100,
+            500
+        );
+
+        Pool pool = Pool(poolAddress);
+        uint user1Deposit = 100;
+        vm.startPrank(OWNER_ADDRESS);
+        liquidityAssetElevated.increaseAllowance(poolAddress, 10000);
+        pool.deposit(user1Deposit);
+        vm.stopPrank();
+
+        uint user2Deposit = 1000;
+        vm.startPrank(ADMIN_ADDRESS);
+        liquidityAssetElevated.increaseAllowance(poolAddress, 10000);
+        pool.deposit(user2Deposit);
+        vm.stopPrank();
+
+        address[] memory holders = new address[](2);
+        holders[0] = OWNER_ADDRESS;
+        holders[1] = ADMIN_ADDRESS;
+
+        //a non-pool-admin address shouldn't be able to call distributeRewards()
+        vm.prank(OWNER_ADDRESS);
+        vm.expectRevert("Ownable: caller is not the owner");
+        pool.distributeRewards(1000, holders);
+
+        //only the pool admin can call distributeRewards()
+        address poolAdmin = pool.owner();
+        vm.prank(poolAdmin);
+        pool.distributeRewards(1000, holders);
+
+        //now we need to test if the users got assigned the correct rewards
+        uint user1Rewards = pool.rewards(OWNER_ADDRESS);
+        uint user2Rewards = pool.rewards(ADMIN_ADDRESS);
+        assertEq(user1Rewards, 90, "wrong reward user1");
+        assertEq(user2Rewards, 909, "wrong reward user2"); //NOTE: 1 is lost as a dust value :(
+
+        uint user1BalanceBefore = liquidityAsset.balanceOf(OWNER_ADDRESS);
+        vm.prank(OWNER_ADDRESS);
+        pool.claimReward();
+        assertEq(
+            liquidityAsset.balanceOf(OWNER_ADDRESS) - user1BalanceBefore,
+            90,
+            "user1 balance not upd after claimReward()"
+        );
+
+        uint user2BalanceBefore = liquidityAsset.balanceOf(ADMIN_ADDRESS);
+        vm.prank(ADMIN_ADDRESS);
+        pool.claimReward();
+        assertEq(
+            liquidityAsset.balanceOf(ADMIN_ADDRESS) - user2BalanceBefore,
+            909,
+            "user2 balance not upd after claimReward()"
+        );
+    }
+
     /// @notice Test scenario when there are not enough funds on the pool
     function test_insufficientFundsClaimReward() external {
         //firstly the users need to deposit before withdrawing
@@ -314,7 +381,8 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_maxPoolSize() external {
+    function test_maxPoolSize(uint256 _maxPoolSize) external {
+        _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
         address poolAddress = mockPoolFactory.createPool(
             "1",
             address(liquidityAssetElevated),
@@ -322,18 +390,17 @@ contract BlendedPoolTest is Test, FixtureContract {
             2000,
             10,
             1000,
-            100,
-            100,
+            _maxPoolSize,
+            0,
             500
         );
 
         Pool pool = Pool(poolAddress);
 
-        uint depositAmount = 600;
         vm.startPrank(OWNER_ADDRESS);
         liquidityAsset.increaseAllowance(poolAddress, 1000);
         vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
-        pool.deposit(101);
+        pool.deposit(_maxPoolSize + 1);
         vm.stopPrank();
     }
 }

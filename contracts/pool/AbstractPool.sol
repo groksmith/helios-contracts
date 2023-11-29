@@ -30,6 +30,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     event RewardClaimed(address indexed recipient, uint256 amount);
     event PendingReward(address indexed recipient, uint256 amount);
     event PendingRewardConcluded(address indexed recipient, uint256 amount);
+    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -37,6 +38,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         uint256 duration;
         uint256 investmentPoolSize;
         uint256 minInvestmentAmount;
+        uint256 withdrawThreshold;
     }
 
     PoolInfo public poolInfo;
@@ -98,6 +100,9 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         _transferLiquidityLockerFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
+        if (_amount > poolInfo.withdrawThreshold) {
+            emit WithdrawalOverThreshold(msg.sender, _amount);
+        }
         return true;
     }
 

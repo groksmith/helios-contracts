@@ -26,14 +26,14 @@ contract BlendedPool is AbstractPool {
 
     event RegPoolDeposit(address indexed regPool, uint256 amount);
 
-
     constructor(
         address _liquidityAsset,
         address _llFactory,
         uint256 _lockupPeriod,
         uint256 _apy,
         uint256 _duration,
-        uint256 _minInvestmentAmount
+        uint256 _minInvestmentAmount,
+        uint256 _withdrawThreshold
     ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
@@ -45,7 +45,8 @@ contract BlendedPool is AbstractPool {
             _apy,
             _duration,
             type(uint256).max,
-            _minInvestmentAmount
+            _minInvestmentAmount,
+            _withdrawThreshold
         );
     }
 

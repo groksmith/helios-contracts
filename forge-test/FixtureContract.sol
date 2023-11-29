@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {MockERC20} from "./MockERC20.sol";
+import {MockPoolFactory} from "./MockPoolFactory.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {LiquidityLockerFactory} from "../contracts/pool/LiquidityLockerFactory.sol";
 import {LiquidityLocker} from "../contracts/pool/LiquidityLocker.sol";
@@ -21,6 +22,7 @@ abstract contract FixtureContract {
     ERC20 public liquidityAsset;
     MockERC20 public liquidityAssetElevated;
     PoolFactory public poolFactory;
+    MockPoolFactory public mockPoolFactory;
     BlendedPool public blendedPool;
     Pool public regPool1;
     Pool public regPool2;
@@ -33,7 +35,8 @@ abstract contract FixtureContract {
         liquidityAsset = ERC20(liquidityAssetElevated);
         liquidityAssetElevated.mint(OWNER_ADDRESS, 1000);
         liquidityAssetElevated.mint(ADMIN_ADDRESS, 1000);
-        poolFactory = new PoolFactory(address(heliosGlobals)); //OK
+        poolFactory = new PoolFactory(address(heliosGlobals));
+        mockPoolFactory = new MockPoolFactory(address(heliosGlobals));
         liquidityLockerFactory = new LiquidityLockerFactory();
         blendedPool = new BlendedPool(
             address(liquidityAsset),
@@ -41,7 +44,8 @@ abstract contract FixtureContract {
             1000,
             200,
             300,
-            100
+            100,
+            500
         );
     }
 }

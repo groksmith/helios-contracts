@@ -45,8 +45,15 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         uint256 apy,
         uint256 duration,
         uint256 investmentPoolSize,
-        uint256 minInvestmentAmount
-    ) external whenNotPaused nonReentrant returns (address poolAddress) {
+        uint256 minInvestmentAmount,
+        uint withdrawThreshold
+    )
+        external
+        virtual
+        whenNotPaused
+        nonReentrant
+        returns (address poolAddress)
+    {
         _whenProtocolNotPaused();
 
         IHeliosGlobals _globals = globals;
@@ -62,7 +69,8 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
             apy,
             duration,
             investmentPoolSize,
-            minInvestmentAmount
+            minInvestmentAmount,
+            withdrawThreshold
         );
 
         poolAddress = address(pool);

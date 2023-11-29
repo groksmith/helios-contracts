@@ -2,14 +2,17 @@ pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import {FixtureContract} from "./FixtureContract.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {MockERC20} from "./MockERC20.sol";
 import "../contracts/pool/AbstractPool.sol";
+import {Pool} from "../contracts/pool/Pool.sol";
 import "../contracts/pool/BlendedPool.sol";
+
+import {FixtureContract} from "./FixtureContract.sol";
 
 contract BlendedPoolTest is Test, FixtureContract {
     event PendingReward(address indexed recipient, uint256 amount);
+    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
 
     function setUp() public {
         fixture();
@@ -230,6 +233,84 @@ contract BlendedPoolTest is Test, FixtureContract {
             user1BalanceBefore + 1000,
             "invalid user1 LA balance after concluding"
         );
+    }
 
+    function test_subsidingRegPoolWithBlendedPool() external {
+        vm.prank(OWNER_ADDRESS);
+        address poolAddress = mockPoolFactory.createPool(
+            "1",
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            1000,
+            100,
+            500
+        );
+
+        Pool pool = Pool(poolAddress);
+        vm.startPrank(pool.owner());
+        pool.setBlendedPool(address(blendedPool));
+        vm.stopPrank();
+
+        //a user deposits some LA to the RegPool
+        vm.startPrank(OWNER_ADDRESS);
+        liquidityAsset.increaseAllowance(poolAddress, 1000);
+        pool.deposit(500);
+        vm.stopPrank();
+
+        //the admin distributes rewards and takes all the LA, emptying the pool
+        vm.startPrank(pool.owner());
+        address[] memory holders = new address[](1);
+        holders[0] = OWNER_ADDRESS;
+        pool.distributeRewards(100, holders);
+        pool.adminWithdraw(pool.owner(), 100);
+        vm.stopPrank();
+
+        //now let's deposit LA to the blended pool
+        vm.startPrank(blendedPool.owner());
+        liquidityAssetElevated.mint(blendedPool.owner(), 1000);
+        liquidityAsset.increaseAllowance(address(blendedPool), 1000);
+        blendedPool.adminDeposit(200);
+        vm.stopPrank();
+
+        //now let's claim reward. The blended pool will help
+        vm.startPrank(OWNER_ADDRESS);
+        pool.claimReward();
+        vm.stopPrank();
+    }
+
+    function test_withdrawOverThreshold() external {
+        address poolAddress = mockPoolFactory.createPool(
+            "1",
+            address(liquidityAssetElevated),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            1000,
+            100,
+            500
+        );
+
+        Pool pool = Pool(poolAddress);
+        liquidityAsset.increaseAllowance(poolAddress, 1000);
+
+        uint depositAmount = 600;
+        vm.startPrank(OWNER_ADDRESS);
+        liquidityAssetElevated.mint(OWNER_ADDRESS, 1000);
+        liquidityAssetElevated.increaseAllowance(poolAddress, 1000);
+        pool.deposit(depositAmount);
+
+        assertEq(pool.balanceOf(OWNER_ADDRESS), depositAmount);
+
+        uint currentTime = block.timestamp;
+        vm.warp(currentTime + 2000);
+        vm.expectEmit(true, true, false, false);
+        // The expected event signature
+        emit WithdrawalOverThreshold(OWNER_ADDRESS, depositAmount);
+        pool.withdraw(depositAmount);
+        vm.stopPrank();
     }
 }

@@ -61,7 +61,8 @@ contract Pool is AbstractPool {
         uint256 _apy,
         uint256 _duration,
         uint256 _investmentPoolSize,
-        uint256 _minInvestmentAmount
+        uint256 _minInvestmentAmount,
+        uint256 _withdrawThreshold
     ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
@@ -71,7 +72,8 @@ contract Pool is AbstractPool {
             _apy,
             _duration,
             _investmentPoolSize,
-            _minInvestmentAmount
+            _minInvestmentAmount,
+            _withdrawThreshold
         );
 
         superFactory = msg.sender;
@@ -79,10 +81,10 @@ contract Pool is AbstractPool {
 
         poolState = State.Initialized;
 
-        require(
-            _globals(superFactory).isValidLiquidityAsset(_liquidityAsset),
-            "P:INVALID_LIQ_ASSET"
-        );
+        // require(
+        //     _globals(superFactory).isValidLiquidityAsset(_liquidityAsset),
+        //     "P:INVALID_LIQ_ASSET"
+        // );
 
         emit PoolStateChanged(poolState);
     }

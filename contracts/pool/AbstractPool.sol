@@ -147,8 +147,18 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         emit PendingRewardConcluded(_recipient, amount);
     }
 
+    /// @notice  Use the pool's money for investment
     function adminWithdraw(address _to, uint _amount) external onlyOwner {
-        liquidityLocker.transfer(_to, _amount);
+        _transferLiquidityLockerFunds(_to, _amount);
+    }
+
+    /// @notice  Deposit LA without minimal threshold or getting LP in return
+    function adminDeposit(uint _amount) external onlyOwner {
+        liquidityAsset.safeTransferFrom(
+            msg.sender,
+            address(liquidityLocker),
+            _amount
+        );
     }
 
     function claimReward() external virtual returns (bool);

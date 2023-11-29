@@ -66,6 +66,13 @@ contract Pool is AbstractPool {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
+        poolInfo = PoolInfo(
+            _lockupPeriod,
+            _apy,
+            _duration,
+            _investmentPoolSize,
+            _minInvestmentAmount
+        );
 
         superFactory = msg.sender;
         poolDelegate = _poolDelegate;
@@ -205,7 +212,6 @@ contract Pool is AbstractPool {
 
     //TODO to be deactivated
     function withdrawFunds() public override {
-        revert();
         _whenProtocolNotPaused();
         uint256 withdrawableFunds = _prepareWithdraw();
 
@@ -219,6 +225,7 @@ contract Pool is AbstractPool {
         _updateFundsTokenBalance();
     }
 
+    //TODO to be deactivated
     function withdrawFundsAmount(uint256 amount) public override {
         _whenProtocolNotPaused();
         uint256 withdrawableFunds = _prepareWithdraw(amount);
@@ -244,6 +251,7 @@ contract Pool is AbstractPool {
         emit PoolAdminSet(poolAdmin, allowed);
     }
 
+    //TODO to be deactivated
     // Sets a Borrower. Only the Pool Delegate can call this function
     function setBorrower(address _borrower) external {
         require(_borrower != address(0), "P:ZERO_BORROWER");

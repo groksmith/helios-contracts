@@ -182,6 +182,12 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.prank(poolAdmin);
         blendedPool.distributeRewards(1000, holders);
 
+        assertEq(
+            blendedPool.rewards(OWNER_ADDRESS),
+            1000,
+            "rewards should be 1000 atm"
+        );
+
         //now let's deplete the pool's balance
         vm.prank(poolAdmin);
         blendedPool.adminWithdraw(poolAdmin, 100);
@@ -195,5 +201,30 @@ contract BlendedPoolTest is Test, FixtureContract {
             blendedPool.claimReward(),
             "should return false if not enough LA"
         );
+
+        assertEq(
+            blendedPool.rewards(OWNER_ADDRESS),
+            0,
+            "rewards should be 0 after claim attempt"
+        );
+
+        assertEq(
+            blendedPool.pendingRewards(OWNER_ADDRESS),
+            1000,
+            "pending rewards should be 1000 after claim attempt"
+        );
+
+        uint user1BalanceBefore = liquidityAsset.balanceOf(OWNER_ADDRESS);
+
+        liquidityAssetElevated.mint(poolAdmin, 1000);
+        vm.startPrank(poolAdmin);
+        liquidityAsset.increaseAllowance(address(blendedPool), 1000);
+        blendedPool.adminDeposit(1000);
+        blendedPool.concludePendingReward(OWNER_ADDRESS);
+
+        uint user1BalanceAfter = liquidityAsset.balanceOf(OWNER_ADDRESS);
+
+        //checking if the user got his money now
+        assertEq(user1BalanceAfter, user1BalanceBefore + 1000, "invalid user1 LA balance after concluding");
     }
 }

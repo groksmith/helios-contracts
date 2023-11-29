@@ -313,4 +313,27 @@ contract BlendedPoolTest is Test, FixtureContract {
         pool.withdraw(depositAmount);
         vm.stopPrank();
     }
+
+    function test_maxPoolSize() external {
+        address poolAddress = mockPoolFactory.createPool(
+            "1",
+            address(liquidityAssetElevated),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            100,
+            100,
+            500
+        );
+
+        Pool pool = Pool(poolAddress);
+
+        uint depositAmount = 600;
+        vm.startPrank(OWNER_ADDRESS);
+        liquidityAsset.increaseAllowance(poolAddress, 1000);
+        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
+        pool.deposit(101);
+        vm.stopPrank();
+    }
 }

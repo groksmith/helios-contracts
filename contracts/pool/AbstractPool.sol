@@ -59,6 +59,10 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     function deposit(uint256 _amount) external whenNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+        require(
+            totalSupply() + _amount < poolInfo.investmentPoolSize,
+            "P:MAX_POOL_SIZE_REACHED"
+        );
 
         PoolLib.updateDepositDate(
             depositDate,

@@ -27,7 +27,7 @@ contract LiquidityLocker is ILiquidityLocker {
     }
 
     function totalBalance() external view returns (uint256) {
-        return IERC20(liquidityAsset).totalSupply();
+        return IERC20(liquidityAsset).balanceOf(address(this));
     }
 
     // Checks that `msg.sender` is the Pool

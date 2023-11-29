@@ -12,8 +12,6 @@ import "../library/PoolLib.sol";
 import "../token/PoolFDT.sol";
 import "./AbstractPool.sol";
 
-import "hardhat/console.sol";
-
 /// @title Blended Pool
 contract BlendedPool is AbstractPool {
     using SafeMathUint for uint256;
@@ -27,6 +25,7 @@ contract BlendedPool is AbstractPool {
     mapping(address => bool) public pools;
 
     event RegPoolDeposit(address indexed regPool, uint256 amount);
+
 
     constructor(
         address _liquidityAsset,
@@ -112,8 +111,6 @@ contract BlendedPool is AbstractPool {
     function totalSupplyLA() public view returns (uint256) {
         return liquidityLocker.totalBalance();
     }
-
-
 
     /// @notice Register a new pool to the Blended Pool
     function addPool(address _pool) external onlyOwner {

@@ -11,8 +11,8 @@ import "../contracts/pool/BlendedPool.sol";
 import {FixtureContract} from "./FixtureContract.sol";
 
 contract BlendedPoolTest is Test, FixtureContract {
-    event PendingReward(address indexed recipient, uint256 amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
+    event PendingReward(address indexed recipient, uint256 indexed amount);
+    event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
 
     function setUp() public {
         fixture();
@@ -273,19 +273,21 @@ contract BlendedPoolTest is Test, FixtureContract {
             "rewards should be 1000 atm"
         );
 
-        //now let's deplete the pool's balance
+        // now let's deplete the pool's balance
         vm.prank(poolAdmin);
         blendedPool.adminWithdraw(poolAdmin, 100);
 
         //..and claim rewards as user1
-        vm.prank(OWNER_ADDRESS);
-        vm.expectEmit(true, true, false, false);
+        vm.startPrank(OWNER_ADDRESS);
+        vm.expectEmit(false, false, false, false);
         // The expected event signature
         emit PendingReward(OWNER_ADDRESS, 1000);
         assertFalse(
             blendedPool.claimReward(),
             "should return false if not enough LA"
         );
+
+        vm.stopPrank();
 
         assertEq(
             blendedPool.rewards(OWNER_ADDRESS),

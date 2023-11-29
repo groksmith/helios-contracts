@@ -14,8 +14,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     using SafeERC20 for IERC20;
 
-    //TODO: Tigran Arakelyan - should liquidity locker be removed?
-    //@note when it will be removed?
     ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contractLiqui //note: to be removed
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     uint256 internal immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
@@ -104,10 +102,10 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             "P:FUNDS_LOCKED"
         );
         /**
-        * TODO: Tigran Arakelyan - possible attack vector
-        * Investor can withdraw big amount partially and contract will be happy with it
-        * Maybe we should check cumulative withdrawals amount
-        */
+         * TODO: Tigran Arakelyan - possible attack vector
+         * Investor can withdraw big amount partially and contract will be happy with it
+         * Maybe we should check cumulative withdrawals amount
+         */
         if (_amount > poolInfo.withdrawThreshold) {
             revert("P:THRESHOLD_REACHED");
             emit WithdrawalOverThreshold(msg.sender, _amount);

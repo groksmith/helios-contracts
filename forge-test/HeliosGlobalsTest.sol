@@ -133,6 +133,8 @@ contract HeliosGlobalsTest is Test, FixtureContract {
     }
 
     function test_when_paused_setGlobalAdmin(address newAdmin) public {
+        vm.assume(newAdmin != address(0) && newAdmin != heliosGlobals.globalAdmin());
+
         vm.startPrank(ADMIN_ADDRESS);
         heliosGlobals.setProtocolPause(true);
         vm.stopPrank();
@@ -149,6 +151,8 @@ contract HeliosGlobalsTest is Test, FixtureContract {
 
     function test_when_not_owner_setGlobalAdmin(address user, address globalAdmin) public {
         vm.assume(user != OWNER_ADDRESS);
+        vm.assume(user != ADMIN_ADDRESS);
+
         assertNotEq(heliosGlobals.globalAdmin(), globalAdmin);
 
         vm.startPrank(user);

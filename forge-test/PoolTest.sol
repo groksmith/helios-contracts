@@ -18,25 +18,35 @@ contract BlendedPoolTest is Test, FixtureContract {
         fixture();
         vm.prank(OWNER_ADDRESS);
         liquidityAsset.increaseAllowance(address(blendedPool), 1000);
+        vm.stopPrank();
         vm.prank(ADMIN_ADDRESS);
         liquidityAsset.increaseAllowance(address(blendedPool), 1000);
+        vm.stopPrank();
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
-    function test_depositSuccess() external {
-        vm.startPrank(OWNER_ADDRESS);
+    function test_depositSuccess(address user1, address user2) external {
+        vm.assume(user1 != address(0));
+        vm.assume(user2 != address(0));
+        vm.assume(user1 != user2);
+
+        liquidityAssetElevated.mint(user1, 1000);
+        liquidityAssetElevated.mint(user2, 1000);
+
+        vm.startPrank(user1);
 
         //testing initial condition i.e. zeroes
-        assertEq(blendedPool.balanceOf(OWNER_ADDRESS), 0);
+        assertEq(blendedPool.balanceOf(user1), 0);
         assertEq(blendedPool.totalLA(), 0);
         assertEq(blendedPool.totalDeposited(), 0);
 
         uint user1Deposit = 100;
+        liquidityAsset.increaseAllowance(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
 
         //user's LP balance should be 100 now
         assertEq(
-            blendedPool.balanceOf(OWNER_ADDRESS),
+            blendedPool.balanceOf(user1),
             user1Deposit,
             "wrong LP balance for user1"
         );
@@ -57,18 +67,19 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
 
         //now let's test for user2
-        vm.startPrank(ADMIN_ADDRESS);
+        vm.startPrank(user2);
         assertEq(
-            blendedPool.balanceOf(ADMIN_ADDRESS),
+            blendedPool.balanceOf(user2),
             0,
             "user2 shouldn't have >0 atm"
         );
         uint user2Deposit = 101;
 
+        liquidityAsset.increaseAllowance(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
 
         assertEq(
-            blendedPool.balanceOf(ADMIN_ADDRESS),
+            blendedPool.balanceOf(user2),
             user2Deposit,
             "wrong user2 LP balance"
         );
@@ -90,19 +101,23 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test attempt to deposit below minimum
-    function test_depositFailure() external {
-        vm.startPrank(OWNER_ADDRESS);
+    function test_depositFailure(address user) external {
+        vm.startPrank(user);
         uint depositAmountBelowMin = 1;
         vm.expectRevert("P:DEP_AMT_BELOW_MIN");
         blendedPool.deposit(depositAmountBelowMin);
     }
 
     /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function test_withdraw() external {
-        vm.startPrank(ADMIN_ADDRESS);
+    function test_withdraw(address user) external {
+        vm.assume(user != address(0));
+        liquidityAssetElevated.mint(user, 1000);
+
+        vm.startPrank(user);
         uint depositAmount = 150;
         uint currentTime = block.timestamp;
 
+        liquidityAsset.increaseAllowance(address(blendedPool), depositAmount);
         //the user can withdraw the sum he has deposited earlier
         blendedPool.deposit(depositAmount);
 

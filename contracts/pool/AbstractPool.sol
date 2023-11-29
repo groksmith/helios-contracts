@@ -28,6 +28,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     event PendingWithdrawal(address indexed investor, uint256 amount);
     event PendingWithdrawalConcluded(address indexed investor, uint256 amount);
     event RewardClaimed(address indexed recipient, uint256 amount);
+    event Reinvest(address indexed investor, uint256 amount);
     event PendingReward(address indexed recipient, uint256 amount);
     event PendingRewardConcluded(address indexed recipient, uint256 amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 amount);
@@ -90,6 +91,10 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             depositDate[msg.sender] + poolInfo.lockupPeriod <= block.timestamp,
             "P:FUNDS_LOCKED"
         );
+        if (_amount > poolInfo.withdrawThreshold) {
+            revert("P:THRESHOLD_REACHED");
+            emit WithdrawalOverThreshold(msg.sender, _amount);
+        }
 
         _burn(msg.sender, _amount);
 
@@ -104,10 +109,19 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         _transferLiquidityLockerFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
-        if (_amount > poolInfo.withdrawThreshold) {
-            emit WithdrawalOverThreshold(msg.sender, _amount);
-        }
         return true;
+    }
+
+    /// @notice Used to reinvest rewards into more LP tokens
+    /// @param  _amount the amount of rewards to be converted into LP
+    function reinvest(uint256 _amount) external {
+        require(_amount > 0, "P:INVALID_VALUE");
+        require(rewards[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
+
+        _mint(msg.sender, rewards[msg.sender]);
+        rewards[msg.sender] -= _amount;
+        _emitBalanceUpdatedEvent();
+        emit Reinvest(msg.sender, _amount);
     }
 
     /// @notice Used to distribute rewards among investors (LP token holders)

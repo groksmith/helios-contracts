@@ -374,9 +374,8 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         uint currentTime = block.timestamp;
         vm.warp(currentTime + 2000);
-        vm.expectEmit(true, true, false, false);
         // The expected event signature
-        emit WithdrawalOverThreshold(OWNER_ADDRESS, depositAmount);
+        vm.expectRevert();
         pool.withdraw(depositAmount);
         vm.stopPrank();
     }
@@ -402,5 +401,30 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
         pool.deposit(_maxPoolSize + 1);
         vm.stopPrank();
+    }
+
+    function test_reinvest() external {
+        //firstly the user needs to deposit
+        uint user1Deposit = 100;
+        vm.prank(OWNER_ADDRESS);
+        blendedPool.deposit(user1Deposit);
+        address[] memory holders = new address[](1);
+        holders[0] = OWNER_ADDRESS;
+
+        //only the pool admin can call distributeRewards()
+        address poolAdmin = blendedPool.owner();
+        vm.prank(poolAdmin);
+        blendedPool.distributeRewards(1000, holders);
+
+        //now the user wishes to reinvest
+        uint userRewards = blendedPool.rewards(OWNER_ADDRESS);
+        vm.startPrank(OWNER_ADDRESS);
+        blendedPool.reinvest(user1Deposit - 1);
+        uint userBalanceNow = blendedPool.balanceOf(OWNER_ADDRESS);
+        uint expected = user1Deposit + userRewards;
+        assertEq(
+            blendedPool.balanceOf(OWNER_ADDRESS),
+            user1Deposit + userRewards
+        );
     }
 }

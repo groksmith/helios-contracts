@@ -23,15 +23,24 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     mapping(address => uint) public pendingRewards;
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
 
-    event Deposit(address indexed investor, uint256 amount);
-    event Withdrawal(address indexed investor, uint256 amount);
-    event PendingWithdrawal(address indexed investor, uint256 amount);
-    event PendingWithdrawalConcluded(address indexed investor, uint256 amount);
-    event RewardClaimed(address indexed recipient, uint256 amount);
-    event Reinvest(address indexed investor, uint256 amount);
-    event PendingReward(address indexed recipient, uint256 amount);
-    event PendingRewardConcluded(address indexed recipient, uint256 amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
+    event Deposit(address indexed investor, uint256 indexed amount);
+    event Withdrawal(address indexed investor, uint256 indexed amount);
+    event PendingWithdrawal(address indexed investor, uint256 indexed amount);
+    event PendingWithdrawalConcluded(
+        address indexed investor,
+        uint256 indexed amount
+    );
+    event RewardClaimed(address indexed recipient, uint256 indexed amount);
+    event Reinvest(address indexed investor, uint256 indexed amount);
+    event PendingReward(address indexed recipient, uint256 indexed amount);
+    event PendingRewardConcluded(
+        address indexed recipient,
+        uint256 indexed amount
+    );
+    event WithdrawalOverThreshold(
+        address indexed caller,
+        uint256 indexed amount
+    );
 
     struct PoolInfo {
         uint256 lockupPeriod;

@@ -14,6 +14,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     using SafeERC20 for IERC20;
 
+    //TODO: Tigran Arakelyan - should liquidity locker be removed?
+    //@note when it will be removed?
     ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contractLiqui //note: to be removed
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     uint256 internal immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
@@ -65,6 +67,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             "P:MAX_POOL_SIZE_REACHED"
         );
 
+        //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
         PoolLib.updateDepositDate(
             depositDate,
             balanceOf(msg.sender),
@@ -83,7 +86,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         emit Deposit(msg.sender, _amount);
     }
 
-    /// @notice withdraw's the caller's liquidity assets
+    /// @notice withdraws the caller's liquidity assets
     /// @param  _amount the amount of LA to be withdrawn
     function withdraw(uint256 _amount) public whenNotPaused returns (bool) {
         require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_BALANCE");
@@ -91,6 +94,11 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             depositDate[msg.sender] + poolInfo.lockupPeriod <= block.timestamp,
             "P:FUNDS_LOCKED"
         );
+        /**
+        * TODO: Tigran Arakelyan - possible attack vector
+        * Investor can withdraw big amount partially and contract will be happy with it
+        * Maybe we should check cumulative withdrawals amount
+        */
         if (_amount > poolInfo.withdrawThreshold) {
             revert("P:THRESHOLD_REACHED");
             emit WithdrawalOverThreshold(msg.sender, _amount);
@@ -126,12 +134,12 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
 
     /// @notice Used to distribute rewards among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
-    /// @param  _holders the list investors must be provided externally due to Solidity limitations
+    /// @param  _holders the list of investors must be provided externally due to Solidity limitations
     function distributeRewards(
         uint256 _amount,
         address[] calldata _holders
     ) external onlyOwner nonReentrant {
-        require(_amount > 0, "P:ZERO_CLAIM");
+        require(_amount > 0, "P:INVALID_VALUE");
         require(_holders.length > 0, "P:ZERO_HOLDERS");
         for (uint256 i = 0; i < _holders.length; i++) {
             address holder = _holders[i];
@@ -143,7 +151,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     }
 
     /// @notice Admin function used for unhappy path after withdrawal failure
-    /// @param _recipient address of the recipient who didn't get the liquidities
+    /// @param _recipient address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _recipient) external onlyOwner {
         uint256 amount = pendingWithdrawals[_recipient];
         require(

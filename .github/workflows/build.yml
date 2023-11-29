@@ -37,7 +37,12 @@ jobs:
         uses: borales/actions-yarn@v3.0.0
         with:
           cmd: install
-
+          
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+          
       - name: Forge tests
         run: forge test -vvv --no-match-contract "PoolFactoryTest|HeliosGlobalsTest"
         

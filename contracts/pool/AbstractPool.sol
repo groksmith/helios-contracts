@@ -14,11 +14,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     using SafeERC20 for IERC20;
 
-    ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contractLiqui //note: to be removed
+    ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contract
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     uint256 internal immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
     uint256 public principalOut;
+    uint public withdrawLimit;
+    uint public withdrawPeriod;
 
+    mapping(address => uint256) public lastWithdrawalTime;
+    mapping(address => uint256) public lastWithdrawalAmount;
     mapping(address => uint) public rewards;
     mapping(address => uint) public pendingWithdrawals;
     mapping(address => uint) public pendingRewards;
@@ -121,7 +125,6 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             return false;
         }
 
-        // uint256 withdrawableFunds = _prepareWithdraw(_amount);
         _transferLiquidityLockerFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);

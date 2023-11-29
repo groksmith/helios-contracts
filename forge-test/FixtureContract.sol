@@ -8,6 +8,7 @@ import {LiquidityLockerFactory} from "../contracts/pool/LiquidityLockerFactory.s
 import {LiquidityLocker} from "../contracts/pool/LiquidityLocker.sol";
 import {PoolFactory} from "../contracts/pool/PoolFactory.sol";
 import {BlendedPool} from "../contracts/pool/BlendedPool.sol";
+import {Pool} from "../contracts/pool/Pool.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 
 abstract contract FixtureContract {
@@ -21,7 +22,10 @@ abstract contract FixtureContract {
     MockERC20 public liquidityAssetElevated;
     PoolFactory public poolFactory;
     BlendedPool public blendedPool;
+    Pool public regPool1;
+    Pool public regPool2;
     LiquidityLockerFactory public liquidityLockerFactory;
+    LiquidityLockerFactory public liquidityLockerFactory2;
 
     function fixture() public {
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS, ADMIN_ADDRESS);

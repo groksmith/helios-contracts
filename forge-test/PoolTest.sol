@@ -225,6 +225,11 @@ contract BlendedPoolTest is Test, FixtureContract {
         uint user1BalanceAfter = liquidityAsset.balanceOf(OWNER_ADDRESS);
 
         //checking if the user got his money now
-        assertEq(user1BalanceAfter, user1BalanceBefore + 1000, "invalid user1 LA balance after concluding");
+        assertEq(
+            user1BalanceAfter,
+            user1BalanceBefore + 1000,
+            "invalid user1 LA balance after concluding"
+        );
+
     }
 }

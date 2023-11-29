@@ -70,7 +70,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     function deposit(uint256 _amount) external whenNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         require(
-            totalSupply() + _amount < poolInfo.investmentPoolSize,
+            totalSupply() + _amount <= poolInfo.investmentPoolSize,
             "P:MAX_POOL_SIZE_REACHED"
         );
 

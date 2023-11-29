@@ -31,7 +31,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
+        
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+          
       - name: Yarn install
         uses: borales/actions-yarn@v3.0.0
         with:
@@ -40,12 +45,16 @@ jobs:
       - name: Yarn compile        
         uses: borales/actions-yarn@v3.0.0
         with:
-          cmd: compile       
-      - name: Yarn test
+          cmd: compile 
+          
+      - name: Hardhat tests
         uses: borales/actions-yarn@v3.0.0
         with:
           cmd: test
 
+      - name: Forge tests
+        run: forge test -vvv --no-match-contract "PoolFactoryTest|HeliosGlobalsTest"
+        
       - name: Yarn Generate abi
         uses: borales/actions-yarn@v3.0.0
         with:

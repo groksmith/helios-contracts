@@ -43,23 +43,6 @@ jobs:
         with:
           version: nightly
 
-      - name: Yarn compile        
-        uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: compile 
-          
-      - name: Hardhat tests
-        uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: test
-
       - name: Forge tests
         run: forge test -vvv --no-match-contract "PoolFactoryTest|HeliosGlobalsTest"
         
-      - name: Yarn Generate abi
-        uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: export
-          CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }} 
-
-

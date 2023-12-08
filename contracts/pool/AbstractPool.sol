@@ -10,6 +10,7 @@ import "../interfaces/ILiquidityLocker.sol";
 import "../library/PoolLib.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     using SafeERC20 for IERC20;
@@ -87,6 +88,33 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             msg.sender
         );
         liquidityAsset.safeTransferFrom(
+            msg.sender,
+            address(liquidityLocker),
+            _amount
+        );
+
+        _mint(msg.sender, _amount);
+
+        _emitBalanceUpdatedEvent();
+        emit Deposit(msg.sender, _amount);
+    }
+
+    /// @notice used to deposit secondary liquidity assets (non-USDT)
+    function depositSecondaryAsset(uint256 _amount, address _assetAddr) external whenNotPaused nonReentrant {
+        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+        require(
+            totalSupply() + _amount <= poolInfo.investmentPoolSize,
+            "P:MAX_POOL_SIZE_REACHED"
+        );
+
+        //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
+        PoolLib.updateDepositDate(
+            depositDate,
+            balanceOf(msg.sender),
+            _amount,
+            msg.sender
+        );
+        IERC20(_assetAddr).safeTransferFrom(
             msg.sender,
             address(liquidityLocker),
             _amount

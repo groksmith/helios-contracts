@@ -261,6 +261,20 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         );
     }
 
+    function setSecondaryLiquidityAsset(address _liquidityAsset) external {
+        liquidityLocker.setSecondaryLiquidityAsset(_liquidityAsset);
+    }
+
+    function deleteSecondaryLiquidityAsset(address _liquidityAsset) external {
+        liquidityLocker.deleteSecondaryLiquidityAsset(_liquidityAsset);
+    }
+
+    function setSecondaryLiquidityAssets(
+        address[] calldata _liquidityAssets
+    ) external {
+        liquidityLocker.setSecondaryLiquidityAssets(_liquidityAssets);
+    }
+
     function getLL() external view returns (address) {
         return address(liquidityLocker);
     }

@@ -7,4 +7,12 @@ interface ILiquidityLocker {
     function totalBalance() external view returns (uint256);
 
     function assetsExists(address _assetAddr) external returns (bool);
+
+    function setSecondaryLiquidityAsset(address _liquidityAsset) external;
+
+    function deleteSecondaryLiquidityAsset(address _liquidityAsset) external;
+
+    function setSecondaryLiquidityAssets(
+        address[] calldata _liquidityAssets
+    ) external;
 }

@@ -200,7 +200,8 @@ contract BlendedPoolTest is Test, FixtureContract {
             1000,
             100000,
             100,
-            500
+            500,
+            1000
         );
 
         Pool pool = Pool(poolAddress);
@@ -333,7 +334,8 @@ contract BlendedPoolTest is Test, FixtureContract {
             1000,
             1000,
             100,
-            500
+            500,
+            1000
         );
 
         Pool pool = Pool(poolAddress);
@@ -382,7 +384,8 @@ contract BlendedPoolTest is Test, FixtureContract {
             1000,
             1000,
             100,
-            500
+            500,
+            1000
         );
 
         Pool pool = Pool(poolAddress);
@@ -415,7 +418,8 @@ contract BlendedPoolTest is Test, FixtureContract {
             1000,
             _maxPoolSize,
             0,
-            500
+            500,
+            1000
         );
 
         Pool pool = Pool(poolAddress);

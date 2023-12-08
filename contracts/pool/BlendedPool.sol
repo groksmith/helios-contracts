@@ -32,8 +32,18 @@ contract BlendedPool is AbstractPool {
         uint256 _apy,
         uint256 _duration,
         uint256 _minInvestmentAmount,
-        uint256 _withdrawThreshold
-    ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL) {
+        uint256 _withdrawThreshold,
+        uint256 _withdrawPeriod
+    )
+        AbstractPool(
+            _liquidityAsset,
+            _llFactory,
+            PoolLib.NAME,
+            PoolLib.SYMBOL,
+            _withdrawThreshold,
+            _withdrawPeriod
+        )
+    {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 

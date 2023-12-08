@@ -46,7 +46,8 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
-        uint withdrawThreshold
+        uint withdrawThreshold,
+        uint withdrawPeriod
     )
         external
         virtual
@@ -70,7 +71,8 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
             duration,
             investmentPoolSize,
             minInvestmentAmount,
-            withdrawThreshold
+            withdrawThreshold,
+            withdrawPeriod
         );
 
         poolAddress = address(pool);

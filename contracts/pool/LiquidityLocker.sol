@@ -34,6 +34,12 @@ contract LiquidityLocker is ILiquidityLocker {
         return IERC20(liquidityAsset).balanceOf(address(this));
     }
 
+    function totalBalanceSecondary(
+        address _assetAddr
+    ) external view returns (uint256) {
+        return IERC20(_assetAddr).balanceOf(address(this));
+    }
+
     function setSecondaryLiquidityAsset(address _liquidityAsset) external {
         secondaryLiquidityAssets[_liquidityAsset] = true;
     }

@@ -19,8 +19,6 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     uint256 internal immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
     uint256 public principalOut;
-    uint public withdrawLimit;
-    uint public withdrawPeriod;
 
     mapping(address => uint256) public lastWithdrawalTime;
     mapping(address => uint256) public lastWithdrawalAmount;
@@ -28,9 +26,6 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     mapping(address => uint) public pendingWithdrawals;
     mapping(address => uint) public pendingRewards;
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
-
-    mapping(address => uint256) public lastWithdrawalTime;
-    mapping(address => uint256) public lastWithdrawalAmount;
 
     uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
     uint256 public withdrawPeriod; // Timeframe for the withdrawal limit
@@ -148,6 +143,21 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             depositDate[msg.sender] + poolInfo.lockupPeriod <= block.timestamp,
             "P:FUNDS_LOCKED"
         );
+
+        // Check if the current withdrawal exceeds the limit in the specified period
+        if (block.timestamp < lastWithdrawalTime[msg.sender] + withdrawPeriod) {
+            require(
+                lastWithdrawalAmount[msg.sender] + _amount <= withdrawLimit,
+                "P:WITHDRAW_LIMIT_EXCEEDED"
+            );
+        } else {
+            lastWithdrawalAmount[msg.sender] = 0;
+        }
+
+        // Update the withdrawal history
+        lastWithdrawalTime[msg.sender] = block.timestamp;
+        lastWithdrawalAmount[msg.sender] += _amount;
+
         /**
          * TODO: Tigran Arakelyan - possible attack vector
          * Investor can withdraw big amount partially and contract will be happy with it

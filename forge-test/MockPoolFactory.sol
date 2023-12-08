@@ -18,7 +18,8 @@ contract MockPoolFactory is PoolFactory {
         uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
-        uint256 withdrawThreshold
+        uint256 withdrawThreshold,
+        uint withdrawPeriod
     )
         external
         override
@@ -37,7 +38,8 @@ contract MockPoolFactory is PoolFactory {
             duration,
             investmentPoolSize,
             minInvestmentAmount,
-            withdrawThreshold
+            withdrawThreshold,
+            withdrawPeriod
         );
 
         poolAddress = address(pool);

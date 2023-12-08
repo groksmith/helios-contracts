@@ -45,7 +45,8 @@ abstract contract FixtureContract {
             200,
             300,
             100,
-            500
+            500,
+            1000
         );
     }
 }

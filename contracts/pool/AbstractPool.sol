@@ -29,6 +29,12 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     mapping(address => uint) public pendingRewards;
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
 
+    mapping(address => uint256) public lastWithdrawalTime;
+    mapping(address => uint256) public lastWithdrawalAmount;
+
+    uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
+    uint256 public withdrawPeriod; // Timeframe for the withdrawal limit
+
     event Deposit(address indexed investor, uint256 indexed amount);
     event Withdrawal(address indexed investor, uint256 indexed amount);
     event PendingWithdrawal(address indexed investor, uint256 indexed amount);
@@ -63,13 +69,17 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         address _liquidityAsset,
         address _llFactory,
         string memory tokenName,
-        string memory tokenSymbol
+        string memory tokenSymbol,
+        uint256 _withdrawLimit,
+        uint256 _withdrawPeriod
     ) PoolFDT(tokenName, tokenSymbol) {
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
         liquidityLocker = ILiquidityLocker(
             ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset)
         );
+        withdrawLimit = _withdrawLimit;
+        withdrawPeriod = _withdrawPeriod;
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
@@ -100,12 +110,16 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     }
 
     /// @notice used to deposit secondary liquidity assets (non-USDT)
-    function depositSecondaryAsset(uint256 _amount, address _assetAddr) external whenNotPaused nonReentrant {
+    function depositSecondaryAsset(
+        uint256 _amount,
+        address _assetAddr
+    ) external whenNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         require(
             totalSupply() + _amount <= poolInfo.investmentPoolSize,
             "P:MAX_POOL_SIZE_REACHED"
         );
+        require(liquidityLocker.assetsExists(_assetAddr), "P:UNKNOWN_ASSET");
 
         //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
         PoolLib.updateDepositDate(

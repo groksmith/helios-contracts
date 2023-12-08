@@ -38,7 +38,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
 
     // Instantiates a Pool
     function createPool(
-        string calldata poolId,
+        string memory poolId,
         address liquidityAsset,
         address llFactory,
         uint256 lockupPeriod,
@@ -60,7 +60,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         IHeliosGlobals _globals = globals;
         require(_globals.isValidPoolDelegate(msg.sender), "PF:NOT_DELEGATE");
 
-        _isMappingKeyValid(poolId);
+        // _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
             msg.sender,

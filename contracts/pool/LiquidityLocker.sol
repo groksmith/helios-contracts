@@ -56,7 +56,7 @@ contract LiquidityLocker is ILiquidityLocker {
         }
     }
 
-    function assetsExists(address _assetAddr) external returns (bool) {
+    function assetsExists(address _assetAddr) external view returns (bool) {
         return secondaryLiquidityAssets[_assetAddr];
     }
 

@@ -34,42 +34,47 @@ contract BlendedPool is AbstractPool {
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    )
-        AbstractPool(
-            _liquidityAsset,
-            _llFactory,
-            PoolLib.NAME,
-            PoolLib.SYMBOL,
-            _withdrawThreshold,
-            _withdrawPeriod
-        )
-    {
+    ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
         superFactory = msg.sender;
 
-        poolInfo = PoolInfo(
-            _lockupPeriod,
-            _apy,
-            _duration,
-            type(uint256).max,
-            _minInvestmentAmount,
-            _withdrawThreshold
-        );
+        poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
+    }
+
+    function deposit(uint256 _amount) external override whenNotPaused nonReentrant {
+        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+
+        //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
+        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), _amount, msg.sender);
+        liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
+
+        _mint(msg.sender, _amount);
+
+        _emitBalanceUpdatedEvent();
+        emit Deposit(msg.sender, _amount);
+    }
+
+    /// @notice Used to distribute rewards among investors (LP token holders)
+    /// @param  _amount the amount to be divided among investors
+    /// @param  _holders the list of investors must be provided externally due to Solidity limitations
+    function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyOwner nonReentrant {
+        require(_amount > 0, "P:INVALID_VALUE");
+        require(_holders.length > 0, "P:ZERO_HOLDERS");
+        for (uint256 i = 0; i < _holders.length; i++) {
+            address holder = _holders[i];
+
+            uint256 holderBalance = balanceOf(holder);
+            uint256 holderShare = (_amount * holderBalance) / totalSupply();
+            rewards[holder] += holderShare;
+        }
     }
 
     function withdrawableOf(address _holder) external view returns (uint256) {
-        require(
-            depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp,
-            "P:FUNDS_LOCKED"
-        );
+        require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
 
-        return
-            Math.min(
-                liquidityAsset.balanceOf(address(liquidityLocker)),
-                super.balanceOf(_holder)
-            );
+        return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
     }
 
     function totalLA() external view returns (uint256) {
@@ -97,10 +102,7 @@ contract BlendedPool is AbstractPool {
             return false;
         }
 
-        require(
-            _transferLiquidityLockerFunds(msg.sender, callerRewards),
-            "P:ERROR_TRANSFERRING_REWARD"
-        );
+        require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
 
         emit RewardClaimed(msg.sender, callerRewards);
         return true;
@@ -111,10 +113,7 @@ contract BlendedPool is AbstractPool {
         require(_amountMissing > 0, "P:INVALID_INPUT");
         require(totalSupplyLA() >= _amountMissing, "P:NOT_ENOUGH_LA_BP");
         address poolLL = AbstractPool(msg.sender).getLL();
-        require(
-            _transferLiquidityLockerFunds(poolLL, _amountMissing),
-            "P:REQUEST_FROM_BP_FAIL"
-        );
+        require(_transferLiquidityLockerFunds(poolLL, _amountMissing), "P:REQUEST_FROM_BP_FAIL");
 
         emit RegPoolDeposit(msg.sender, _amountMissing);
     }

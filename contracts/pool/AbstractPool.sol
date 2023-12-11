@@ -22,9 +22,9 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
 
     mapping(address => uint256) public lastWithdrawalTime;
     mapping(address => uint256) public lastWithdrawalAmount;
-    mapping(address => uint) public rewards;
-    mapping(address => uint) public pendingWithdrawals;
-    mapping(address => uint) public pendingRewards;
+    mapping(address => uint256) public rewards;
+    mapping(address => uint256) public pendingWithdrawals;
+    mapping(address => uint256) public pendingRewards;
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
 
     uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
@@ -33,21 +33,12 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     event Deposit(address indexed investor, uint256 indexed amount);
     event Withdrawal(address indexed investor, uint256 indexed amount);
     event PendingWithdrawal(address indexed investor, uint256 indexed amount);
-    event PendingWithdrawalConcluded(
-        address indexed investor,
-        uint256 indexed amount
-    );
+    event PendingWithdrawalConcluded(address indexed investor, uint256 indexed amount);
     event RewardClaimed(address indexed recipient, uint256 indexed amount);
     event Reinvest(address indexed investor, uint256 indexed amount);
     event PendingReward(address indexed recipient, uint256 indexed amount);
-    event PendingRewardConcluded(
-        address indexed recipient,
-        uint256 indexed amount
-    );
-    event WithdrawalOverThreshold(
-        address indexed caller,
-        uint256 indexed amount
-    );
+    event PendingRewardConcluded(address indexed recipient, uint256 indexed amount);
+    event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -70,33 +61,19 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     ) PoolFDT(tokenName, tokenSymbol) {
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
-        liquidityLocker = ILiquidityLocker(
-            ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset)
-        );
+        liquidityLocker = ILiquidityLocker(ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
         withdrawLimit = _withdrawLimit;
         withdrawPeriod = _withdrawPeriod;
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
-    function deposit(uint256 _amount) external whenNotPaused nonReentrant {
+    function deposit(uint256 _amount) external virtual whenNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-        require(
-            totalSupply() + _amount <= poolInfo.investmentPoolSize,
-            "P:MAX_POOL_SIZE_REACHED"
-        );
+        require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
         //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
-        PoolLib.updateDepositDate(
-            depositDate,
-            balanceOf(msg.sender),
-            _amount,
-            msg.sender
-        );
-        liquidityAsset.safeTransferFrom(
-            msg.sender,
-            address(liquidityLocker),
-            _amount
-        );
+        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), _amount, msg.sender);
+        liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
 
         _mint(msg.sender, _amount);
 
@@ -105,29 +82,14 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     }
 
     /// @notice used to deposit secondary liquidity assets (non-USDT)
-    function depositSecondaryAsset(
-        uint256 _amount,
-        address _assetAddr
-    ) external whenNotPaused nonReentrant {
+    function depositSecondaryAsset(uint256 _amount, address _assetAddr) external whenNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-        require(
-            totalSupply() + _amount <= poolInfo.investmentPoolSize,
-            "P:MAX_POOL_SIZE_REACHED"
-        );
+        require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
         require(liquidityLocker.assetsExists(_assetAddr), "P:UNKNOWN_ASSET");
 
         //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
-        PoolLib.updateDepositDate(
-            depositDate,
-            balanceOf(msg.sender),
-            _amount,
-            msg.sender
-        );
-        IERC20(_assetAddr).safeTransferFrom(
-            msg.sender,
-            address(liquidityLocker),
-            _amount
-        );
+        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), _amount, msg.sender);
+        IERC20(_assetAddr).safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
 
         _mint(msg.sender, _amount);
 
@@ -139,17 +101,11 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     /// @param  _amount the amount of LA to be withdrawn
     function withdraw(uint256 _amount) public whenNotPaused returns (bool) {
         require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_BALANCE");
-        require(
-            depositDate[msg.sender] + poolInfo.lockupPeriod <= block.timestamp,
-            "P:FUNDS_LOCKED"
-        );
+        require(depositDate[msg.sender] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
 
         // Check if the current withdrawal exceeds the limit in the specified period
         if (block.timestamp < lastWithdrawalTime[msg.sender] + withdrawPeriod) {
-            require(
-                lastWithdrawalAmount[msg.sender] + _amount <= withdrawLimit,
-                "P:WITHDRAW_LIMIT_EXCEEDED"
-            );
+            require(lastWithdrawalAmount[msg.sender] + _amount <= withdrawLimit, "P:WITHDRAW_LIMIT_EXCEEDED");
         } else {
             lastWithdrawalAmount[msg.sender] = 0;
         }
@@ -198,10 +154,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     /// @notice Used to distribute rewards among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
     /// @param  _holders the list of investors must be provided externally due to Solidity limitations
-    function distributeRewards(
-        uint256 _amount,
-        address[] calldata _holders
-    ) external onlyOwner nonReentrant {
+    function distributeRewards(uint256 _amount, address[] calldata _holders) external virtual onlyOwner nonReentrant {
         require(_amount > 0, "P:INVALID_VALUE");
         require(_holders.length > 0, "P:ZERO_HOLDERS");
         for (uint256 i = 0; i < _holders.length; i++) {
@@ -217,10 +170,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     /// @param _recipient address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _recipient) external onlyOwner {
         uint256 amount = pendingWithdrawals[_recipient];
-        require(
-            liquidityLocker.transfer(_recipient, amount),
-            "P:CONCLUDE_WITHDRAWAL_FAILED"
-        );
+        require(liquidityLocker.transfer(_recipient, amount), "P:CONCLUDE_WITHDRAWAL_FAILED");
 
         //remove from pendingWithdrawals mapping:
         delete pendingWithdrawals[_recipient];
@@ -231,10 +181,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     /// @param _recipient address of the recipient who didn't get the reward
     function concludePendingReward(address _recipient) external onlyOwner {
         uint256 amount = pendingRewards[_recipient];
-        require(
-            liquidityLocker.transfer(_recipient, amount),
-            "P:CONCLUDE_REWARD_FAILED"
-        );
+        require(liquidityLocker.transfer(_recipient, amount), "P:CONCLUDE_REWARD_FAILED");
 
         //remove from pendingWithdrawals mapping:
         delete pendingRewards[_recipient];
@@ -248,17 +195,10 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     }
 
     /// @notice  Deposit LA without minimal threshold or getting LP in return
-    function adminDeposit(uint _amount) external onlyOwner {
-        require(
-            liquidityAsset.balanceOf(msg.sender) > _amount,
-            "P:NOT_ENOUGH_BALANCE!!"
-        );
+    function adminDeposit(uint256 _amount) external onlyOwner {
+        require(liquidityAsset.balanceOf(msg.sender) > _amount, "P:NOT_ENOUGH_BALANCE!!");
 
-        liquidityAsset.safeTransferFrom(
-            msg.sender,
-            address(liquidityLocker),
-            _amount
-        );
+        liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
     }
 
     function setSecondaryLiquidityAsset(address _liquidityAsset) external {
@@ -269,9 +209,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         liquidityLocker.deleteSecondaryLiquidityAsset(_liquidityAsset);
     }
 
-    function setSecondaryLiquidityAssets(
-        address[] calldata _liquidityAssets
-    ) external {
+    function setSecondaryLiquidityAssets(address[] calldata _liquidityAssets) external {
         liquidityLocker.setSecondaryLiquidityAssets(_liquidityAssets);
     }
 
@@ -282,10 +220,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     function claimReward() external virtual returns (bool);
 
     /// @notice  Transfers Liquidity Locker assets to given `to` address
-    function _transferLiquidityLockerFunds(
-        address to,
-        uint256 value
-    ) internal returns (bool) {
+    function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool) {
         return liquidityLocker.transfer(to, value);
     }
 
@@ -296,10 +231,6 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
 
     // Emits a `BalanceUpdated` event for LiquidityLocker
     function _emitBalanceUpdatedEvent() internal {
-        emit BalanceUpdated(
-            address(liquidityLocker),
-            address(liquidityAsset),
-            liquidityLocker.totalBalance()
-        );
+        emit BalanceUpdated(address(liquidityLocker), address(liquidityAsset), liquidityLocker.totalBalance());
     }
 }

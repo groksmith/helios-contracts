@@ -30,7 +30,9 @@ contract Pool is AbstractPool {
         Finalized,
         Deactivated
     }
+
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
+
     mapping(address => bool) public poolAdmins; // The Pool Admin addresses that have permission to do certain operations in case of disaster management
 
     constructor(
@@ -44,27 +46,12 @@ contract Pool is AbstractPool {
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    )
-        AbstractPool(
-            _liquidityAsset,
-            _llFactory,
-            PoolLib.NAME,
-            PoolLib.SYMBOL,
-            _withdrawThreshold,
-            _withdrawPeriod
-        )
-    {
+    ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
-        poolInfo = PoolInfo(
-            _lockupPeriod,
-            _apy,
-            _duration,
-            _investmentPoolSize,
-            _minInvestmentAmount,
-            _withdrawThreshold
-        );
+        poolInfo =
+            PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
 
         superFactory = msg.sender;
         poolDelegate = _poolDelegate;
@@ -87,19 +74,13 @@ contract Pool is AbstractPool {
             }
             blendedPool.requestLiquidityAssets(amountMissing);
             _mint(address(blendedPool), amountMissing);
-            require(
-                _transferLiquidityLockerFunds(msg.sender, callerRewards),
-                "P:ERROR_TRANSFERRING_REWARD"
-            );
+            require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
 
             emit RewardClaimed(msg.sender, callerRewards);
             return true;
         }
 
-        require(
-            _transferLiquidityLockerFunds(msg.sender, callerRewards),
-            "P:ERROR_TRANSFERRING_REWARD"
-        );
+        require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
 
         emit RewardClaimed(msg.sender, callerRewards);
         return true;
@@ -111,16 +92,9 @@ contract Pool is AbstractPool {
     }
 
     function withdrawableOf(address _holder) external view returns (uint256) {
-        require(
-            depositDate[_holder].add(poolInfo.lockupPeriod) <= block.timestamp,
-            "P:FUNDS_LOCKED"
-        );
+        require(depositDate[_holder].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
 
-        return
-            Math.min(
-                liquidityAsset.balanceOf(address(liquidityLocker)),
-                super.balanceOf(_holder)
-            );
+        return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
     }
 
     function totalDeposited() external view returns (uint256) {
@@ -165,20 +139,30 @@ contract Pool is AbstractPool {
     //     _updateFundsTokenBalance();
     // }
 
+    /// @notice Used to distribute rewards among investors (LP token holders)
+    /// @param  _amount the amount to be divided among investors
+    /// @param  _holders the list of investors must be provided externally due to Solidity limitations
+    function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyOwner nonReentrant {
+        require(_amount > 0, "P:INVALID_VALUE");
+        require(_holders.length > 0, "P:ZERO_HOLDERS");
+        for (uint256 i = 0; i < _holders.length; i++) {
+            address holder = _holders[i];
+
+            uint256 holderBalance = balanceOf(holder);
+            uint256 holderShare = holderBalance * 1e18 / poolInfo.investmentPoolSize;
+            uint256 holderRewards = holderShare * _amount / 1e18;
+            rewards[holder] += holderRewards;
+        }
+    }
+
     function setBlendedPool(address _blendedPool) external onlyOwner {
         blendedPool = BlendedPool(_blendedPool);
     }
 
     function _canWithdraw(address account, uint256 amount) internal view {
-        require(
-            depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp,
-            "P:FUNDS_LOCKED"
-        );
+        require(depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
         require(balanceOf(account) >= amount, "P:INSUFFICIENT_BALANCE");
-        require(
-            amount <= _balanceOfLiquidityLocker(),
-            "P:INSUFFICIENT_LIQUIDITY"
-        );
+        require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
     }
 
     // Get LiquidityLocker balance
@@ -192,11 +176,7 @@ contract Pool is AbstractPool {
     }
 
     // Transfers Liquidity Asset to given `to` address
-    function _transferLiquidityAssetFrom(
-        address from,
-        address to,
-        uint256 value
-    ) internal {
+    function _transferLiquidityAssetFrom(address from, address to, uint256 value) internal {
         liquidityAsset.safeTransferFrom(from, to, value);
     }
 
@@ -206,9 +186,7 @@ contract Pool is AbstractPool {
     }
 
     // Returns the HeliosGlobals instance
-    function _globals(
-        address poolFactory
-    ) internal view returns (IHeliosGlobals) {
+    function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
         return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 }

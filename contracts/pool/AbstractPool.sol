@@ -26,6 +26,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingRewards;
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
+    mapping(address => DepositInstance[]) public userDeposits;
 
     uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
     uint256 public withdrawPeriod; // Timeframe for the withdrawal limit
@@ -47,6 +48,12 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         uint256 investmentPoolSize;
         uint256 minInvestmentAmount;
         uint256 withdrawThreshold;
+    }
+
+    struct DepositInstance {
+        IERC20 token;
+        uint256 amount;
+        uint256 unlockTime;
     }
 
     PoolInfo public poolInfo;
@@ -151,20 +158,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         emit Reinvest(msg.sender, _amount);
     }
 
-    /// @notice Used to distribute rewards among investors (LP token holders)
-    /// @param  _amount the amount to be divided among investors
-    /// @param  _holders the list of investors must be provided externally due to Solidity limitations
-    function distributeRewards(uint256 _amount, address[] calldata _holders) external virtual onlyOwner nonReentrant {
-        require(_amount > 0, "P:INVALID_VALUE");
-        require(_holders.length > 0, "P:ZERO_HOLDERS");
-        for (uint256 i = 0; i < _holders.length; i++) {
-            address holder = _holders[i];
-
-            uint256 holderBalance = balanceOf(holder);
-            uint256 holderShare = (_amount * holderBalance) / totalSupply();
-            rewards[holder] += holderShare;
-        }
-    }
+    function distributeRewards(uint256 _amount, address[] calldata _holders) external virtual;
 
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _recipient address of the recipient who didn't get the liquidity

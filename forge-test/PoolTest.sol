@@ -126,14 +126,14 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //attempt to withdraw too early fails
         vm.expectRevert("P:FUNDS_LOCKED");
-        blendedPool.withdraw(depositAmount);
+        blendedPool.withdraw(depositAmount, 0);
 
         vm.warp(currentTime + 1000);
-        blendedPool.withdraw(depositAmount);
+        blendedPool.withdraw(depositAmount, 0);
 
         //but he cannot withdraw more
         vm.expectRevert("P:INSUFFICIENT_BALANCE");
-        blendedPool.withdraw(1);
+        blendedPool.withdraw(1, 0);
 
         vm.stopPrank();
     }
@@ -403,7 +403,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.warp(currentTime + 2000);
         // The expected event signature
         vm.expectRevert();
-        pool.withdraw(depositAmount);
+        pool.withdraw(depositAmount, 0);
         vm.stopPrank();
     }
 

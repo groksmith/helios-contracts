@@ -78,25 +78,29 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
-        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), _amount, msg.sender);
-        liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
+        IERC20 mainLA = liquidityLocker.liquidityAsset();
 
-        _mint(msg.sender, _amount);
-
-        _emitBalanceUpdatedEvent();
-        emit Deposit(msg.sender, _amount);
+        depositLogic(_amount, mainLA);
     }
 
     /// @notice used to deposit secondary liquidity assets (non-USDT)
+    /// @param _assetAddr the address of the stablecoin
     function depositSecondaryAsset(uint256 _amount, address _assetAddr) external whenNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
         require(liquidityLocker.assetsExists(_assetAddr), "P:UNKNOWN_ASSET");
 
-        //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
-        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), _amount, msg.sender);
-        IERC20(_assetAddr).safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
+        IERC20 token = IERC20(_assetAddr);
+
+        depositLogic(_amount, token);
+    }
+
+    function depositLogic(uint256 _amount, IERC20 _token) internal {
+        userDeposits[msg.sender].push(
+            DepositInstance({token: _token, amount: _amount, unlockTime: block.timestamp + withdrawPeriod})
+        );
+
+        _token.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
 
         _mint(msg.sender, _amount);
 
@@ -106,30 +110,12 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
 
     /// @notice withdraws the caller's liquidity assets
     /// @param  _amount the amount of LA to be withdrawn
-    function withdraw(uint256 _amount) public whenNotPaused returns (bool) {
-        require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_BALANCE");
-        require(depositDate[msg.sender] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
-
-        // Check if the current withdrawal exceeds the limit in the specified period
-        if (block.timestamp < lastWithdrawalTime[msg.sender] + withdrawPeriod) {
-            require(lastWithdrawalAmount[msg.sender] + _amount <= withdrawLimit, "P:WITHDRAW_LIMIT_EXCEEDED");
-        } else {
-            lastWithdrawalAmount[msg.sender] = 0;
-        }
-
-        // Update the withdrawal history
-        lastWithdrawalTime[msg.sender] = block.timestamp;
-        lastWithdrawalAmount[msg.sender] += _amount;
-
-        /**
-         * TODO: Tigran Arakelyan - possible attack vector
-         * Investor can withdraw big amount partially and contract will be happy with it
-         * Maybe we should check cumulative withdrawals amount
-         */
-        if (_amount > poolInfo.withdrawThreshold) {
-            emit WithdrawalOverThreshold(msg.sender, _amount);
-            revert("P:THRESHOLD_REACHED");
-        }
+    /// @param  _index the index of the DepositInstance
+    function withdraw(uint256 _amount, uint256 _index) public whenNotPaused returns (bool) {
+        require(_index < userDeposits[msg.sender].length, "P:INVALID_INDEX");
+        DepositInstance storage aDeposit = userDeposits[msg.sender][_index];
+        require(block.timestamp >= aDeposit.unlockTime, "P:TOKENS_LOCKED");
+        require(aDeposit.amount >= _amount && balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
 
         _burn(msg.sender, _amount);
 
@@ -140,10 +126,25 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             return false;
         }
 
+        aDeposit.amount -= _amount;
+        aDeposit.token.transfer(msg.sender, _amount);
+
+        if (aDeposit.amount == 0) {
+            removeDeposit(msg.sender, _index);
+        }
+
         _transferLiquidityLockerFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
         return true;
+    }
+
+    function removeDeposit(address _user, uint256 _index) private {
+        uint256 lastIndex = userDeposits[_user].length - 1;
+        if (_index != lastIndex) {
+            userDeposits[_user][_index] = userDeposits[_user][lastIndex];
+        }
+        userDeposits[_user].pop();
     }
 
     /// @notice Used to reinvest rewards into more LP tokens

@@ -159,6 +159,17 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         emit Reinvest(msg.sender, _amount);
     }
 
+    /// @notice check how many funds 
+    function availableToWithdraw(address _user, uint256 _index) external view returns (uint256) {
+        require(_index < userDeposits[_user].length, "P:INVALID_INDEX");
+        DepositInstance memory depositInstance = userDeposits[_user][_index];
+        if (block.timestamp >= depositInstance.unlockTime) {
+            return depositInstance.amount;
+        } else {
+            return 0;
+        }
+    }
+
     function distributeRewards(uint256 _amount, address[] calldata _holders) external virtual;
 
     /// @notice Admin function used for unhappy path after withdrawal failure

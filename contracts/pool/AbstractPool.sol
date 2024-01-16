@@ -209,7 +209,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
     }
 
-    function setSecondaryLiquidityAsset(address _liquidityAsset) external {
+    function setSecondaryLiquidityAsset(address _liquidityAsset) external onlyOwner {
         liquidityLocker.setSecondaryLiquidityAsset(_liquidityAsset);
     }
 

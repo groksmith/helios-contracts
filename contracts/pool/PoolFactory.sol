@@ -18,12 +18,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
 
     event PoolFactoryAdminSet(address indexed poolFactoryAdmin, bool allowed);
 
-    event PoolCreated(
-        string poolId,
-        address liquidityAsset,
-        address indexed pool,
-        address indexed delegate
-    );
+    event PoolCreated(string poolId, address liquidityAsset, address indexed pool, address indexed delegate);
 
     constructor(address _globals) {
         globals = IHeliosGlobals(_globals);
@@ -46,21 +41,15 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
-        uint withdrawThreshold,
-        uint withdrawPeriod
-    )
-        external
-        virtual
-        whenNotPaused
-        nonReentrant
-        returns (address poolAddress)
-    {
+        uint256 withdrawThreshold,
+        uint256 withdrawPeriod
+    ) external virtual whenNotPaused nonReentrant returns (address poolAddress) {
         _whenProtocolNotPaused();
 
         IHeliosGlobals _globals = globals;
         require(_globals.isValidPoolDelegate(msg.sender), "PF:NOT_DELEGATE");
 
-        // _isMappingKeyValid(poolId);
+        _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
             msg.sender,
@@ -83,10 +72,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     }
 
     // Sets a PoolFactory Admin. Only the Governor can call this function
-    function setPoolFactoryAdmin(
-        address poolFactoryAdmin,
-        bool allowed
-    ) external {
+    function setPoolFactoryAdmin(address poolFactoryAdmin, bool allowed) external {
         _isValidGovernor();
         poolFactoryAdmins[poolFactoryAdmin] = allowed;
         emit PoolFactoryAdminSet(poolFactoryAdmin, allowed);
@@ -111,10 +97,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
 
     // Checks that `msg.sender` is the Governor or a PoolFactory Admin
     function _isValidGovernorOrPoolFactoryAdmin() internal view {
-        require(
-            msg.sender == globals.governor() || poolFactoryAdmins[msg.sender],
-            "PF:NOT_GOV_OR_ADM"
-        );
+        require(msg.sender == globals.governor() || poolFactoryAdmins[msg.sender], "PF:NOT_GOV_OR_ADM");
     }
 
     // Checks that the protocol is not in a paused state
@@ -123,7 +106,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     }
 
     // Checks that the mapping key is valid (unique)
-    function _isMappingKeyValid(string calldata key) internal view {
+    function _isMappingKeyValid(string memory key) internal view {
         require(pools[key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 }

@@ -88,7 +88,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     function depositSecondaryAsset(uint256 _amount, address _assetAddr) external whenNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
-        require(liquidityLocker.assetsExists(_assetAddr), "P:UNKNOWN_ASSET");
+        require(liquidityLocker.secondaryAssetExists(_assetAddr), "P:UNKNOWN_ASSET");
 
         IERC20 token = IERC20(_assetAddr);
 
@@ -110,33 +110,35 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
 
     /// @notice withdraws the caller's liquidity assets
     /// @param  _amount the amount of LA to be withdrawn
-    /// @param  _index the index of the DepositInstance
-    function withdraw(uint256 _amount, uint256 _index) public whenNotPaused returns (bool) {
-        require(_index < userDeposits[msg.sender].length, "P:INVALID_INDEX");
-        DepositInstance storage aDeposit = userDeposits[msg.sender][_index];
-        require(block.timestamp >= aDeposit.unlockTime, "P:TOKENS_LOCKED");
-        require(aDeposit.amount >= _amount && balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
+    /// @param  _indices the indices of the DepositInstance
+    function withdraw(uint256 _amount, uint16[] calldata _indices) public whenNotPaused {
+        for (uint256 i = 0; i < _indices.length; i++) {
+            uint256 _index = _indices[i];
+            require(_index < userDeposits[msg.sender].length, "P:INVALID_INDEX");
+            DepositInstance storage aDeposit = userDeposits[msg.sender][_index];
+            require(block.timestamp >= aDeposit.unlockTime, "P:TOKENS_LOCKED");
+            require(aDeposit.amount >= _amount && balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
 
-        _burn(msg.sender, _amount);
+            _burn(msg.sender, _amount);
 
-        //unhappy path - the withdrawal is then added in the 'pending' to be processed by the admin
-        if (liquidityLocker.totalBalance() < _amount) {
-            pendingWithdrawals[msg.sender] += _amount;
-            emit PendingWithdrawal(msg.sender, _amount);
-            return false;
+            //unhappy path - the withdrawal is then added in the 'pending' to be processed by the admin
+            if (liquidityLocker.totalBalance() < _amount) {
+                pendingWithdrawals[msg.sender] += _amount;
+                emit PendingWithdrawal(msg.sender, _amount);
+                continue;
+            }
+
+            aDeposit.amount -= _amount;
+            aDeposit.token.transfer(msg.sender, _amount);
+
+            if (aDeposit.amount == 0) {
+                removeDeposit(msg.sender, _index);
+            }
+
+            _transferLiquidityLockerFunds(msg.sender, _amount);
+            _emitBalanceUpdatedEvent();
+            emit Withdrawal(msg.sender, _amount);
         }
-
-        aDeposit.amount -= _amount;
-        aDeposit.token.transfer(msg.sender, _amount);
-
-        if (aDeposit.amount == 0) {
-            removeDeposit(msg.sender, _index);
-        }
-
-        _transferLiquidityLockerFunds(msg.sender, _amount);
-        _emitBalanceUpdatedEvent();
-        emit Withdrawal(msg.sender, _amount);
-        return true;
     }
 
     function removeDeposit(address _user, uint256 _index) private {
@@ -159,7 +161,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         emit Reinvest(msg.sender, _amount);
     }
 
-    /// @notice check how many funds 
+    /// @notice check how many funds
     function availableToWithdraw(address _user, uint256 _index) external view returns (uint256) {
         require(_index < userDeposits[_user].length, "P:INVALID_INDEX");
         DepositInstance memory depositInstance = userDeposits[_user][_index];

@@ -10,7 +10,7 @@ interface ILiquidityLocker {
 
     function liquidityAsset() external view returns (IERC20);
 
-    function assetsExists(address _assetAddr) external returns (bool);
+    function secondaryAssetExists(address _assetAddr) external returns (bool);
 
     function setSecondaryLiquidityAsset(address _liquidityAsset) external;
 

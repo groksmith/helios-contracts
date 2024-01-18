@@ -7,6 +7,7 @@ import "hardhat-storage-layout";
 import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-deploy";
+import "@nomicfoundation/hardhat-foundry";
 
 const config: HardhatUserConfig = {
     solidity: {

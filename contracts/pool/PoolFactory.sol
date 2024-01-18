@@ -10,11 +10,11 @@ import "../interfaces/IPoolFactory.sol";
 
 // PoolFactory instantiates Pools
 contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
-    IHeliosGlobals public override globals;                 // A HeliosGlobals instance
+    IHeliosGlobals public override globals; // A HeliosGlobals instance
 
-    mapping(string => address)  public pools;               // Map to reference Pools corresponding to their respective indices.
-    mapping(address => bool)    public isPool;              // True only if a Pool was instantiated by this factory.
-    mapping(address => bool)    public poolFactoryAdmins;   // The PoolFactory Admin addresses that have permission to do certain operations in case of disaster management.
+    mapping(string => address) public pools; // Map to reference Pools corresponding to their respective indices.
+    mapping(address => bool) public isPool; // True only if a Pool was instantiated by this factory.
+    mapping(address => bool) public poolFactoryAdmins; // The PoolFactory Admin addresses that have permission to do certain operations in case of disaster management.
 
     event PoolFactoryAdminSet(address indexed poolFactoryAdmin, bool allowed);
 
@@ -33,16 +33,17 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
 
     // Instantiates a Pool
     function createPool(
-        string calldata poolId,
+        string memory poolId,
         address liquidityAsset,
         address llFactory,
         uint256 lockupPeriod,
         uint256 apy,
         uint256 duration,
         uint256 investmentPoolSize,
-        uint256 minInvestmentAmount
-    ) external whenNotPaused nonReentrant returns (address poolAddress) {
-
+        uint256 minInvestmentAmount,
+        uint256 withdrawThreshold,
+        uint256 withdrawPeriod
+    ) external virtual whenNotPaused nonReentrant returns (address poolAddress) {
         _whenProtocolNotPaused();
 
         IHeliosGlobals _globals = globals;
@@ -58,7 +59,9 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
             apy,
             duration,
             investmentPoolSize,
-            minInvestmentAmount
+            minInvestmentAmount,
+            withdrawThreshold,
+            withdrawPeriod
         );
 
         poolAddress = address(pool);
@@ -103,7 +106,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     }
 
     // Checks that the mapping key is valid (unique)
-    function _isMappingKeyValid(string calldata key) internal view {
+    function _isMappingKeyValid(string memory key) internal view {
         require(pools[key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 }

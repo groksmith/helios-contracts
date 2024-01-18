@@ -12,3 +12,8 @@ typechain
 typechain-types
 coverage
 coverage.json
+
+cache_forge
+out
+coverage_report
+lcov.info

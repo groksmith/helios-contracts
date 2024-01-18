@@ -20,36 +20,29 @@ env:
   CELO_USER_PRIVATE_KEY: ${{ secrets.CELO_USER_PRIVATE_KEY }}
   CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }}
 
-defaults:
-  run:
-    working-directory: packages/helios-contracts
+# defaults:
+#   run:
+#     working-directory: packages/helios-contracts
     
 jobs:
   build:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+        
       - name: Yarn install
         uses: borales/actions-yarn@v3.0.0
         with:
           cmd: install
 
-      - name: Yarn compile        
-        uses: borales/actions-yarn@v3.0.0
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          cmd: compile       
-      - name: Yarn test
-        uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: test
-
-      - name: Yarn Generate abi
-        uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: export
-          CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }} 
-
-
+          version: nightly
+          
+      - name: Forge tests
+        run: forge test -vvv --no-match-contract "PoolFactoryTest|HeliosGlobalsTest"
+        

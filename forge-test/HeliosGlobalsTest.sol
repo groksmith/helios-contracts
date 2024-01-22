@@ -6,7 +6,6 @@ import {FixtureContract} from "./FixtureContract.sol";
 contract HeliosGlobalsTest is Test, FixtureContract {
     event ProtocolPaused(bool pause);
     event GlobalAdminSet(address indexed newGlobalAdmin);
-    event PoolDelegateSet(address indexed delegate, bool valid);
     event LiquidityAssetSet(address asset, uint256 decimals, string symbol, bool valid);
     event ValidPoolFactorySet(address indexed poolFactory, bool valid);
     event ValidSubFactorySet(address indexed superFactory, address indexed subFactory, bool valid);

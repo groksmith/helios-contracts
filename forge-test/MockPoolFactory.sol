@@ -19,18 +19,11 @@ contract MockPoolFactory is PoolFactory {
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
-        uint withdrawPeriod
-    )
-        external
-        override
-        whenNotPaused
-        nonReentrant
-        returns (address poolAddress)
-    {
+        uint256 withdrawPeriod
+    ) external override whenNotPaused nonReentrant returns (address poolAddress) {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
-            msg.sender,
             liquidityAsset,
             llFactory,
             lockupPeriod,

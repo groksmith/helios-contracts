@@ -21,10 +21,7 @@ contract LiquidityLocker is ILiquidityLocker {
     }
 
     // Transfers amount of Liquidity Asset to a destination account. Only the Pool can call this function
-    function transfer(
-        address dst,
-        uint256 amount
-    ) external override isPool returns (bool) {
+    function transfer(address dst, uint256 amount) external override isPool returns (bool) {
         require(dst != address(0), "LL:NULL_DST");
         liquidityAsset.safeTransfer(dst, amount);
         return true;
@@ -34,9 +31,7 @@ contract LiquidityLocker is ILiquidityLocker {
         return IERC20(liquidityAsset).balanceOf(address(this));
     }
 
-    function totalBalanceSecondary(
-        address _assetAddr
-    ) external view returns (uint256) {
+    function totalBalanceSecondary(address _assetAddr) external view returns (uint256) {
         return IERC20(_assetAddr).balanceOf(address(this));
     }
 
@@ -48,10 +43,8 @@ contract LiquidityLocker is ILiquidityLocker {
         delete secondaryLiquidityAssets[_liquidityAsset];
     }
 
-    function setSecondaryLiquidityAssets(
-        address[] calldata _liquidityAssets
-    ) external {
-        for (uint i = 0; i <= _liquidityAssets.length; i++) {
+    function setSecondaryLiquidityAssets(address[] calldata _liquidityAssets) external {
+        for (uint256 i = 0; i <= _liquidityAssets.length; i++) {
             secondaryLiquidityAssets[_liquidityAssets[i]] = true;
         }
     }

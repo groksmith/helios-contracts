@@ -9,10 +9,10 @@ import "../interfaces/ILiquidityLockerFactory.sol";
 contract LiquidityLockerFactory is ILiquidityLockerFactory {
     uint8 constant LIQ_LOCKER_FACTORY = 1;
 
-    mapping(address => address) public owner;     // Mapping of LiquidityLocker addresses to their owner (i.e owner[locker] = Owner of the LiquidityLocker).
-    mapping(address => bool)    public isLocker;  // True only if a LiquidityLocker was created by this factory.
+    mapping(address => address) public owner; // Mapping of LiquidityLocker addresses to their owner (i.e owner[locker] = Owner of the LiquidityLocker).
+    mapping(address => bool) public isLocker; // True only if a LiquidityLocker was created by this factory.
 
-    function factoryType() external override pure returns (uint8) {
+    function factoryType() external pure override returns (uint8) {
         return LIQ_LOCKER_FACTORY;
     }
 

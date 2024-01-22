@@ -21,8 +21,8 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
     event ValidPoolFactorySet(address indexed poolFactory, bool valid);
     event ValidSubFactorySet(address indexed superFactory, address indexed subFactory, bool valid);
 
-    constructor(address root) {
-        _setupRole(DEFAULT_ADMIN_ROLE, root);
+    constructor(address admin) {
+        _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setRoleAdmin(USER_ROLE, DEFAULT_ADMIN_ROLE);
         emit Initialized();
     }

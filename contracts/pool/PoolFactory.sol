@@ -46,7 +46,6 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
-            msg.sender,
             liquidityAsset,
             llFactory,
             lockupPeriod,

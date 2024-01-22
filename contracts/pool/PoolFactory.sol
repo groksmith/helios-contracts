@@ -24,9 +24,8 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         globals = IHeliosGlobals(_globals);
     }
 
-    // Sets HeliosGlobals instance. Only the Governor can call this function
-    function setGlobals(address newGlobals) external {
-        _isValidGovernor();
+    // Sets HeliosGlobals instance. Only the Admin can call this function
+    function setGlobals(address newGlobals) external onlyAdmin {
         require(newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
         globals = IHeliosGlobals(newGlobals);
     }
@@ -43,12 +42,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
-    ) external virtual whenNotPaused nonReentrant returns (address poolAddress) {
-        _whenProtocolNotPaused();
-
-        IHeliosGlobals _globals = globals;
-        require(_globals.isValidPoolDelegate(msg.sender), "PF:NOT_DELEGATE");
-
+    ) external virtual onlyAdmin whenNotPaused nonReentrant returns (address poolAddress) {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
@@ -71,38 +65,20 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         emit PoolCreated(poolId, liquidityAsset, poolAddress, msg.sender);
     }
 
-    // Sets a PoolFactory Admin. Only the Governor can call this function
-    function setPoolFactoryAdmin(address poolFactoryAdmin, bool allowed) external {
-        _isValidGovernor();
-        poolFactoryAdmins[poolFactoryAdmin] = allowed;
-        emit PoolFactoryAdminSet(poolFactoryAdmin, allowed);
-    }
-
-    // Triggers paused state. Halts functionality for certain functions. Only the Governor or a PoolFactory Admin can call this function
-    function pause() external {
-        _isValidGovernorOrPoolFactoryAdmin();
+    // Triggers paused state. Halts functionality for certain functions. Only Admin or a PoolFactory Admin can call this function
+    function pause() external onlyAdmin {
         super._pause();
     }
 
-    // Triggers unpaused state. Restores functionality for certain functions. Only the Governor or a PoolFactory Admin can call this function
-    function unpause() external {
-        _isValidGovernorOrPoolFactoryAdmin();
+    // Triggers unpaused state. Restores functionality for certain functions. Only Admin or a PoolFactory Admin can call this function
+    function unpause() external onlyAdmin {
         super._unpause();
     }
 
-    // Checks that `msg.sender` is the Governor
-    function _isValidGovernor() internal view {
-        require(msg.sender == globals.governor(), "PF:NOT_GOV");
-    }
-
-    // Checks that `msg.sender` is the Governor or a PoolFactory Admin
-    function _isValidGovernorOrPoolFactoryAdmin() internal view {
-        require(msg.sender == globals.governor() || poolFactoryAdmins[msg.sender], "PF:NOT_GOV_OR_ADM");
-    }
-
-    // Checks that the protocol is not in a paused state
-    function _whenProtocolNotPaused() internal view {
-        require(!globals.protocolPaused(), "PF:PROTO_PAUSED");
+    // Checks that `msg.sender` is the Admin
+    modifier onlyAdmin() {
+        require(globals.isAdmin(msg.sender), "PF:NOT_ADMIN");
+        _;
     }
 
     // Checks that the mapping key is valid (unique)

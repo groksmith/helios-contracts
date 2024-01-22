@@ -13,10 +13,8 @@ import {Pool} from "../contracts/pool/Pool.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 
 abstract contract FixtureContract {
-    address public constant OWNER_ADDRESS =
-        0x8A867fcC5a4d1FBbf7c1A9D6e5306b78511fDDDe;
-    address public constant ADMIN_ADDRESS =
-        0x4F8fF72C3A17B571D4a1671d5ddFbcf48187FBCa;
+    address public constant OWNER_ADDRESS = 0x8A867fcC5a4d1FBbf7c1A9D6e5306b78511fDDDe;
+    address public constant USER_ADDRESS = 0x4F8fF72C3A17B571D4a1671d5ddFbcf48187FBCa;
 
     HeliosGlobals public heliosGlobals;
     ERC20 public liquidityAsset;
@@ -30,11 +28,11 @@ abstract contract FixtureContract {
     LiquidityLockerFactory public liquidityLockerFactory2;
 
     function fixture() public {
-        heliosGlobals = new HeliosGlobals(OWNER_ADDRESS, ADMIN_ADDRESS);
+        heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
         liquidityAssetElevated = new MockERC20("USDT", "USDT");
         liquidityAsset = ERC20(liquidityAssetElevated);
         liquidityAssetElevated.mint(OWNER_ADDRESS, 1000);
-        liquidityAssetElevated.mint(ADMIN_ADDRESS, 1000);
+        liquidityAssetElevated.mint(USER_ADDRESS, 1000);
         poolFactory = new PoolFactory(address(heliosGlobals));
         mockPoolFactory = new MockPoolFactory(address(heliosGlobals));
         liquidityLockerFactory = new LiquidityLockerFactory();

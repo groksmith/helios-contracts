@@ -14,12 +14,17 @@ library PoolLib {
 
     // Updates the effective deposit date based on how much new capital has been added.
     // If more capital is added, the deposit date moves closer to the current timestamp.
-    function updateDepositDate(mapping(address => uint256) storage depositDate, uint256 balance, uint256 amount, address account) internal {
+    function updateDepositDate(
+        mapping(address => uint256) storage depositDate,
+        uint256 balance,
+        uint256 amount,
+        address account
+    ) internal {
         uint256 prevDate = depositDate[account];
 
         uint256 newDate = (balance + amount) > 0
-        ? prevDate.add(block.timestamp.sub(prevDate).mul(amount).div(balance + amount))
-        : prevDate;
+            ? prevDate.add(block.timestamp.sub(prevDate).mul(amount).div(balance + amount))
+            : prevDate;
 
         depositDate[account] = newDate;
         emit DepositDateUpdated(account, newDate);

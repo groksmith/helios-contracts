@@ -14,16 +14,9 @@ abstract contract PoolFDT is BasicFDT {
     uint256 public interestSum; // Sum of all withdrawable interest.
     uint256 public interestBalance; // The amount of earned interest present and accounted for in this contract.
 
-    event BalanceUpdated(
-        address indexed liquidityProvider,
-        address indexed token,
-        uint256 balance
-    );
+    event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
 
-    constructor(
-        string memory tokenName,
-        string memory tokenSymbol
-    ) BasicFDT(tokenName, tokenSymbol) {}
+    constructor(string memory tokenName, string memory tokenSymbol) BasicFDT(tokenName, tokenSymbol) {}
 
     function _updateFundsTokenBalance() internal override returns (int256) {
         uint256 _prevFundsTokenBalance = interestBalance;

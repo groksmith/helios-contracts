@@ -4,7 +4,6 @@ import "forge-std/Test.sol";
 import {FixtureContract} from "./FixtureContract.sol";
 
 contract HeliosGlobalsTest is Test, FixtureContract {
-
     event ProtocolPaused(bool pause);
     event GlobalAdminSet(address indexed newGlobalAdmin);
     event PoolDelegateSet(address indexed delegate, bool valid);
@@ -17,7 +16,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
     }
 
     function test_adminSetPaused() public {
-        vm.startPrank(ADMIN_ADDRESS);
+        vm.startPrank(OWNER_ADDRESS);
 
         //Asserts if initial state of contract is paused
         assertEq(heliosGlobals.protocolPaused(), false);
@@ -47,7 +46,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         assertEq(heliosGlobals.protocolPaused(), false);
 
         //Sets contract paused
-        vm.expectRevert(bytes("HG:NOT_ADM"));
+        vm.expectRevert(bytes("HG:NOT_ADMIN"));
         heliosGlobals.setProtocolPause(true);
 
         //Asserts if after pausing contract it is not paused
@@ -75,92 +74,11 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.startPrank(user);
 
         address poolFactoryAddress = address(poolFactory);
-        vm.expectRevert(bytes("MG:NOT_GOV"));
+        vm.expectRevert(bytes("HG:NOT_ADMIN"));
         heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
         assertEq(heliosGlobals.isValidPoolFactory(poolFactoryAddress), false);
 
         vm.stopPrank();
-    }
-
-    function test_when_owner_setPoolDelegateAllowList(address poolDelegate) public {
-        vm.startPrank(OWNER_ADDRESS);
-
-        assertEq(heliosGlobals.isValidPoolDelegate(poolDelegate), false);
-
-        vm.expectEmit();
-        emit PoolDelegateSet(poolDelegate, true);
-
-        heliosGlobals.setPoolDelegateAllowList(poolDelegate, true);
-        assertEq(heliosGlobals.isValidPoolDelegate(poolDelegate), true);
-
-        vm.stopPrank();
-    }
-
-    function test_when_not_owner_setPoolDelegateAllowList(address user, address poolDelegate) public {
-        vm.assume(user != OWNER_ADDRESS);
-        vm.startPrank(user);
-
-        vm.expectRevert(bytes("MG:NOT_GOV"));
-        heliosGlobals.setPoolDelegateAllowList(poolDelegate, true);
-        assertEq(heliosGlobals.isValidPoolDelegate(poolDelegate), false);
-
-        vm.stopPrank();
-    }
-
-    function test_when_owner_setGlobalAdmin(address newAdmin) public {
-        vm.assume(newAdmin != address(0) && newAdmin != heliosGlobals.globalAdmin());
-        assertNotEq(heliosGlobals.globalAdmin(), newAdmin);
-
-        vm.startPrank(OWNER_ADDRESS);
-
-        vm.expectEmit();
-        emit GlobalAdminSet(newAdmin);
-
-        heliosGlobals.setGlobalAdmin(newAdmin);
-        vm.stopPrank();
-        assertEq(heliosGlobals.globalAdmin(), newAdmin);
-    }
-
-    function test_when_owner_set_zero_setGlobalAdmin() public {
-        address newAdmin = address(0);
-
-        vm.startPrank(OWNER_ADDRESS);
-        vm.expectRevert("HG:NOT_GOV_OR_ADM");
-        heliosGlobals.setGlobalAdmin(newAdmin);
-
-        assertNotEq(heliosGlobals.globalAdmin(), newAdmin);
-        vm.stopPrank();
-    }
-
-    function test_when_paused_setGlobalAdmin(address newAdmin) public {
-        vm.assume(newAdmin != address(0) && newAdmin != heliosGlobals.globalAdmin());
-
-        vm.startPrank(ADMIN_ADDRESS);
-        heliosGlobals.setProtocolPause(true);
-        vm.stopPrank();
-
-        vm.startPrank(OWNER_ADDRESS);
-        vm.expectRevert(bytes("HG:PROTO_PAUSED"));
-        heliosGlobals.setGlobalAdmin(newAdmin);
-        vm.stopPrank();
-
-        vm.startPrank(ADMIN_ADDRESS);
-        heliosGlobals.setProtocolPause(false);
-        vm.stopPrank();
-    }
-
-    function test_when_not_owner_setGlobalAdmin(address user, address globalAdmin) public {
-        vm.assume(user != OWNER_ADDRESS);
-        vm.assume(user != ADMIN_ADDRESS);
-
-        assertNotEq(heliosGlobals.globalAdmin(), globalAdmin);
-
-        vm.startPrank(user);
-        vm.expectRevert(bytes("HG:NOT_GOV_OR_ADM"));
-        heliosGlobals.setGlobalAdmin(globalAdmin);
-        vm.stopPrank();
-
-        assertNotEq(heliosGlobals.globalAdmin(), globalAdmin);
     }
 
     function test_when_owner_setLiquidityAsset() public {
@@ -182,7 +100,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.startPrank(user);
 
         address liquidityAssetAddress = address(liquidityAsset);
-        vm.expectRevert(bytes("MG:NOT_GOV"));
+        vm.expectRevert(bytes("HG:NOT_ADMIN"));
         heliosGlobals.setLiquidityAsset(liquidityAssetAddress, true);
         assertEq(heliosGlobals.isValidLiquidityAsset(liquidityAssetAddress), false);
 
@@ -218,7 +136,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
 
         vm.startPrank(user);
-        vm.expectRevert(bytes("MG:NOT_GOV"));
+        vm.expectRevert(bytes("HG:NOT_ADMIN"));
         heliosGlobals.setValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, true);
         vm.stopPrank();
     }

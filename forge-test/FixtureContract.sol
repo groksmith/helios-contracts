@@ -2,7 +2,7 @@ pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {MockERC20} from "./MockERC20.sol";
+import {MockTokenERC20} from "./MockTokenERC20.sol";
 import {MockPoolFactory} from "./MockPoolFactory.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {LiquidityLockerFactory} from "../contracts/pool/LiquidityLockerFactory.sol";
@@ -18,7 +18,7 @@ abstract contract FixtureContract {
 
     HeliosGlobals public heliosGlobals;
     ERC20 public liquidityAsset;
-    MockERC20 public liquidityAssetElevated;
+    MockTokenERC20 public liquidityAssetElevated;
     PoolFactory public poolFactory;
     MockPoolFactory public mockPoolFactory;
     BlendedPool public blendedPool;
@@ -29,7 +29,7 @@ abstract contract FixtureContract {
 
     function fixture() public {
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
-        liquidityAssetElevated = new MockERC20("USDT", "USDT");
+        liquidityAssetElevated = new MockTokenERC20("USDT", "USDT");
         liquidityAsset = ERC20(liquidityAssetElevated);
         liquidityAssetElevated.mint(OWNER_ADDRESS, 1000);
         liquidityAssetElevated.mint(USER_ADDRESS, 1000);

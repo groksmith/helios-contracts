@@ -115,7 +115,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         for (uint256 i = 0; i < _indices.length; i++) {
             uint256 _index = _indices[i];
             require(_index < userDeposits[msg.sender].length, "P:INVALID_INDEX");
-            DepositInstance storage aDeposit = userDeposits[msg.sender][_index];
+            DepositInstance memory aDeposit = userDeposits[msg.sender][_index];
             require(block.timestamp >= aDeposit.unlockTime, "P:TOKENS_LOCKED");
             require(aDeposit.amount >= _amount && balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
 
@@ -129,7 +129,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             }
 
             aDeposit.amount -= _amount;
-            aDeposit.token.transfer(msg.sender, _amount);
+            uint256 tokenAmountInDeposit = aDeposit.token.balanceOf(address(liquidityLocker));
 
             if (aDeposit.amount == 0) {
                 removeDeposit(msg.sender, _index);

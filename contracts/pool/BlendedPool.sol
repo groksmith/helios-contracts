@@ -43,19 +43,6 @@ contract BlendedPool is AbstractPool {
         poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
     }
 
-    function deposit(uint256 _amount) external override whenNotPaused nonReentrant {
-        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-
-        //TODO: Tigran Arakelyan - strange logic for updating deposit Date (comes from maple lib, uses weird math)
-        PoolLib.updateDepositDate(depositDate, balanceOf(msg.sender), _amount, msg.sender);
-        liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
-
-        _mint(msg.sender, _amount);
-
-        _emitBalanceUpdatedEvent();
-        emit Deposit(msg.sender, _amount);
-    }
-
     /// @notice Used to distribute rewards among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
     /// @param  _holders the list of investors must be provided externally due to Solidity limitations
@@ -121,6 +108,15 @@ contract BlendedPool is AbstractPool {
     /// @notice Get the amount of Liquidity Assets in the Blended Pool
     function totalSupplyLA() public view returns (uint256) {
         return liquidityLocker.totalBalance();
+    }
+
+    /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
+    function deposit(uint256 _amount) external override whenNotPaused nonReentrant {
+        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+
+        IERC20 mainLA = liquidityLocker.liquidityAsset();
+
+        depositLogic(_amount, mainLA);
     }
 
     /// @notice Register a new pool to the Blended Pool

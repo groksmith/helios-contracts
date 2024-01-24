@@ -109,11 +109,12 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     }
 
     /// @notice withdraws the caller's liquidity assets
-    /// @param  _amount the amount of LA to be withdrawn
+    /// @param  _amounts the amount of LA to be withdrawn
     /// @param  _indices the indices of the DepositInstance
-    function withdraw(uint256 _amount, uint16[] calldata _indices) public whenNotPaused {
+    function withdraw(uint256[] calldata _amounts, uint16[] calldata _indices) public whenNotPaused {
         for (uint256 i = 0; i < _indices.length; i++) {
             uint256 _index = _indices[i];
+            uint256 _amount = _amounts[i];
             require(_index < userDeposits[msg.sender].length, "P:INVALID_INDEX");
             DepositInstance memory aDeposit = userDeposits[msg.sender][_index];
             require(block.timestamp >= aDeposit.unlockTime, "P:TOKENS_LOCKED");

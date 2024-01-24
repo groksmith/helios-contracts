@@ -24,8 +24,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
     uint256 internal totalMinted;
     uint256 public principalOut;
 
-    mapping(address => uint256) public lastWithdrawalTime;
-    mapping(address => uint256) public lastWithdrawalAmount;
     mapping(address => uint256) public rewards;
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingRewards;

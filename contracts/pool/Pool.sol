@@ -28,8 +28,6 @@ contract Pool is AbstractPool {
 
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
 
-    mapping(address => bool) public poolAdmins; // The Pool Admin addresses that have permission to do certain operations in case of disaster management
-
     constructor(
         address _liquidityAsset,
         address _llFactory,

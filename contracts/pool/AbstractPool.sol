@@ -1,23 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "../token/PoolFDT.sol";
 import "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "../interfaces/ILiquidityLockerFactory.sol";
 import "../interfaces/ILiquidityLocker.sol";
-import "../library/PoolLib.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
+abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
+    string public constant NAME = "Helios TKN Pool";
+    string public constant SYMBOL = "HLS-P";
+
     using SafeERC20 for IERC20;
 
     ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contract
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     uint256 internal immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
+    uint256 internal totalMinted;
     uint256 public principalOut;
 
     mapping(address => uint256) public lastWithdrawalTime;
@@ -25,6 +29,8 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     mapping(address => uint256) public rewards;
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingRewards;
+
+    // TODO: Tigran. Not initialized?
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
     mapping(address => DepositInstance[]) public userDeposits;
 
@@ -40,6 +46,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     event PendingReward(address indexed recipient, uint256 indexed amount);
     event PendingRewardConcluded(address indexed recipient, uint256 indexed amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
+    event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -65,7 +72,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         string memory tokenSymbol,
         uint256 _withdrawLimit,
         uint256 _withdrawPeriod
-    ) PoolFDT(tokenName, tokenSymbol) {
+    ) ERC20(tokenName, tokenSymbol) {
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
         liquidityLocker = ILiquidityLocker(ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
@@ -103,6 +110,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         _token.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
 
         _mint(msg.sender, _amount);
+        totalMinted += _amount;
 
         _emitBalanceUpdatedEvent();
         emit Deposit(msg.sender, _amount);
@@ -130,7 +138,9 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             }
 
             aDeposit.amount -= _amount;
-            uint256 tokenAmountInDeposit = aDeposit.token.balanceOf(address(liquidityLocker));
+
+            // TODO: Tigran. Check what is it for?
+            // uint256 tokenAmountInDeposit = aDeposit.token.balanceOf(address(liquidityLocker));
 
             if (aDeposit.amount == 0) {
                 removeDeposit(msg.sender, _index);
@@ -157,6 +167,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         require(rewards[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
 
         _mint(msg.sender, rewards[msg.sender]);
+        totalMinted += _amount;
         rewards[msg.sender] -= _amount;
         _emitBalanceUpdatedEvent();
         emit Reinvest(msg.sender, _amount);
@@ -177,7 +188,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
 
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _recipient address of the recipient who didn't get the liquidity
-    function concludePendingWithdrawal(address _recipient) external onlyOwner {
+    function concludePendingWithdrawal(address _recipient) external nonReentrant onlyOwner {
         uint256 amount = pendingWithdrawals[_recipient];
         require(liquidityLocker.transfer(_recipient, amount), "P:CONCLUDE_WITHDRAWAL_FAILED");
 
@@ -188,7 +199,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
 
     /// @notice Admin function used for unhappy path after reward claiming failure
     /// @param _recipient address of the recipient who didn't get the reward
-    function concludePendingReward(address _recipient) external onlyOwner {
+    function concludePendingReward(address _recipient) external nonReentrant onlyOwner {
         uint256 amount = pendingRewards[_recipient];
         require(liquidityLocker.transfer(_recipient, amount), "P:CONCLUDE_REWARD_FAILED");
 

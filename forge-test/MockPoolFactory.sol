@@ -24,7 +24,6 @@ contract MockPoolFactory is PoolFactory {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
-            msg.sender,
             liquidityAsset,
             llFactory,
             lockupPeriod,

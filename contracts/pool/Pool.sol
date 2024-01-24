@@ -22,7 +22,6 @@ contract Pool is AbstractPool {
     using SafeERC20 for IERC20;
 
     address public immutable superFactory; // The factory that deployed this Pool
-    address public immutable poolDelegate; // The Pool Delegate address, maintains full authority over the Pool
     BlendedPool public blendedPool;
 
     enum State {
@@ -36,7 +35,6 @@ contract Pool is AbstractPool {
     mapping(address => bool) public poolAdmins; // The Pool Admin addresses that have permission to do certain operations in case of disaster management
 
     constructor(
-        address _poolDelegate,
         address _liquidityAsset,
         address _llFactory,
         uint256 _lockupPeriod,
@@ -48,13 +46,11 @@ contract Pool is AbstractPool {
         uint256 _withdrawPeriod
     ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
-        require(_poolDelegate != address(0), "P:ZERO_POOL_DLG");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
         poolInfo =
             PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
 
         superFactory = msg.sender;
-        poolDelegate = _poolDelegate;
     }
 
     /// @notice Used to transfer the investor's rewards to him

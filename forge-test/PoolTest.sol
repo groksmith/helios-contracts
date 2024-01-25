@@ -30,8 +30,8 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.assume(user2 != address(0));
         vm.assume(user1 != user2);
 
-        liquidityAssetElevated.mint(user1, 1000);
-        liquidityAssetElevated.mint(user2, 1000);
+        mintTokens(user1, 1000);
+        mintTokens(user2, 1000);
 
         vm.startPrank(user1);
 
@@ -83,7 +83,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     /// @notice Test attempt to withdraw; both happy and unhappy paths
     function test_withdraw(address user) external {
         vm.assume(user != address(0));
-        liquidityAssetElevated.mint(user, 1000);
+        mintTokens(user, 1000);
 
         vm.startPrank(user);
         uint256 depositAmount = 150;
@@ -166,7 +166,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         //firstly the users need to deposit before withdrawing
         address poolAddress = mockPoolFactory.createPool(
             "1",
-            address(liquidityAssetElevated),
+            address(liquidityAsset),
             address(liquidityLockerFactory),
             2000,
             10,
@@ -180,13 +180,13 @@ contract BlendedPoolTest is Test, FixtureContract {
         Pool pool = Pool(poolAddress);
         uint256 user1Deposit = 100;
         vm.startPrank(OWNER_ADDRESS);
-        liquidityAssetElevated.increaseAllowance(poolAddress, 10000);
+        liquidityAsset.increaseAllowance(poolAddress, 10000);
         pool.deposit(user1Deposit);
         vm.stopPrank();
 
         uint256 user2Deposit = 1000;
         vm.startPrank(USER_ADDRESS);
-        liquidityAssetElevated.increaseAllowance(poolAddress, 10000);
+        liquidityAsset.increaseAllowance(poolAddress, 10000);
         pool.deposit(user2Deposit);
         vm.stopPrank();
 
@@ -263,7 +263,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(OWNER_ADDRESS);
 
-        liquidityAssetElevated.mint(poolAdmin, 1000);
+        mintTokens(poolAdmin, 1000);
         vm.startPrank(poolAdmin);
         liquidityAsset.increaseAllowance(address(blendedPool), 1000);
         blendedPool.adminDeposit(1000);
@@ -302,18 +302,17 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
 
         //now let's deposit LA to the blended pool
-
         address bpOwner = blendedPool.owner();
         vm.startPrank(bpOwner);
         blendedPool.addPool(poolAddress);
-        liquidityAssetElevated.mint(bpOwner, 1003);
-        liquidityAsset.increaseAllowance(address(blendedPool), 1005);
+        mintTokens(bpOwner, 100);
+        liquidityAsset.increaseAllowance(address(blendedPool), 100);
         blendedPool.adminDeposit(100);
         vm.stopPrank();
 
         //now let's claim reward. The blended pool will help
         vm.startPrank(OWNER_ADDRESS);
-        liquidityAssetElevated.increaseAllowance(poolAddress, 10000);
+        liquidityAsset.increaseAllowance(poolAddress, 10000);
         pool.claimReward();
     }
 
@@ -321,7 +320,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
         address poolAddress = mockPoolFactory.createPool(
             "1",
-            address(liquidityAssetElevated),
+            address(liquidityAsset),
             address(liquidityLockerFactory),
             2000,
             10,

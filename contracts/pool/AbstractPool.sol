@@ -214,7 +214,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
 
     /// @notice  Deposit LA without minimal threshold or getting LP in return
     function adminDeposit(uint256 _amount) external onlyOwner {
-        require(liquidityAsset.balanceOf(msg.sender) > _amount, "P:NOT_ENOUGH_BALANCE!!");
+        require(liquidityAsset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE!!");
 
         liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
     }

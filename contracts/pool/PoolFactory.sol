@@ -2,11 +2,11 @@
 pragma solidity 0.8.16;
 
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./Pool.sol";
-import "../interfaces/IHeliosGlobals.sol";
-import "../interfaces/IPoolFactory.sol";
+import {Pool} from "./Pool.sol";
+import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
+import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
 // PoolFactory instantiates Pools
 contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {

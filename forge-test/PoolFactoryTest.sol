@@ -1,7 +1,7 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import {FixtureContract} from "./FixtureContract.sol";
+import {FixtureContract} from "./fixtures/FixtureContract.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 
 contract PoolFactoryTest is Test, FixtureContract {

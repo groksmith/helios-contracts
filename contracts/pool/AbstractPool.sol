@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "forge-std/console.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "../interfaces/ILiquidityLockerFactory.sol";
-import "../interfaces/ILiquidityLocker.sol";
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ILiquidityLocker} from "../interfaces/ILiquidityLocker.sol";
+import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol";
 
 abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
     string public constant NAME = "Helios TKN Pool";
@@ -214,7 +212,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
 
     /// @notice  Deposit LA without minimal threshold or getting LP in return
     function adminDeposit(uint256 _amount) external onlyOwner {
-        require(liquidityAsset.balanceOf(msg.sender) > _amount, "P:NOT_ENOUGH_BALANCE!!");
+        require(liquidityAsset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE!!");
 
         liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
     }

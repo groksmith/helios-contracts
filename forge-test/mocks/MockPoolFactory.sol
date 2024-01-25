@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {PoolFactory} from "../contracts/pool/PoolFactory.sol";
-import {Pool} from "../contracts/pool/Pool.sol";
+import {Pool} from "../../contracts/pool/Pool.sol";
+import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 
 // Used for testing only
 contract MockPoolFactory is PoolFactory {

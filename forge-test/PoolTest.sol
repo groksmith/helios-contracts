@@ -30,8 +30,8 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.assume(user2 != address(0));
         vm.assume(user1 != user2);
 
-        mintTokens(user1, 1000);
-        mintTokens(user2, 1000);
+        mintLiquidityAsset(user1, 1000);
+        mintLiquidityAsset(user2, 1000);
 
         vm.startPrank(user1);
 
@@ -83,7 +83,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     /// @notice Test attempt to withdraw; both happy and unhappy paths
     function test_withdraw(address user) external {
         vm.assume(user != address(0));
-        mintTokens(user, 1000);
+        mintLiquidityAsset(user, 1000);
 
         vm.startPrank(user);
         uint256 depositAmount = 150;
@@ -263,7 +263,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(OWNER_ADDRESS);
 
-        mintTokens(poolAdmin, 1000);
+        mintLiquidityAsset(poolAdmin, 1000);
         vm.startPrank(poolAdmin);
         liquidityAsset.increaseAllowance(address(blendedPool), 1000);
         blendedPool.adminDeposit(1000);
@@ -305,7 +305,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         address bpOwner = blendedPool.owner();
         vm.startPrank(bpOwner);
         blendedPool.addPool(poolAddress);
-        mintTokens(bpOwner, 100);
+        mintLiquidityAsset(bpOwner, 100);
         liquidityAsset.increaseAllowance(address(blendedPool), 100);
         blendedPool.adminDeposit(100);
         vm.stopPrank();

@@ -66,13 +66,13 @@ abstract contract FixtureContract is Test {
         regPool1 = Pool(poolAddress);
     }
 
-    function createInvestor(address investor) public returns (address) {
+    function createInvestorAndMintLiquidityAsset(address investor, uint256 amount) public returns (address) {
         vm.assume(investor != address(0));
-        liquidityAssetElevated.mint(investor, 1000);
+        liquidityAssetElevated.mint(investor, amount);
         return investor;
     }
 
-    function mintTokens(address user, uint256 amount) public {
+    function mintLiquidityAsset(address user, uint256 amount) public {
         liquidityAssetElevated.mint(user, amount);
     }
 }

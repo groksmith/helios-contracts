@@ -19,8 +19,8 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
     function test_depositSuccess(address user1, address user2) external {
-        user1 = createInvestor(user1);
-        user2 = createInvestor(user2);
+        user1 = createInvestorAndMintLiquidityAsset(user1, 1000);
+        user2 = createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
 
         vm.startPrank(user1);
@@ -65,7 +65,7 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test attempt to withdraw; both happy and unhappy paths
     function test_withdraw(address user) external {
-        user = createInvestor(user);
+        user = createInvestorAndMintLiquidityAsset(user, 1000);
 
         vm.startPrank(user);
         uint256 depositAmount = 150;
@@ -96,8 +96,8 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test complete scenario of depositing, distribution of rewards and claim
     function test_distributeRewardsAndClaim(address user1, address user2) external {
-        user1 = createInvestor(user1);
-        user2 = createInvestor(user2);
+        user1 = createInvestorAndMintLiquidityAsset(user1, 1000);
+        user2 = createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
 
         //firstly the users need to deposit before withdrawing
@@ -126,7 +126,7 @@ contract RegPoolTest is FixtureContract {
         //only the pool admin can call distributeRewards()
         address poolAdmin = regPool1.owner();
         vm.startPrank(poolAdmin);
-        mintTokens(poolAdmin, rewardGenerated);
+        mintLiquidityAsset(poolAdmin, rewardGenerated);
         liquidityAsset.increaseAllowance(address(regPool1), rewardGenerated);
         regPool1.adminDeposit(rewardGenerated);
         regPool1.distributeRewards(rewardGenerated, holders);
@@ -183,7 +183,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     function test_reinvest(address user) external {
-        user = createInvestor(user);
+        user = createInvestorAndMintLiquidityAsset(user, 1000);
         vm.startPrank(user);
 
         //firstly the user needs to deposit
@@ -198,7 +198,7 @@ contract RegPoolTest is FixtureContract {
         //only the pool admin can call distributeRewards()
         address poolAdmin = regPool1.owner();
         vm.startPrank(poolAdmin);
-        mintTokens(poolAdmin, 1000);
+        mintLiquidityAsset(poolAdmin, 1000);
         liquidityAsset.increaseAllowance(address(regPool1), 1000);
         regPool1.adminDeposit(1000);
         regPool1.distributeRewards(1000, holders);

@@ -5,6 +5,7 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {Pool} from "./Pool.sol";
+import {BlendedPool} from "./BlendedPool.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
@@ -12,13 +13,12 @@ import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     IHeliosGlobals public override globals; // A HeliosGlobals instance
 
+    address public blendedPool; // Address of Blended Pool
     mapping(string => address) public pools; // Map to reference Pools corresponding to their respective indices.
     mapping(address => bool) public isPool; // True only if a Pool was instantiated by this factory.
-    mapping(address => bool) public poolFactoryAdmins; // The PoolFactory Admin addresses that have permission to do certain operations in case of disaster management.
-
-    event PoolFactoryAdminSet(address indexed poolFactoryAdmin, bool allowed);
 
     event PoolCreated(string poolId, address liquidityAsset, address indexed pool, address indexed delegate);
+    event BlendedPoolCreated(address liquidityAsset, address indexed pool, address indexed delegate);
 
     constructor(address _globals) {
         globals = IHeliosGlobals(_globals);
@@ -62,6 +62,37 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         isPool[poolAddress] = true;
 
         emit PoolCreated(poolId, liquidityAsset, poolAddress, msg.sender);
+    }
+
+    // Instantiates a Pool
+    function createBlendedPool(
+        address liquidityAsset,
+        address llFactory,
+        uint256 lockupPeriod,
+        uint256 apy,
+        uint256 duration,
+        uint256 minInvestmentAmount,
+        uint256 withdrawThreshold,
+        uint256 withdrawPeriod
+    ) external virtual onlyAdmin whenNotPaused nonReentrant returns (address blendedPoolAddress) {
+
+        require(blendedPool != address (0));
+
+        BlendedPool pool = new BlendedPool(
+            liquidityAsset,
+            llFactory,
+            lockupPeriod,
+            apy,
+            duration,
+            minInvestmentAmount,
+            withdrawThreshold,
+            withdrawPeriod
+        );
+
+        blendedPoolAddress = address(pool);
+        blendedPool = blendedPoolAddress;
+
+        emit BlendedPoolCreated(liquidityAsset, blendedPoolAddress, msg.sender);
     }
 
     // Triggers paused state. Halts functionality for certain functions. Only Admin or a PoolFactory Admin can call this function

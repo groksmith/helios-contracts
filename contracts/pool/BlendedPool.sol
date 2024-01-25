@@ -33,10 +33,12 @@ contract BlendedPool is AbstractPool {
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_liquidityAsset, _llFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
-        require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
+        require(_liquidityAsset != address(0), "BP:ZERO_LIQ_ASSET");
+        require(_llFactory != address(0), "BP:ZERO_LIQ_LOCKER_FACTORY");
 
         superFactory = msg.sender;
+        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "BP:INVALID_LIQ_ASSET");
+        require(_globals(superFactory).isValidLiquidityLockerFactory(_llFactory), "BP:INVALID_LL_FACTORY");
 
         poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
     }
@@ -45,8 +47,8 @@ contract BlendedPool is AbstractPool {
     /// @param  _amount the amount to be divided among investors
     /// @param  _holders the list of investors must be provided externally due to Solidity limitations
     function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyOwner nonReentrant {
-        require(_amount > 0, "P:INVALID_VALUE");
-        require(_holders.length > 0, "P:ZERO_HOLDERS");
+        require(_amount > 0, "BP:INVALID_VALUE");
+        require(_holders.length > 0, "BP:ZERO_HOLDERS");
         for (uint256 i = 0; i < _holders.length; i++) {
             address holder = _holders[i];
 
@@ -57,7 +59,7 @@ contract BlendedPool is AbstractPool {
     }
 
     function withdrawableOf(address _holder) external view returns (uint256) {
-        require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
+        require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "BP:FUNDS_LOCKED");
 
         return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
     }
@@ -86,7 +88,7 @@ contract BlendedPool is AbstractPool {
             return false;
         }
 
-        require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
+        require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "BP:ERROR_TRANSFERRING_REWARD");
 
         emit RewardClaimed(msg.sender, callerRewards);
         return true;
@@ -94,10 +96,10 @@ contract BlendedPool is AbstractPool {
 
     /// @notice Only called by a RegPool when it doesn't have enough LA
     function requestLiquidityAssets(uint256 _amountMissing) external onlyPool {
-        require(_amountMissing > 0, "P:INVALID_INPUT");
-        require(totalSupplyLA() >= _amountMissing, "P:NOT_ENOUGH_LA_BP");
+        require(_amountMissing > 0, "BP:INVALID_INPUT");
+        require(totalSupplyLA() >= _amountMissing, "BP:NOT_ENOUGH_LA_BP");
         address poolLL = AbstractPool(msg.sender).getLL();
-        require(_transferLiquidityLockerFunds(poolLL, _amountMissing), "P:REQUEST_FROM_BP_FAIL");
+        require(_transferLiquidityLockerFunds(poolLL, _amountMissing), "BP:REQUEST_FROM_BP_FAIL");
 
         emit RegPoolDeposit(msg.sender, _amountMissing);
     }
@@ -109,7 +111,7 @@ contract BlendedPool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     function deposit(uint256 _amount) external override whenNotPaused nonReentrant {
-        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+        require(_amount >= poolInfo.minInvestmentAmount, "BP:DEP_AMT_BELOW_MIN");
 
         IERC20 mainLA = liquidityLocker.liquidityAsset();
 
@@ -136,6 +138,10 @@ contract BlendedPool is AbstractPool {
     // Returns the LiquidityLocker instance
     function _liquidityLocker() internal view returns (ILiquidityLocker) {
         return ILiquidityLocker(liquidityLocker);
+    }
+
+    function _globals(address poolFactory) internal override view returns (IHeliosGlobals) {
+        return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 
     modifier onlyPool() {

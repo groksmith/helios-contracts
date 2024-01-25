@@ -27,6 +27,7 @@ abstract contract FixtureContract is Test {
     LiquidityLockerFactory public liquidityLockerFactory;
 
     function fixture() public {
+        vm.startPrank(OWNER_ADDRESS);
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
         liquidityAssetElevated = new MockTokenERC20("USDT", "USDT");
         liquidityAsset = ERC20(liquidityAssetElevated);
@@ -37,7 +38,11 @@ abstract contract FixtureContract is Test {
         poolFactory = new PoolFactory(address(heliosGlobals));
         mockPoolFactory = new MockPoolFactory(address(heliosGlobals));
         liquidityLockerFactory = new LiquidityLockerFactory();
-        blendedPool = new BlendedPool(
+
+        heliosGlobals.setLiquidityAsset(address(liquidityAsset), true);
+        heliosGlobals.setValidLiquidityLockerFactory(address(liquidityLockerFactory), true);
+
+        address blendedPoolAddress = mockPoolFactory.createBlendedPool(
             address(liquidityAsset),
             address(liquidityLockerFactory),
             1000,
@@ -47,6 +52,8 @@ abstract contract FixtureContract is Test {
             500,
             1000
         );
+
+        blendedPool = BlendedPool(blendedPoolAddress);
 
         address poolAddress = mockPoolFactory.createPool(
             "reg pool",
@@ -62,6 +69,7 @@ abstract contract FixtureContract is Test {
         );
 
         regPool1 = Pool(poolAddress);
+        vm.stopPrank();
     }
 
     function createInvestorAndMintLiquidityAsset(address investor, uint256 amount) public returns (address) {

@@ -9,6 +9,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {ILiquidityLocker} from "../interfaces/ILiquidityLocker.sol";
 import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol";
+import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
+import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
 abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
     string public constant NAME = "Helios TKN Pool";
@@ -249,4 +251,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
     function _emitBalanceUpdatedEvent() internal {
         emit BalanceUpdated(address(liquidityLocker), address(liquidityAsset), liquidityLocker.totalBalance());
     }
+
+    // Returns the HeliosGlobals instance
+    function _globals(address poolFactory) internal virtual view returns (IHeliosGlobals);
 }

@@ -47,6 +47,8 @@ contract Pool is AbstractPool {
             PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
 
         superFactory = msg.sender;
+        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
+        require(_globals(superFactory).isValidLiquidityLockerFactory(_llFactory), "P:INVALID_LL_FACTORY");
     }
 
     /// @notice Used to transfer the investor's rewards to him
@@ -145,7 +147,7 @@ contract Pool is AbstractPool {
     }
 
     // Returns the HeliosGlobals instance
-    function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
+    function _globals(address poolFactory) internal override view returns (IHeliosGlobals) {
         return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 }

@@ -101,7 +101,6 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         address liquidityAssetAddress = address(liquidityAsset);
         vm.expectRevert(bytes("HG:NOT_ADMIN"));
         heliosGlobals.setLiquidityAsset(liquidityAssetAddress, true);
-        assertEq(heliosGlobals.isValidLiquidityAsset(liquidityAssetAddress), false);
 
         vm.stopPrank();
     }

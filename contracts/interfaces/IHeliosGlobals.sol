@@ -10,5 +10,5 @@ interface IHeliosGlobals {
 
     function isValidLiquidityAsset(address asset) external view returns (bool);
 
-    function validSubFactories(address superFactory, address subFactory) external view returns (bool);
+    function isValidLiquidityLockerFactory(address liquidityLockerFactory) external view returns (bool);
 }

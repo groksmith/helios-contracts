@@ -3,11 +3,11 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
-import {MockTokenERC20} from "./MockTokenERC20.sol";
-import "../contracts/pool/AbstractPool.sol";
+import {MockTokenERC20} from "./Mocks/MockTokenERC20.sol";
+import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
 
-import {FixtureContract} from "./FixtureContract.sol";
+import {FixtureContract} from "./fixtures/FixtureContract.sol";
 
 contract RegPoolTest is FixtureContract {
     event PendingReward(address indexed recipient, uint256 indexed amount);

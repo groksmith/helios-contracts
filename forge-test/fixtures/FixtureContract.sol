@@ -1,16 +1,14 @@
 pragma solidity 0.8.16;
 
-import "forge-std/Test.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {MockTokenERC20} from "./MockTokenERC20.sol";
-import {MockPoolFactory} from "./MockPoolFactory.sol";
-import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
-import {LiquidityLockerFactory} from "../contracts/pool/LiquidityLockerFactory.sol";
-import {LiquidityLocker} from "../contracts/pool/LiquidityLocker.sol";
-import {PoolFactory} from "../contracts/pool/PoolFactory.sol";
-import {BlendedPool} from "../contracts/pool/BlendedPool.sol";
-import {Pool} from "../contracts/pool/Pool.sol";
-import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
+import {Test} from "forge-std/Test.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
+import {MockPoolFactory} from "../mocks/MockPoolFactory.sol";
+import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
+import {LiquidityLockerFactory} from "../../contracts/pool/LiquidityLockerFactory.sol";
+import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
+import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
+import {Pool} from "../../contracts/pool/Pool.sol";
 
 abstract contract FixtureContract is Test {
     address public constant OWNER_ADDRESS = 0x8A867fcC5a4d1FBbf7c1A9D6e5306b78511fDDDe;

@@ -10,15 +10,11 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILiquidityLockerFactory.sol";
 import "../interfaces/ILiquidityLocker.sol";
 import "../interfaces/IHeliosGlobals.sol";
-import "../library/PoolLib.sol";
 import "./AbstractPool.sol";
 import "./BlendedPool.sol";
 
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is AbstractPool {
-    using SafeMath for uint256;
-    using SafeMathUint for uint256;
-    using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
     address public immutable superFactory; // The factory that deployed this Pool
@@ -32,8 +28,6 @@ contract Pool is AbstractPool {
 
     event PoolAdminSet(address indexed poolAdmin, bool allowed);
 
-    mapping(address => bool) public poolAdmins; // The Pool Admin addresses that have permission to do certain operations in case of disaster management
-
     constructor(
         address _liquidityAsset,
         address _llFactory,
@@ -44,7 +38,7 @@ contract Pool is AbstractPool {
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL, _withdrawThreshold, _withdrawPeriod) {
+    ) AbstractPool(_liquidityAsset, _llFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
         poolInfo =
@@ -70,6 +64,7 @@ contract Pool is AbstractPool {
             }
             blendedPool.requestLiquidityAssets(amountMissing);
             _mint(address(blendedPool), amountMissing);
+            totalMinted += amountMissing;
             require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
 
             emit RewardClaimed(msg.sender, callerRewards);
@@ -88,7 +83,7 @@ contract Pool is AbstractPool {
     }
 
     function withdrawableOf(address _holder) external view returns (uint256) {
-        require(depositDate[_holder].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
 
         return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
     }
@@ -111,7 +106,7 @@ contract Pool is AbstractPool {
             address holder = _holders[i];
 
             uint256 holderBalance = balanceOf(holder);
-            uint256 holderShare = holderBalance * 1e18 / poolInfo.investmentPoolSize;
+            uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;
             uint256 holderRewards = holderShare * _amount / 1e18;
             rewards[holder] += holderRewards;
         }
@@ -122,7 +117,7 @@ contract Pool is AbstractPool {
     }
 
     function _canWithdraw(address account, uint256 amount) internal view {
-        require(depositDate[account].add(poolInfo.lockupPeriod) <= block.timestamp, "P:FUNDS_LOCKED");
+        require(depositDate[account] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
         require(balanceOf(account) >= amount, "P:INSUFFICIENT_BALANCE");
         require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
     }

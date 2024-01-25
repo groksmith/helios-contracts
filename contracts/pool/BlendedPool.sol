@@ -8,14 +8,10 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../interfaces/IPoolFactory.sol";
 
 import "../interfaces/IHeliosGlobals.sol";
-import "../library/PoolLib.sol";
-import "../token/PoolFDT.sol";
 import "./AbstractPool.sol";
 
 /// @title Blended Pool
 contract BlendedPool is AbstractPool {
-    using SafeMathUint for uint256;
-    using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
     address public immutable superFactory; // The factory that deployed this Pool
@@ -34,7 +30,7 @@ contract BlendedPool is AbstractPool {
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL, _withdrawThreshold, _withdrawPeriod) {
+    ) AbstractPool(_liquidityAsset, _llFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
@@ -79,7 +75,6 @@ contract BlendedPool is AbstractPool {
     /// @notice Used to transfer the investor's rewards to him
     function claimReward() external override returns (bool) {
         uint256 callerRewards = rewards[msg.sender];
-        require(callerRewards >= 0, "P:ZERO_REWARDS");
         uint256 totalBalance = liquidityLocker.totalBalance();
         rewards[msg.sender] = 0;
 

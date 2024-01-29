@@ -112,6 +112,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     /// @param  _amounts the amount of LA to be withdrawn
     /// @param  _indices the indices of the DepositInstance
     function withdraw(uint256[] calldata _amounts, uint16[] calldata _indices) public whenNotPaused {
+        require(_amounts.length == _indices.length, "P:ARRAYS_INCONSISTENT");
         for (uint256 i = 0; i < _indices.length; i++) {
             uint256 _index = _indices[i];
             uint256 _amount = _amounts[i];
@@ -130,7 +131,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
             }
 
             aDeposit.amount -= _amount;
-            uint256 tokenAmountInDeposit = aDeposit.token.balanceOf(address(liquidityLocker));
+            // uint256 tokenAmountInDeposit = aDeposit.token.balanceOf(address(liquidityLocker));
 
             if (aDeposit.amount == 0) {
                 removeDeposit(msg.sender, _index);
@@ -156,7 +157,7 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
         require(_amount > 0, "P:INVALID_VALUE");
         require(rewards[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
 
-        _mint(msg.sender, rewards[msg.sender]);
+        _mint(msg.sender, _amount);
         rewards[msg.sender] -= _amount;
         _emitBalanceUpdatedEvent();
         emit Reinvest(msg.sender, _amount);
@@ -198,14 +199,20 @@ abstract contract AbstractPool is PoolFDT, Pausable, Ownable {
     }
 
     /// @notice  Use the pool's money for investment
-    function drawdown(address _to) external onlyOwner {
+    function drawdown(address _to, uint256 _amount) external onlyOwner {
+        principalOut += _amount;
         uint256 amount = _drawdownAmount();
         _transferLiquidityLockerFunds(_to, amount);
     }
 
     /// @notice  Deposit LA without minimal threshold or getting LP in return
     function adminDeposit(uint256 _amount) external onlyOwner {
-        require(liquidityAsset.balanceOf(msg.sender) > _amount, "P:NOT_ENOUGH_BALANCE!!");
+        require(liquidityAsset.balanceOf(msg.sender) > _amount, "P:NOT_ENOUGH_BALANCE");
+        if (_amount >= principalOut) {
+            principalOut = 0;
+        } else {
+            principalOut -= _amount;
+        }
 
         liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
     }

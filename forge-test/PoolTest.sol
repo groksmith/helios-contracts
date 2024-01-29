@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
-import {MockERC20} from "./MockERC20.sol";
+import {MockTokenERC20} from "./MockTokenERC20.sol";
 import "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
 import "../contracts/pool/BlendedPool.sol";
@@ -19,7 +19,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.prank(OWNER_ADDRESS);
         liquidityAsset.increaseAllowance(address(blendedPool), 1000);
         vm.stopPrank();
-        vm.prank(ADMIN_ADDRESS);
+        vm.prank(USER_ADDRESS);
         liquidityAsset.increaseAllowance(address(blendedPool), 1000);
         vm.stopPrank();
     }
@@ -119,12 +119,12 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.deposit(user1Deposit);
 
         uint256 user2Deposit = 1000;
-        vm.prank(ADMIN_ADDRESS);
+        vm.prank(USER_ADDRESS);
         blendedPool.deposit(user2Deposit);
 
         address[] memory holders = new address[](2);
         holders[0] = OWNER_ADDRESS;
-        holders[1] = ADMIN_ADDRESS;
+        holders[1] = USER_ADDRESS;
 
         //a non-pool-admin address shouldn't be able to call distributeRewards()
         vm.prank(OWNER_ADDRESS);
@@ -138,7 +138,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //now we need to test if the users got assigned the correct rewards
         uint256 user1Rewards = blendedPool.rewards(OWNER_ADDRESS);
-        uint256 user2Rewards = blendedPool.rewards(ADMIN_ADDRESS);
+        uint256 user2Rewards = blendedPool.rewards(USER_ADDRESS);
         assertEq(user1Rewards, 90, "wrong reward user1");
         assertEq(user2Rewards, 909, "wrong reward user2"); //NOTE: 1 is lost as a dust value :(
 
@@ -151,11 +151,11 @@ contract BlendedPoolTest is Test, FixtureContract {
             "user1 balance not upd after claimReward()"
         );
 
-        uint256 user2BalanceBefore = liquidityAsset.balanceOf(ADMIN_ADDRESS);
-        vm.prank(ADMIN_ADDRESS);
+        uint256 user2BalanceBefore = liquidityAsset.balanceOf(USER_ADDRESS);
+        vm.prank(USER_ADDRESS);
         blendedPool.claimReward();
         assertEq(
-            liquidityAsset.balanceOf(ADMIN_ADDRESS) - user2BalanceBefore,
+            liquidityAsset.balanceOf(USER_ADDRESS) - user2BalanceBefore,
             909,
             "user2 balance not upd after claimReward()"
         );
@@ -185,14 +185,14 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
 
         uint256 user2Deposit = 1000;
-        vm.startPrank(ADMIN_ADDRESS);
+        vm.startPrank(USER_ADDRESS);
         liquidityAssetElevated.increaseAllowance(poolAddress, 10000);
         pool.deposit(user2Deposit);
         vm.stopPrank();
 
         address[] memory holders = new address[](2);
         holders[0] = OWNER_ADDRESS;
-        holders[1] = ADMIN_ADDRESS;
+        holders[1] = USER_ADDRESS;
 
         //a non-pool-admin address shouldn't be able to call distributeRewards()
         vm.prank(OWNER_ADDRESS);
@@ -206,7 +206,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //now we need to test if the users got assigned the correct rewards
         uint256 user1Rewards = pool.rewards(OWNER_ADDRESS);
-        uint256 user2Rewards = pool.rewards(ADMIN_ADDRESS);
+        uint256 user2Rewards = pool.rewards(USER_ADDRESS);
         assertEq(user1Rewards, 1, "wrong reward user1");
         assertEq(user2Rewards, 10, "wrong reward user2"); //NOTE: 1 is lost as a dust value :(
 
@@ -217,11 +217,11 @@ contract BlendedPoolTest is Test, FixtureContract {
             liquidityAsset.balanceOf(OWNER_ADDRESS) - user1BalanceBefore, 1, "user1 balance not upd after claimReward()"
         );
 
-        uint256 user2BalanceBefore = liquidityAsset.balanceOf(ADMIN_ADDRESS);
-        vm.prank(ADMIN_ADDRESS);
+        uint256 user2BalanceBefore = liquidityAsset.balanceOf(USER_ADDRESS);
+        vm.prank(USER_ADDRESS);
         pool.claimReward();
         assertEq(
-            liquidityAsset.balanceOf(ADMIN_ADDRESS) - user2BalanceBefore,
+            liquidityAsset.balanceOf(USER_ADDRESS) - user2BalanceBefore,
             10,
             "user2 balance not upd after claimReward()"
         );

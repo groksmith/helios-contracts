@@ -26,51 +26,32 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
     mapping(address => uint256) internal accumulativeMintedFor;
 
     event PointsPerShareUpdated(uint256 pointsPerShare);
-    event PointsCorrectionUpdated(
-        address indexed account,
-        int256 pointsCorrection
-    );
+    event PointsCorrectionUpdated(address indexed account, int256 pointsCorrection);
     event FundsDistributed(address indexed by, uint256 fundsDistributed);
-    event FundsWithdrawn(
-        address indexed by,
-        uint256 fundsWithdrawn,
-        uint256 totalWithdrawn
-    );
+    event FundsWithdrawn(address indexed by, uint256 fundsWithdrawn, uint256 totalWithdrawn);
 
-    constructor(
-        string memory tokenName,
-        string memory tokenSymbol
-    ) ERC20(tokenName, tokenSymbol) {}
+    constructor(string memory tokenName, string memory tokenSymbol) ERC20(tokenName, tokenSymbol) {}
 
     function _distributeFunds(uint256 value) internal {
         require(totalSupply() > 0, "FDT:ZERO_SUPPLY");
 
         if (value == 0) return;
 
-        pointsPerShare = pointsPerShare.add(
-            value.mul(POINTS_MULTIPLIER) / totalSupply()
-        );
+        pointsPerShare = pointsPerShare.add(value.mul(POINTS_MULTIPLIER) / totalSupply());
         emit FundsDistributed(msg.sender, value);
         emit PointsPerShareUpdated(pointsPerShare);
     }
 
     //TODO to be deactivated
-    function _prepareWithdraw()
-        internal
-        returns (uint256 withdrawableDividend)
-    {
+    function _prepareWithdraw() internal returns (uint256 withdrawableDividend) {
         withdrawableDividend = withdrawableFundsOf(msg.sender);
-        uint256 _withdrawnFunds = withdrawnFunds[msg.sender].add(
-            withdrawableDividend
-        );
+        uint256 _withdrawnFunds = withdrawnFunds[msg.sender].add(withdrawableDividend);
         withdrawnFunds[msg.sender] = _withdrawnFunds;
 
         emit FundsWithdrawn(msg.sender, withdrawableDividend, _withdrawnFunds);
     }
 
-    function _prepareWithdraw(
-        uint256 amount
-    ) internal returns (uint256 withdrawableDividend) {
+    function _prepareWithdraw(uint256 amount) internal returns (uint256 withdrawableDividend) {
         withdrawableDividend = withdrawableFundsOf(msg.sender);
         require(amount <= withdrawableDividend, "FDT:INSUFFICIENT_FUNDS");
         uint256 _withdrawnFunds = withdrawnFunds[msg.sender].add(amount);
@@ -92,29 +73,19 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
     }
 
     function accumulativeFundsOf(address owner) public view returns (uint256) {
-        return
-            pointsPerShare
-                .mul(balanceOf(owner))
-                .toInt256Safe()
-                .add(pointsCorrection[owner])
-                .toUint256Safe() / POINTS_MULTIPLIER;
+        return pointsPerShare.mul(balanceOf(owner)).toInt256Safe().add(pointsCorrection[owner]).toUint256Safe()
+            / POINTS_MULTIPLIER;
     }
 
     function decimals() public view virtual override returns (uint8) {
         return 18;
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint256 value
-    ) internal virtual override {
+    function _transfer(address from, address to, uint256 value) internal virtual override {
         super._transfer(from, to, value);
 
         int256 _magCorrection = pointsPerShare.mul(value).toInt256Safe();
-        int256 pointsCorrectionFrom = pointsCorrection[from].add(
-            _magCorrection
-        );
+        int256 pointsCorrectionFrom = pointsCorrection[from].add(_magCorrection);
         pointsCorrection[from] = pointsCorrectionFrom;
         int256 pointsCorrectionTo = pointsCorrection[to].sub(_magCorrection);
         pointsCorrection[to] = pointsCorrectionTo;
@@ -127,13 +98,9 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
         super._mint(account, value);
 
         totalMinted = totalMinted.add(value);
-        accumulativeMintedFor[account] = accumulativeMintedFor[account].add(
-            value
-        );
+        accumulativeMintedFor[account] = accumulativeMintedFor[account].add(value);
 
-        int256 _pointsCorrection = pointsCorrection[account].sub(
-            (pointsPerShare.mul(value)).toInt256Safe()
-        );
+        int256 _pointsCorrection = pointsCorrection[account].sub((pointsPerShare.mul(value)).toInt256Safe());
 
         pointsCorrection[account] = _pointsCorrection;
 
@@ -143,9 +110,7 @@ abstract contract BasicFDT is ERC20, ReentrancyGuard {
     function _burn(address account, uint256 value) internal virtual override {
         super._burn(account, value);
 
-        int256 _pointsCorrection = pointsCorrection[account].add(
-            (pointsPerShare.mul(value)).toInt256Safe()
-        );
+        int256 _pointsCorrection = pointsCorrection[account].add((pointsPerShare.mul(value)).toInt256Safe());
 
         pointsCorrection[account] = _pointsCorrection;
 

@@ -1,7 +1,8 @@
-pragma solidity 0.8.16;
+pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
+
 import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
@@ -17,10 +18,10 @@ contract BlendedPoolTest is Test, FixtureContract {
     function setUp() public {
         fixture();
         vm.prank(OWNER_ADDRESS);
-        liquidityAsset.increaseAllowance(address(blendedPool), 1000);
+        liquidityAsset.approve(address(blendedPool), 1000);
         vm.stopPrank();
         vm.prank(USER_ADDRESS);
-        liquidityAsset.increaseAllowance(address(blendedPool), 1000);
+        liquidityAsset.approve(address(blendedPool), 1000);
         vm.stopPrank();
     }
 
@@ -38,7 +39,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(blendedPool.totalDeposited(), 0);
 
         uint256 user1Deposit = 100;
-        liquidityAsset.increaseAllowance(address(blendedPool), user1Deposit);
+        liquidityAsset.approve(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
 
         //user's LP balance should be 100 now
@@ -56,7 +57,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(blendedPool.balanceOf(user2), 0, "user2 shouldn't have >0 atm");
         uint256 user2Deposit = 101;
 
-        liquidityAsset.increaseAllowance(address(blendedPool), user2Deposit);
+        liquidityAsset.approve(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
 
         assertEq(blendedPool.balanceOf(user2), user2Deposit, "wrong user2 LP balance");
@@ -85,7 +86,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         uint256 depositAmount = 150;
         uint256 currentTime = block.timestamp;
 
-        liquidityAsset.increaseAllowance(address(blendedPool), depositAmount);
+        liquidityAsset.approve(address(blendedPool), depositAmount);
         //the user can withdraw the sum he has deposited earlier
         blendedPool.deposit(depositAmount);
 
@@ -116,13 +117,13 @@ contract BlendedPoolTest is Test, FixtureContract {
         //firstly the users need to deposit before withdrawing
         uint256 user1Deposit = 100;
         vm.startPrank(user1);
-        liquidityAsset.increaseAllowance(address(blendedPool), user1Deposit);
+        liquidityAsset.approve(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
         vm.stopPrank();
 
         uint256 user2Deposit = 1000;
         vm.startPrank(user2);
-        liquidityAsset.increaseAllowance(address(blendedPool), user2Deposit);
+        liquidityAsset.approve(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
         vm.stopPrank();
 
@@ -190,13 +191,13 @@ contract BlendedPoolTest is Test, FixtureContract {
         Pool pool = Pool(poolAddress);
         uint256 user1Deposit = 100;
         vm.startPrank(user1);
-        liquidityAsset.increaseAllowance(poolAddress, 10000);
+        liquidityAsset.approve(poolAddress, 10000);
         pool.deposit(user1Deposit);
         vm.stopPrank();
 
         uint256 user2Deposit = 1000;
         vm.startPrank(user2);
-        liquidityAsset.increaseAllowance(poolAddress, 10000);
+        liquidityAsset.approve(poolAddress, 10000);
         pool.deposit(user2Deposit);
         vm.stopPrank();
 
@@ -243,7 +244,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         //firstly the users need to deposit before withdrawing
         uint256 user1Deposit = 100;
         vm.startPrank(user);
-        liquidityAsset.increaseAllowance(address(blendedPool), 10000);
+        liquidityAsset.approve(address(blendedPool), 10000);
         blendedPool.deposit(user1Deposit);
         vm.stopPrank();
 
@@ -279,7 +280,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         mintLiquidityAsset(OWNER_ADDRESS, 1000);
         vm.startPrank(OWNER_ADDRESS);
-        liquidityAsset.increaseAllowance(address(blendedPool), 1000);
+        liquidityAsset.approve(address(blendedPool), 1000);
         blendedPool.adminDeposit(1000);
         blendedPool.concludePendingReward(user);
 
@@ -304,7 +305,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //a user deposits some LA to the RegPool
         vm.startPrank(user);
-        liquidityAsset.increaseAllowance(poolAddress, 1000);
+        liquidityAsset.approve(poolAddress, 1000);
         pool.deposit(500);
         vm.stopPrank();
 
@@ -321,13 +322,13 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
         blendedPool.addPool(poolAddress);
         mintLiquidityAsset(OWNER_ADDRESS, 100);
-        liquidityAsset.increaseAllowance(address(blendedPool), 100);
+        liquidityAsset.approve(address(blendedPool), 100);
         blendedPool.adminDeposit(100);
         vm.stopPrank();
 
         //now let's claim reward. The blended pool will help
         vm.startPrank(user);
-        liquidityAsset.increaseAllowance(poolAddress, 10000);
+        liquidityAsset.approve(poolAddress, 10000);
         pool.claimReward();
     }
 
@@ -354,7 +355,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         Pool pool = Pool(poolAddress);
 
         vm.startPrank(user);
-        liquidityAsset.increaseAllowance(poolAddress, 1000);
+        liquidityAsset.approve(poolAddress, 1000);
         vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
         pool.deposit(_maxPoolSize + 1);
         vm.stopPrank();
@@ -366,7 +367,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         //firstly the user needs to deposit
         uint256 user1Deposit = 100;
         vm.startPrank(user);
-        liquidityAsset.increaseAllowance(address(blendedPool), 10000);
+        liquidityAsset.approve(address(blendedPool), 10000);
         blendedPool.deposit(user1Deposit);
         vm.stopPrank();
 

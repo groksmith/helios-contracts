@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -30,7 +30,7 @@ contract RegPoolTest is FixtureContract {
         assertEq(regPool1.totalDeposited(), 0);
 
         uint256 user1Deposit = 100;
-        liquidityAsset.increaseAllowance(address(regPool1), user1Deposit);
+        liquidityAsset.approve(address(regPool1), user1Deposit);
         regPool1.deposit(user1Deposit);
 
         //user's LP balance should be 100 now
@@ -45,7 +45,7 @@ contract RegPoolTest is FixtureContract {
         assertEq(regPool1.balanceOf(user2), 0, "user2 shouldn't have >0 atm");
         uint256 user2Deposit = 101;
 
-        liquidityAsset.increaseAllowance(address(regPool1), user2Deposit);
+        liquidityAsset.approve(address(regPool1), user2Deposit);
         regPool1.deposit(user2Deposit);
 
         assertEq(regPool1.balanceOf(user2), user2Deposit, "wrong user2 LP balance");
@@ -71,7 +71,7 @@ contract RegPoolTest is FixtureContract {
         uint256 depositAmount = 150;
         uint256 currentTime = block.timestamp;
 
-        liquidityAsset.increaseAllowance(address(regPool1), depositAmount);
+        liquidityAsset.approve(address(regPool1), depositAmount);
         //the user can withdraw the sum he has deposited earlier
         regPool1.deposit(depositAmount);
 
@@ -103,13 +103,13 @@ contract RegPoolTest is FixtureContract {
         //firstly the users need to deposit before withdrawing
         uint256 user1Deposit = 100;
         vm.startPrank(user1);
-        liquidityAsset.increaseAllowance(address(regPool1), user1Deposit);
+        liquidityAsset.approve(address(regPool1), user1Deposit);
         regPool1.deposit(user1Deposit);
         vm.stopPrank();
 
         uint256 user2Deposit = 1000;
         vm.startPrank(user2);
-        liquidityAsset.increaseAllowance(address(regPool1), user2Deposit);
+        liquidityAsset.approve(address(regPool1), user2Deposit);
         regPool1.deposit(user2Deposit);
         vm.stopPrank();
         address[] memory holders = new address[](2);
@@ -126,7 +126,7 @@ contract RegPoolTest is FixtureContract {
         //only the pool admin can call distributeRewards()
         vm.startPrank(OWNER_ADDRESS);
         mintLiquidityAsset(OWNER_ADDRESS, rewardGenerated);
-        liquidityAsset.increaseAllowance(address(regPool1), rewardGenerated);
+        liquidityAsset.approve(address(regPool1), rewardGenerated);
         regPool1.adminDeposit(rewardGenerated);
         regPool1.distributeRewards(rewardGenerated, holders);
         vm.stopPrank();
@@ -176,7 +176,7 @@ contract RegPoolTest is FixtureContract {
 
         Pool pool = Pool(poolAddress);
 
-        liquidityAsset.increaseAllowance(poolAddress, 1000);
+        liquidityAsset.approve(poolAddress, 1000);
         vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
         pool.deposit(_maxPoolSize + 1);
         vm.stopPrank();
@@ -188,7 +188,7 @@ contract RegPoolTest is FixtureContract {
 
         //firstly the user needs to deposit
         uint256 user1Deposit = 1000;
-        liquidityAsset.increaseAllowance(address(regPool1), user1Deposit);
+        liquidityAsset.approve(address(regPool1), user1Deposit);
         regPool1.deposit(user1Deposit);
         vm.stopPrank();
 
@@ -199,7 +199,7 @@ contract RegPoolTest is FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         mintLiquidityAsset(OWNER_ADDRESS, 1000);
-        liquidityAsset.increaseAllowance(address(regPool1), 1000);
+        liquidityAsset.approve(address(regPool1), 1000);
 
         regPool1.adminDeposit(1000);
         regPool1.distributeRewards(1000, holders);
@@ -210,7 +210,7 @@ contract RegPoolTest is FixtureContract {
         uint256 userRewards = regPool1.rewards(user);
         assertEq(userRewards, 10);
 
-        liquidityAsset.increaseAllowance(address(regPool1), userRewards);
+        liquidityAsset.approve(address(regPool1), userRewards);
         regPool1.reinvest(userRewards);
 
         uint256 userBalanceNow = regPool1.balanceOf(user);

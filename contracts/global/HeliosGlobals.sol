@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.20;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {ISubFactory} from "../interfaces/ISubFactory.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 
@@ -22,7 +22,7 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
     event ValidLiquidityLockerFactorySet(address indexed liquidityLockerFactory, bool valid);
 
     constructor(address admin) {
-        _setupRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _setRoleAdmin(USER_ROLE, DEFAULT_ADMIN_ROLE);
         emit Initialized();
     }

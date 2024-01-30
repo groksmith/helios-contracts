@@ -42,6 +42,9 @@ build:
 deploy:
 	forge create StakeContract --private-key ${PRIVATE_KEY} # --rpc-url
 
+verify:
+	forge create StakeContract --private-key ${PRIVATE_KEY} # --rpc-url
+
 format:
 	forge fmt
 

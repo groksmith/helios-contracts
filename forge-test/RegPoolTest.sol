@@ -198,8 +198,10 @@ contract RegPoolTest is FixtureContract {
         //only the pool admin can call distributeRewards()
         address poolAdmin = regPool1.owner();
         vm.startPrank(poolAdmin);
+
         mintLiquidityAsset(poolAdmin, 1000);
         liquidityAsset.increaseAllowance(address(regPool1), 1000);
+
         regPool1.adminDeposit(1000);
         regPool1.distributeRewards(1000, holders);
         vm.stopPrank();

@@ -8,3 +8,9 @@ cache_path  = 'cache_forge'
 remappings = [
     '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
 ]
+
+[rpc_endpoints]
+base_sepolia = "${RPC_URL}"
+
+[etherscan]
+base_sepolia = { key = "${API_KEY}", chain = "84532", url = "${RPC_URL}" }

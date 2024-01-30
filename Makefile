@@ -40,11 +40,14 @@ build:
 	forge remappings > remappings.txt
 	forge build
 
-deploy:
-	forge create StakeContract --private-key ${PRIVATE_KEY} # --rpc-url
+deploy_all:
+	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url ${RPC_URL} --broadcast -vvvv
 
-verify:
-	forge create StakeContract --private-key ${PRIVATE_KEY} # --rpc-url
+verify_all:
+	forge verify-contract 0x528Fcd0E3a36ca90C7eA05DE128e763a1FA38525 ./contracts/global/HeliosGlobals.sol:HeliosGlobals --constructor-args $(shell cast abi-encode "constructor(address)" ${HELIOS_OWNER}) --verifier-url ${VERIFIER_URL} --watch
+	forge verify-contract 0xb5cA9428b37e1e70c1B2568b72e9bda619670098 ./contracts/pool/PoolFactory.sol:PoolFactory --constructor-args $(shell cast abi-encode "constructor(address)" 0x528Fcd0E3a36ca90C7eA05DE128e763a1FA38525) --verifier-url ${VERIFIER_URL} --watch
+	forge verify-contract 0x9357e38C376Bb82F73194A1231B56e5BfE79EcBd ./contracts/pool/LiquidityLockerFactory.sol:LiquidityLockerFactory --constructor-args $(shell cast abi-encode "constructor()") --verifier-url ${VERIFIER_URL} --watch
+	forge verify-contract 0x984ECd10B04464F6B367fB9d34A5eeccC0424Ec6 ./forge-test/mocks/MockTokenERC20.sol:MockTokenERC20 --constructor-args $(shell cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC) --verifier-url ${VERIFIER_URL} --watch
 
 format:
 	forge fmt

@@ -73,7 +73,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     function test_depositFailure(address user) external {
         vm.startPrank(user);
         uint256 depositAmountBelowMin = 1;
-        vm.expectRevert("P:DEP_AMT_BELOW_MIN");
+        vm.expectRevert("BP:DEP_AMT_BELOW_MIN");
         blendedPool.deposit(depositAmountBelowMin);
     }
 
@@ -132,12 +132,11 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //a non-pool-admin address shouldn't be able to call distributeRewards()
         vm.prank(user1);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("PF:NOT_ADMIN");
         blendedPool.distributeRewards(1000, holders);
 
         //only the pool admin can call distributeRewards()
-        address poolAdmin = blendedPool.owner();
-        vm.prank(poolAdmin);
+        vm.prank(OWNER_ADDRESS);
         blendedPool.distributeRewards(1000, holders);
 
         //now we need to test if the users got assigned the correct rewards
@@ -171,8 +170,9 @@ contract BlendedPoolTest is Test, FixtureContract {
         createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
 
+        vm.startPrank(OWNER_ADDRESS);
         //firstly the users need to deposit before withdrawing
-        address poolAddress = mockPoolFactory.createPool(
+        address poolAddress = poolFactory.createPool(
             "1",
             address(liquidityAsset),
             address(liquidityLockerFactory),
@@ -184,6 +184,8 @@ contract BlendedPoolTest is Test, FixtureContract {
             500,
             1000
         );
+
+        vm.stopPrank();
 
         Pool pool = Pool(poolAddress);
         uint256 user1Deposit = 100;
@@ -204,12 +206,11 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //a non-pool-admin address shouldn't be able to call distributeRewards()
         vm.prank(user1);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("PF:NOT_ADMIN");
         pool.distributeRewards(1000, holders);
 
         //only the pool admin can call distributeRewards()
-        address poolAdmin = pool.owner();
-        vm.prank(poolAdmin);
+        vm.prank(OWNER_ADDRESS);
         pool.distributeRewards(1000, holders);
 
         //now we need to test if the users got assigned the correct rewards
@@ -250,16 +251,16 @@ contract BlendedPoolTest is Test, FixtureContract {
         holders[0] = user;
 
         //only the pool admin can call distributeRewards()
-        address poolAdmin = blendedPool.owner();
-        vm.prank(poolAdmin);
+        vm.prank(OWNER_ADDRESS);
         blendedPool.distributeRewards(1000, holders);
 
         assertEq(blendedPool.rewards(user), 1000, "rewards should be 1000 atm");
 
         // now let's deplete the pool's balance
-        vm.prank(poolAdmin);
+        vm.startPrank(OWNER_ADDRESS);
         uint256 drawdownAmount = blendedPool.totalSupply() - blendedPool.principalOut();
-        blendedPool.drawdown(poolAdmin, drawdownAmount);
+        blendedPool.drawdown(OWNER_ADDRESS, drawdownAmount);
+        vm.stopPrank();
 
         //..and claim rewards as user1
         vm.startPrank(user);
@@ -276,10 +277,10 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user);
 
-        mintLiquidityAsset(poolAdmin, 1000);
-        vm.startPrank(poolAdmin);
+        mintLiquidityAsset(OWNER_ADDRESS, 1000);
+        vm.startPrank(OWNER_ADDRESS);
         liquidityAsset.increaseAllowance(address(blendedPool), 1000);
-        blendedPool.adminDeposit(999);
+        blendedPool.adminDeposit(1000);
         blendedPool.concludePendingReward(user);
 
         uint256 user1BalanceAfter = liquidityAsset.balanceOf(user);
@@ -290,13 +291,14 @@ contract BlendedPoolTest is Test, FixtureContract {
 
     function test_subsidingRegPoolWithBlendedPool(address user) external {
         createInvestorAndMintLiquidityAsset(user, 1000);
-        vm.prank(user);
-        address poolAddress = mockPoolFactory.createPool(
+
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+        address poolAddress = poolFactory.createPool(
             "1", address(liquidityAsset), address(liquidityLockerFactory), 2000, 10, 1000, 1000, 100, 500, 1000
         );
 
         Pool pool = Pool(poolAddress);
-        vm.startPrank(pool.owner());
+
         pool.setBlendedPool(address(blendedPool));
         vm.stopPrank();
 
@@ -307,19 +309,18 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
 
         //the admin distributes rewards and takes all the LA, emptying the pool
-        vm.startPrank(pool.owner());
+        vm.startPrank(OWNER_ADDRESS);
 
         address[] memory holders = new address[](1);
         holders[0] = user;
         pool.distributeRewards(100, holders);
-        pool.drawdown(pool.owner(), 100);
+        pool.drawdown(OWNER_ADDRESS, 100);
         vm.stopPrank();
 
         //now let's deposit LA to the blended pool
-        address bpOwner = blendedPool.owner();
-        vm.startPrank(bpOwner);
+        vm.startPrank(OWNER_ADDRESS);
         blendedPool.addPool(poolAddress);
-        mintLiquidityAsset(bpOwner, 100);
+        mintLiquidityAsset(OWNER_ADDRESS, 100);
         liquidityAsset.increaseAllowance(address(blendedPool), 100);
         blendedPool.adminDeposit(100);
         vm.stopPrank();
@@ -333,8 +334,10 @@ contract BlendedPoolTest is Test, FixtureContract {
     function test_maxPoolSize(address user, uint256 _maxPoolSize) external {
         createInvestorAndMintLiquidityAsset(user, 1000);
 
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+
         _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
-        address poolAddress = mockPoolFactory.createPool(
+        address poolAddress = poolFactory.createPool(
             "1",
             address(liquidityAsset),
             address(liquidityLockerFactory),
@@ -346,6 +349,7 @@ contract BlendedPoolTest is Test, FixtureContract {
             500,
             1000
         );
+        vm.stopPrank();
 
         Pool pool = Pool(poolAddress);
 
@@ -370,8 +374,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         holders[0] = user;
 
         //only the pool admin can call distributeRewards()
-        address poolAdmin = blendedPool.owner();
-        vm.prank(poolAdmin);
+        vm.prank(OWNER_ADDRESS);
         blendedPool.distributeRewards(1000, holders);
 
         mintLiquidityAsset(blendedPool.getLL(), 1003);

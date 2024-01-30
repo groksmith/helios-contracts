@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import {Pool} from "../../contracts/pool/Pool.sol";
+import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 
 // Used for testing only
@@ -40,5 +41,32 @@ contract MockPoolFactory is PoolFactory {
         isPool[poolAddress] = true;
 
         emit PoolCreated(poolId, liquidityAsset, poolAddress, msg.sender);
+    }
+
+    function createBlendedPool(
+        address liquidityAsset,
+        address llFactory,
+        uint256 lockupPeriod,
+        uint256 apy,
+        uint256 duration,
+        uint256 minInvestmentAmount,
+        uint256 withdrawThreshold,
+        uint256 withdrawPeriod
+    ) external override whenNotPaused nonReentrant returns (address poolAddress) {
+        BlendedPool pool = new BlendedPool(
+            liquidityAsset,
+            llFactory,
+            lockupPeriod,
+            apy,
+            duration,
+            minInvestmentAmount,
+            withdrawThreshold,
+            withdrawPeriod
+        );
+
+        poolAddress = address(pool);
+        blendedPool = poolAddress;
+
+        emit BlendedPoolCreated(liquidityAsset, blendedPool, msg.sender);
     }
 }

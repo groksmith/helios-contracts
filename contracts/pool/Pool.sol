@@ -19,7 +19,6 @@ import {BlendedPool} from "./BlendedPool.sol";
 contract Pool is AbstractPool {
     using SafeERC20 for IERC20;
 
-    address public immutable superFactory; // The factory that deployed this Pool
     BlendedPool public blendedPool;
 
     enum State {
@@ -46,7 +45,8 @@ contract Pool is AbstractPool {
         poolInfo =
             PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
 
-        superFactory = msg.sender;
+        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
+        require(_globals(superFactory).isValidLiquidityLockerFactory(_llFactory), "P:INVALID_LL_FACTORY");
     }
 
     /// @notice Used to transfer the investor's rewards to him
@@ -101,7 +101,7 @@ contract Pool is AbstractPool {
     /// @notice Used to distribute rewards among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
     /// @param  _holders the list of investors must be provided externally due to Solidity limitations
-    function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyOwner nonReentrant {
+    function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyAdmin nonReentrant {
         require(_amount > 0, "P:INVALID_VALUE");
         require(_holders.length > 0, "P:ZERO_HOLDERS");
         for (uint256 i = 0; i < _holders.length; i++) {
@@ -114,7 +114,7 @@ contract Pool is AbstractPool {
         }
     }
 
-    function setBlendedPool(address _blendedPool) external onlyOwner {
+    function setBlendedPool(address _blendedPool) external onlyAdmin {
         blendedPool = BlendedPool(_blendedPool);
     }
 
@@ -145,7 +145,7 @@ contract Pool is AbstractPool {
     }
 
     // Returns the HeliosGlobals instance
-    function _globals(address poolFactory) internal view returns (IHeliosGlobals) {
+    function _globals(address poolFactory) internal override view returns (IHeliosGlobals) {
         return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 }

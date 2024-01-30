@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "./LiquidityLocker.sol";
-import "../interfaces/ISubFactory.sol";
-import "../interfaces/ILiquidityLockerFactory.sol";
+import {LiquidityLocker} from "./LiquidityLocker.sol";
+import {ISubFactory} from "../interfaces/ISubFactory.sol";
+import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol";
 
 // LiquidityLockerFactory instantiates LiquidityLockers
 contract LiquidityLockerFactory is ILiquidityLockerFactory {

@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IPoolFactory.sol";
-
-import "../interfaces/IHeliosGlobals.sol";
-import "../library/PoolLib.sol";
-import "../token/PoolFDT.sol";
-import "./AbstractPool.sol";
+import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
+import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
+import {AbstractPool} from "./AbstractPool.sol";
+import {ILiquidityLocker} from "../interfaces/ILiquidityLocker.sol";
+import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol";
 
 /// @title Blended Pool
 contract BlendedPool is AbstractPool {
-    using SafeMathUint for uint256;
-    using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
     address public immutable superFactory; // The factory that deployed this Pool
@@ -34,7 +32,7 @@ contract BlendedPool is AbstractPool {
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    ) AbstractPool(_liquidityAsset, _llFactory, PoolLib.NAME, PoolLib.SYMBOL, _withdrawThreshold, _withdrawPeriod) {
+    ) AbstractPool(_liquidityAsset, _llFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_llFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
@@ -79,7 +77,6 @@ contract BlendedPool is AbstractPool {
     /// @notice Used to transfer the investor's rewards to him
     function claimReward() external override returns (bool) {
         uint256 callerRewards = rewards[msg.sender];
-        require(callerRewards >= 0, "P:ZERO_REWARDS");
         uint256 totalBalance = liquidityLocker.totalBalance();
         rewards[msg.sender] = 0;
 

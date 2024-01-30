@@ -1,14 +1,14 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import {FixtureContract} from "./FixtureContract.sol";
+import {FixtureContract} from "./fixtures/FixtureContract.sol";
 
 contract HeliosGlobalsTest is Test, FixtureContract {
     event ProtocolPaused(bool pause);
     event GlobalAdminSet(address indexed newGlobalAdmin);
     event LiquidityAssetSet(address asset, uint256 decimals, string symbol, bool valid);
     event ValidPoolFactorySet(address indexed poolFactory, bool valid);
-    event ValidSubFactorySet(address indexed superFactory, address indexed subFactory, bool valid);
+    event ValidLiquidityLockerFactorySet(address indexed liquidityLockerFactory, bool valid);
 
     function setUp() public {
         fixture();
@@ -106,37 +106,32 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_when_owner_setValidSubFactory() public {
+    function test_when_owner_setValidLiquidityLockerFactory() public {
         vm.startPrank(OWNER_ADDRESS);
 
-        address poolFactoryAddress = address(poolFactory);
         address liquidityLockerFactoryAddress = address(liquidityLockerFactory);
 
-        heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
+        heliosGlobals.setValidLiquidityLockerFactory(liquidityLockerFactoryAddress, true);
 
         vm.expectEmit();
-        emit ValidSubFactorySet(poolFactoryAddress, liquidityLockerFactoryAddress, true);
+        emit ValidLiquidityLockerFactorySet(liquidityLockerFactoryAddress, true);
 
-        heliosGlobals.setValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, true);
-        assertEq(heliosGlobals.isValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, 1), true);
-        assertEq(heliosGlobals.isValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, 2), false);
+        heliosGlobals.setValidLiquidityLockerFactory(liquidityLockerFactoryAddress, true);
+        assertEq(heliosGlobals.isValidLiquidityLockerFactory(liquidityLockerFactoryAddress), true);
 
         vm.stopPrank();
     }
 
-    function test_when_not_owner_setValidSubFactory(address user) public {
+    function test_when_not_owner_setValidLiquidityLockerFactory(address user) public {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(OWNER_ADDRESS);
 
-        address poolFactoryAddress = address(poolFactory);
         address liquidityLockerFactoryAddress = address(liquidityLockerFactory);
-
-        heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
         vm.stopPrank();
 
         vm.startPrank(user);
         vm.expectRevert(bytes("HG:NOT_ADMIN"));
-        heliosGlobals.setValidSubFactory(poolFactoryAddress, liquidityLockerFactoryAddress, true);
+        heliosGlobals.setValidLiquidityLockerFactory(liquidityLockerFactoryAddress, true);
         vm.stopPrank();
     }
 }

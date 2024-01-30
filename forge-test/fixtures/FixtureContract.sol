@@ -3,7 +3,6 @@ pragma solidity 0.8.16;
 import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
-import {MockPoolFactory} from "../mocks/MockPoolFactory.sol";
 import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 import {LiquidityLockerFactory} from "../../contracts/pool/LiquidityLockerFactory.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
@@ -21,13 +20,13 @@ abstract contract FixtureContract is Test {
     ERC20 public liquidityAsset;
     MockTokenERC20 private liquidityAssetElevated;
     PoolFactory public poolFactory;
-    MockPoolFactory public mockPoolFactory;
     BlendedPool public blendedPool;
     Pool public regPool1;
     LiquidityLockerFactory public liquidityLockerFactory;
 
     function fixture() public {
-        vm.startPrank(OWNER_ADDRESS);
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
         liquidityAssetElevated = new MockTokenERC20("USDT", "USDT");
         liquidityAsset = ERC20(liquidityAssetElevated);
@@ -35,27 +34,14 @@ abstract contract FixtureContract is Test {
         liquidityAssetElevated.mint(OWNER_ADDRESS, 1000000);
         liquidityAssetElevated.mint(USER_ADDRESS, 1000);
 
-        poolFactory = new PoolFactory(address(heliosGlobals));
-        mockPoolFactory = new MockPoolFactory(address(heliosGlobals));
         liquidityLockerFactory = new LiquidityLockerFactory();
-
-        heliosGlobals.setLiquidityAsset(address(liquidityAsset), true);
         heliosGlobals.setValidLiquidityLockerFactory(address(liquidityLockerFactory), true);
+        heliosGlobals.setLiquidityAsset(address(liquidityAsset), true);
 
-        address blendedPoolAddress = mockPoolFactory.createBlendedPool(
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
-            1000,
-            200,
-            300,
-            100,
-            500,
-            1000
-        );
+        poolFactory = new PoolFactory(address(heliosGlobals));
+        heliosGlobals.setValidPoolFactory(address(poolFactory), true);
 
-        blendedPool = BlendedPool(blendedPoolAddress);
-
-        address poolAddress = mockPoolFactory.createPool(
+        address poolAddress = poolFactory.createPool(
             "reg pool",
             address(liquidityAsset),
             address(liquidityLockerFactory),
@@ -69,11 +55,26 @@ abstract contract FixtureContract is Test {
         );
 
         regPool1 = Pool(poolAddress);
+
+        address blendedPoolAddress = poolFactory.createBlendedPool(
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            1000,
+            200,
+            300,
+            100,
+            500,
+            1000
+        );
+
+        blendedPool = BlendedPool(blendedPoolAddress);
+
         vm.stopPrank();
     }
 
     function createInvestorAndMintLiquidityAsset(address investor, uint256 amount) public returns (address) {
         vm.assume(investor != address(0));
+        vm.assume(investor != OWNER_ADDRESS);
         liquidityAssetElevated.mint(investor, amount);
         return investor;
     }

@@ -120,13 +120,12 @@ contract RegPoolTest is FixtureContract {
 
         //a non-pool-admin address shouldn't be able to call distributeRewards()
         vm.prank(user1);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("PF:NOT_ADMIN");
         regPool1.distributeRewards(rewardGenerated, holders);
 
         //only the pool admin can call distributeRewards()
-        address poolAdmin = regPool1.owner();
-        vm.startPrank(poolAdmin);
-        mintLiquidityAsset(poolAdmin, rewardGenerated);
+        vm.startPrank(OWNER_ADDRESS);
+        mintLiquidityAsset(OWNER_ADDRESS, rewardGenerated);
         liquidityAsset.increaseAllowance(address(regPool1), rewardGenerated);
         regPool1.adminDeposit(rewardGenerated);
         regPool1.distributeRewards(rewardGenerated, holders);
@@ -159,8 +158,10 @@ contract RegPoolTest is FixtureContract {
     }
 
     function test_maxPoolSize(uint256 _maxPoolSize) external {
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+
         _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
-        address poolAddress = mockPoolFactory.createPool(
+        address poolAddress = poolFactory.createPool(
             "1",
             address(liquidityAsset),
             address(liquidityLockerFactory),
@@ -175,7 +176,6 @@ contract RegPoolTest is FixtureContract {
 
         Pool pool = Pool(poolAddress);
 
-        vm.startPrank(OWNER_ADDRESS);
         liquidityAsset.increaseAllowance(poolAddress, 1000);
         vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
         pool.deposit(_maxPoolSize + 1);
@@ -196,10 +196,9 @@ contract RegPoolTest is FixtureContract {
         holders[0] = user;
 
         //only the pool admin can call distributeRewards()
-        address poolAdmin = regPool1.owner();
-        vm.startPrank(poolAdmin);
+        vm.startPrank(OWNER_ADDRESS);
 
-        mintLiquidityAsset(poolAdmin, 1000);
+        mintLiquidityAsset(OWNER_ADDRESS, 1000);
         liquidityAsset.increaseAllowance(address(regPool1), 1000);
 
         regPool1.adminDeposit(1000);

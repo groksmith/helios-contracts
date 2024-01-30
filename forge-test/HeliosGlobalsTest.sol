@@ -75,7 +75,6 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         address poolFactoryAddress = address(poolFactory);
         vm.expectRevert(bytes("HG:NOT_ADMIN"));
         heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
-        assertEq(heliosGlobals.isValidPoolFactory(poolFactoryAddress), false);
 
         vm.stopPrank();
     }

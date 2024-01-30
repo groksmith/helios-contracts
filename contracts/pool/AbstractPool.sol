@@ -12,7 +12,7 @@ import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
-abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
+abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
     string public constant NAME = "Helios TKN Pool";
     string public constant SYMBOL = "HLS-P";
 
@@ -23,6 +23,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
     uint256 internal immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
     uint256 internal totalMinted;
     uint256 public principalOut;
+
+    address public immutable superFactory; // The factory that deployed this Pool
 
     mapping(address => uint256) public rewards;
     mapping(address => uint256) public pendingWithdrawals;
@@ -76,6 +78,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
         liquidityLocker = ILiquidityLocker(ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
         withdrawLimit = _withdrawLimit;
         withdrawPeriod = _withdrawPeriod;
+        superFactory = msg.sender;
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
@@ -187,7 +190,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
 
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _recipient address of the recipient who didn't get the liquidity
-    function concludePendingWithdrawal(address _recipient) external nonReentrant onlyOwner {
+    function concludePendingWithdrawal(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingWithdrawals[_recipient];
         require(liquidityLocker.transfer(_recipient, amount), "P:CONCLUDE_WITHDRAWAL_FAILED");
 
@@ -198,7 +201,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
 
     /// @notice Admin function used for unhappy path after reward claiming failure
     /// @param _recipient address of the recipient who didn't get the reward
-    function concludePendingReward(address _recipient) external nonReentrant onlyOwner {
+    function concludePendingReward(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingRewards[_recipient];
         require(liquidityLocker.transfer(_recipient, amount), "P:CONCLUDE_REWARD_FAILED");
 
@@ -208,14 +211,14 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
     }
 
     /// @notice  Use the pool's money for investment
-    function drawdown(address _to, uint256 _amount) external onlyOwner {
+    function drawdown(address _to, uint256 _amount) external onlyAdmin {
         principalOut += _amount;
         uint256 amount = _drawdownAmount();
         _transferLiquidityLockerFunds(_to, amount);
     }
 
     /// @notice  Deposit LA without minimal threshold or getting LP in return
-    function adminDeposit(uint256 _amount) external onlyOwner {
+    function adminDeposit(uint256 _amount) external onlyAdmin {
         require(liquidityAsset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
         if (_amount >= principalOut) {
             principalOut = 0;
@@ -226,7 +229,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
         liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
     }
 
-    function setSecondaryLiquidityAsset(address _liquidityAsset) external onlyOwner {
+    function setSecondaryLiquidityAsset(address _liquidityAsset) external onlyAdmin {
         liquidityLocker.setSecondaryLiquidityAsset(_liquidityAsset);
     }
 
@@ -261,4 +264,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable, Ownable {
 
     // Returns the HeliosGlobals instance
     function _globals(address poolFactory) internal virtual view returns (IHeliosGlobals);
+
+    modifier onlyAdmin() {
+        require(_globals(superFactory).isAdmin(msg.sender), "PF:NOT_ADMIN");
+        _;
+    }
 }

@@ -16,8 +16,6 @@ import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol
 contract BlendedPool is AbstractPool {
     using SafeERC20 for IERC20;
 
-    address public immutable superFactory; // The factory that deployed this Pool
-
     address public borrower; // Address of borrower for this Pool.
     mapping(address => bool) public pools;
 
@@ -36,7 +34,6 @@ contract BlendedPool is AbstractPool {
         require(_liquidityAsset != address(0), "BP:ZERO_LIQ_ASSET");
         require(_llFactory != address(0), "BP:ZERO_LIQ_LOCKER_FACTORY");
 
-        superFactory = msg.sender;
         require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "BP:INVALID_LIQ_ASSET");
         require(_globals(superFactory).isValidLiquidityLockerFactory(_llFactory), "BP:INVALID_LL_FACTORY");
 
@@ -46,7 +43,7 @@ contract BlendedPool is AbstractPool {
     /// @notice Used to distribute rewards among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
     /// @param  _holders the list of investors must be provided externally due to Solidity limitations
-    function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyOwner nonReentrant {
+    function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyAdmin nonReentrant {
         require(_amount > 0, "BP:INVALID_VALUE");
         require(_holders.length > 0, "BP:ZERO_HOLDERS");
         for (uint256 i = 0; i < _holders.length; i++) {
@@ -119,19 +116,19 @@ contract BlendedPool is AbstractPool {
     }
 
     /// @notice Register a new pool to the Blended Pool
-    function addPool(address _pool) external onlyOwner {
+    function addPool(address _pool) external onlyAdmin {
         pools[_pool] = true;
     }
 
     /// @notice Register new pools in batch to the Blended Pool
-    function addPools(address[] memory _pools) external onlyOwner {
+    function addPools(address[] memory _pools) external onlyAdmin {
         for (uint256 i = 0; i < _pools.length; i++) {
             pools[_pools[i]] = true;
         }
     }
 
     /// @notice Remove a pool when it's no longer actual
-    function removePool(address _pool) external onlyOwner {
+    function removePool(address _pool) external onlyAdmin {
         delete pools[_pool];
     }
 

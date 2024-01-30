@@ -25,6 +25,7 @@ remove_modules:
 # Install the Modules
 install:
 	forge install foundry-rs/forge-std
+	forge install OpenZeppelin/openzeppelin-contracts
 
 # Update Dependencies
 update:

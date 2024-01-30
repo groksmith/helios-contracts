@@ -257,9 +257,10 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(blendedPool.rewards(user), 1000, "rewards should be 1000 atm");
 
         // now let's deplete the pool's balance
-        vm.prank(poolAdmin);
+        vm.startPrank(poolAdmin);
         uint256 drawdownAmount = blendedPool.totalSupply() - blendedPool.principalOut();
         blendedPool.drawdown(poolAdmin, drawdownAmount);
+        vm.stopPrank();
 
         //..and claim rewards as user1
         vm.startPrank(user);

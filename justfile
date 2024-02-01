@@ -56,10 +56,11 @@ remap: && _timer
 build: && _timer
 	forge clean
 	forge remappings > remappings.txt
-	forge build --extra-output-files abi --out ./abi
+	forge build --names
 
 generate-abi: && _timer
-	forge build --names --skip .t.sol .s.sol abi --out ./abi
+    forge clean
+    forge build --names --skip .t.sol .s.sol abi
 
 deploy-all: && _timer
 	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url {{ RPC_URL }} --broadcast -vvvv

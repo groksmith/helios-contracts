@@ -26,4 +26,12 @@ jobs:
 
       - name: Forge tests
         run: just test-all
+
+      - name: Generate Abi
+        run: just generate-abi
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ABI
+          path: abi
         

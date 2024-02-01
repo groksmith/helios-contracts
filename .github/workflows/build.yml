@@ -32,11 +32,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-        
-      - name: Yarn install
-        uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: install
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -44,5 +39,5 @@ jobs:
           version: nightly
           
       - name: Forge tests
-        run: forge test -vvv --no-match-contract "PoolFactoryTest.t.sol|HeliosGlobalsTest.t.sol"
+        run: forge test -vvv
         

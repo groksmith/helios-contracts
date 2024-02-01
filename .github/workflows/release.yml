@@ -1,18 +1,14 @@
-name: Build & Test
+name: Release
 
 on:
   push:
-    branches: [$default-branch]
     tags:
-      - '*'
-  pull_request:
-    branches:
-      - "**"
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -26,5 +22,11 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v1
 
-      - name: Forge tests
-        run: just test-all
+      - name: Generate Abi
+        run: just generate-abi
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ABI
+          path: abi
+

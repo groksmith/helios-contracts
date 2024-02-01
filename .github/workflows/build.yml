@@ -3,27 +3,12 @@ name: Build & Test
 on:
   push:
     branches: [$default-branch]
+    tags:
+      - '*'
   pull_request:
     branches:
       - "**"
-env:
-  COIN_MARKET_CAP: ${{ secrets.COIN_MARKET_CAP }}
-  MAIN_NET_FORK_API_KEY: ${{ secrets.MAIN_NET_FORK_API_KEY }}
-  GOERLI_API_KEY: ${{ secrets.GOERLI_API_KEY }}
-  GOERLI_OWNER_PRIVATE_KEY: ${{ secrets.GOERLI_OWNER_PRIVATE_KEY }}
-  GOERLI_ADMIN_PRIVATE_KEY: ${{ secrets.GOERLI_ADMIN_PRIVATE_KEY }}
-  GOERLI_USER_PRIVATE_KEY: ${{ secrets.GOERLI_USER_PRIVATE_KEY }}
-  GOERLI_BORROWER_PRIVATE_KEY: ${{ secrets.GOERLI_BORROWER_PRIVATE_KEY }}
-  CELO_API_KEY: ${{ secrets.CELO_API_KEY }}
-  CELO_OWNER_PRIVATE_KEY: ${{ secrets.CELO_OWNER_PRIVATE_KEY }}
-  CELO_ADMIN_PRIVATE_KEY: ${{ secrets.CELO_ADMIN_PRIVATE_KEY }}
-  CELO_USER_PRIVATE_KEY: ${{ secrets.CELO_USER_PRIVATE_KEY }}
-  CELO_BORROWER_PRIVATE_KEY: ${{ secrets.CELO_BORROWER_PRIVATE_KEY }}
 
-# defaults:
-#   run:
-#     working-directory: packages/helios-contracts
-    
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,17 +17,23 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-        
-      - name: Yarn install
-        uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: install
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-          
+
+      - name: Install just
+        uses: extractions/setup-just@v1
+
       - name: Forge tests
-        run: forge test -vvv --no-match-contract "PoolFactoryTest|HeliosGlobalsTest"
+        run: just test-all
+
+      - name: Generate Abi
+        run: just generate-abi
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ABI
+          path: abi
         

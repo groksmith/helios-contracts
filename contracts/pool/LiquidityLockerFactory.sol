@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.20;
 
 import {LiquidityLocker} from "./LiquidityLocker.sol";
 import {ISubFactory} from "../interfaces/ISubFactory.sol";

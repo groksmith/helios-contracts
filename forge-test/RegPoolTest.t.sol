@@ -7,7 +7,7 @@ import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
 
-import {FixtureContract} from "./fixtures/FixtureContract.sol";
+import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract RegPoolTest is FixtureContract {
     event PendingReward(address indexed recipient, uint256 indexed amount);

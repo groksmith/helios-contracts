@@ -10,7 +10,6 @@ import {MockTokenERC20} from "../forge-test/mocks/MockTokenERC20.sol";
 contract InitializeScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address adminAddress = vm.envAddress("HELIOS_OWNER");
 
         address heliosGlobalsAddress = vm.envAddress("HELIOS_GLOBALS_ADDRESS");
         address poolFactoryAddress = vm.envAddress("POOL_FACTORY_ADDRESS");

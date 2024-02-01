@@ -1,13 +1,5 @@
 #!/usr/bin/env just --justfile
 
-bt := '0'
-
-export RUST_BACKTRACE := bt
-
-log := "warn"
-
-export JUST_LOG := log
-
 # load .env file
 set dotenv-load
 
@@ -32,7 +24,7 @@ start_time := `date +%s`
 _timer:
     @echo "Task executed in $(($(date +%s) - {{ start_time }})) seconds"
 
-clean-all:
+clean-all: && _timer
 	forge clean
 	rm -rf coverage_report
 	rm -rf lcov.info
@@ -40,7 +32,7 @@ clean-all:
 	rm -rf artifacts
 	rm -rf out
 
-remove-modules:
+remove-modules: && _timer
 	rm -rf .gitmodules
 	rm -rf .git/modules/*
 	rm -rf lib
@@ -49,30 +41,30 @@ remove-modules:
 	git commit -m "modules"
 
 # Install the Modules
-install:
+install: && _timer
 	forge install foundry-rs/forge-std
 	forge install OpenZeppelin/openzeppelin-contracts
 
 # Update Dependencies
-update:
+update: && _timer
 	forge update
 
-remap:
+remap: && _timer
 	forge remappings > remappings.txt
 
 # Builds
-build:
+build: && _timer
 	forge clean
 	forge remappings > remappings.txt
 	forge build --extra-output-files abi --out ./abi
 
-generate-abi:
-	forge build --names --skip .t.sol .s.sol
+generate-abi: && _timer
+	forge build --names --skip .t.sol .s.sol abi --out ./abi
 
-deploy-all:
+deploy-all: && _timer
 	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url {{ RPC_URL }} --broadcast -vvvv
 
-verify-all:
+verify-all: && _timer
 	forge verify-contract {{ HELIOS_GLOBALS_ADDRESS }} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
 		--constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_OWNER }}` \
 		--verifier-url {{ VERIFIER_URL }} --watch
@@ -89,15 +81,15 @@ verify-all:
 		--constructor-args `cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
-initialize-all:
+initialize-all: && _timer
 	forge script ./script/InitializeScript.s.sol:InitializeScript --rpc-url {{ RPC_URL }} --broadcast -vvvv
 
-format:
+format: && _timer
 	forge fmt
 
-test-all:
+test-all: && _timer
 	forge test -vvv
 
-coverage-all:
+coverage-all: && _timer
 	forge coverage --report lcov
 	genhtml -o coverage_report --branch-coverage lcov.info --ignore-errors category

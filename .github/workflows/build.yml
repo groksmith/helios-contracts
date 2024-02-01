@@ -44,5 +44,5 @@ jobs:
           version: nightly
           
       - name: Forge tests
-        run: forge test -vvv --no-match-contract "PoolFactoryTest|HeliosGlobalsTest"
+        run: forge test -vvv --no-match-contract "PoolFactoryTest.t.sol|HeliosGlobalsTest.t.sol"
         

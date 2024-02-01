@@ -9,7 +9,7 @@ import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
 import {BlendedPool} from "../contracts/pool/BlendedPool.sol";
 
-import {FixtureContract} from "./fixtures/FixtureContract.sol";
+import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract BlendedPoolTest is Test, FixtureContract {
     event PendingReward(address indexed recipient, uint256 indexed amount);
@@ -382,7 +382,6 @@ contract BlendedPoolTest is Test, FixtureContract {
         //liquidityAssetElevated.mint(blendedPool.getLL(), 1003);
 
         //now the user wishes to reinvest
-        uint256 laBalancePool = liquidityAsset.balanceOf(blendedPool.getLL());
         uint256 userRewards = blendedPool.rewards(user);
         vm.startPrank(user);
         blendedPool.reinvest(1000);

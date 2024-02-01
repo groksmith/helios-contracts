@@ -21,7 +21,9 @@ jobs:
         with:
           version: nightly
 
-      - name: Forge tests
+      - name: Install just
         uses: extractions/setup-just@v1
+
+      - name: Forge tests
         run: just test-all
         

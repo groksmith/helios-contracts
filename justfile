@@ -60,7 +60,7 @@ build: && _timer
 
 generate-abi: && _timer
     forge clean
-    forge build --names --skip .t.sol .s.sol abi
+    forge build --names --skip .t.sol .s.sol --extra-output-files abi --out abi
 
 deploy-all: && _timer
 	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url {{ RPC_URL }} --broadcast -vvvv

@@ -15,6 +15,7 @@ coverage.json
 
 cache_forge
 out
+abi
 coverage_report
 lcov.info
 

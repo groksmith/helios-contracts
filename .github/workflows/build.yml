@@ -20,7 +20,8 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-          
+
       - name: Forge tests
-        run: forge test -vvv
+        uses: extractions/setup-just@v1
+        run: just test-all
         

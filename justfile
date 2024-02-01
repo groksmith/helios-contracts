@@ -16,14 +16,13 @@ set positional-arguments
 
 set export
 
-
-RPC_URL:= env_var_or_default("RPC_URL", "")
-VERIFIER_URL:= env_var_or_default("VERIFIER_URL", "")
-HELIOS_OWNER:= env_var_or_default("HELIOS_OWNER", "")
-POOL_FACTORY_ADDRESS:= env_var_or_default("POOL_FACTORY_ADDRESS", "")
-LIQUIDITY_LOCKER_FACTORY_ADDRESS:= env_var_or_default("LIQUIDITY_LOCKER_FACTORY_ADDRESS", "")
-USDT_ADDRESS:= env_var_or_default("USDT_ADDRESS", "")
-
+RPC_URL := env_var_or_default("RPC_URL", "")
+VERIFIER_URL := env_var_or_default("VERIFIER_URL", "")
+HELIOS_OWNER := env_var_or_default("HELIOS_OWNER", "")
+HELIOS_GLOBALS_ADDRESS := env_var_or_default("HELIOS_GLOBALS_ADDRESS", "")
+POOL_FACTORY_ADDRESS := env_var_or_default("POOL_FACTORY_ADDRESS", "")
+LIQUIDITY_LOCKER_FACTORY_ADDRESS := env_var_or_default("LIQUIDITY_LOCKER_FACTORY_ADDRESS", "")
+USDT_ADDRESS := env_var_or_default("USDT_ADDRESS", "")
 
 _default:
   just --list
@@ -71,27 +70,27 @@ generate-abi:
 	forge build --names --skip .t.sol .s.sol
 
 deploy-all:
-	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url ${RPC_URL} --broadcast -vvvv
+	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url {{ RPC_URL }} --broadcast -vvvv
 
 verify-all:
-	forge verify-contract ${HELIOS_GLOBALS_ADDRESS} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
-		--constructor-args $(shell cast abi-encode "constructor(address)" ${HELIOS_OWNER}) \
-		--verifier-url ${VERIFIER_URL} --watch
+	forge verify-contract {{ HELIOS_GLOBALS_ADDRESS }} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
+		--constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_OWNER }}` \
+		--verifier-url {{ VERIFIER_URL }} --watch
 
-	forge verify-contract ${POOL_FACTORY_ADDRESS} ./contracts/pool/PoolFactory.sol:PoolFactory \
-		--constructor-args $(shell cast abi-encode "constructor(address)" ${HELIOS_GLOBALS_ADDRESS}) \
-		--verifier-url ${VERIFIER_URL} --watch
+	forge verify-contract {{ POOL_FACTORY_ADDRESS }} ./contracts/pool/PoolFactory.sol:PoolFactory \
+		--constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_GLOBALS_ADDRESS }}` \
+		--verifier-url {{ VERIFIER_URL }} --watch
 
-	forge verify-contract ${LIQUIDITY_LOCKER_FACTORY_ADDRESS} ./contracts/pool/LiquidityLockerFactory.sol:LiquidityLockerFactory \
-		--constructor-args $(shell cast abi-encode "constructor()") --verifier-url ${VERIFIER_URL} --watch
+	forge verify-contract {{ LIQUIDITY_LOCKER_FACTORY_ADDRESS }} ./contracts/pool/LiquidityLockerFactory.sol:LiquidityLockerFactory \
+		--constructor-args `cast abi-encode "constructor()"` --verifier-url {{ VERIFIER_URL }} --watch
 
 	#SKIP IN PROD
-	forge verify-contract ${USDT_ADDRESS} ./forge-test/mocks/MockTokenERC20.sol:MockTokenERC20 \
-		--constructor-args $(shell cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC) \
-		--verifier-url ${VERIFIER_URL} --watch
+	forge verify-contract {{ USDT_ADDRESS }} ./forge-test/mocks/MockTokenERC20.sol:MockTokenERC20 \
+		--constructor-args `cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC` \
+		--verifier-url {{ VERIFIER_URL }} --watch
 
 initialize-all:
-	forge script ./script/InitializeScript.s.sol:InitializeScript --rpc-url ${RPC_URL} --broadcast -vvvv
+	forge script ./script/InitializeScript.s.sol:InitializeScript --rpc-url {{ RPC_URL }} --broadcast -vvvv
 
 format:
 	forge fmt

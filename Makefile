@@ -14,7 +14,7 @@ clean-all:
 	rm -rf out
 
 # Remove modules
-remove_modules:
+remove-modules:
 	rm -rf .gitmodules
 	rm -rf .git/modules/*
 	rm -rf lib
@@ -38,18 +38,21 @@ remap:
 build:
 	forge clean
 	forge remappings > remappings.txt
-	forge build
+	forge build --extra-output-files abi --out ./abi
 
-deploy_all:
+generate-abi:
+	forge build --names --skip .t.sol .s.sol
+
+deploy-all:
 	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url ${RPC_URL} --broadcast -vvvv
 
-verify_all:
-	forge verify-contract ${HELOIS_GLOBALS_ADDRESS} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
+verify-all:
+	forge verify-contract ${HELIOS_GLOBALS_ADDRESS} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
 		--constructor-args $(shell cast abi-encode "constructor(address)" ${HELIOS_OWNER}) \
 		--verifier-url ${VERIFIER_URL} --watch
 
 	forge verify-contract ${POOL_FACTORY_ADDRESS} ./contracts/pool/PoolFactory.sol:PoolFactory \
-		--constructor-args $(shell cast abi-encode "constructor(address)" ${HELOIS_GLOBALS_ADDRESS}) \
+		--constructor-args $(shell cast abi-encode "constructor(address)" ${HELIOS_GLOBALS_ADDRESS}) \
 		--verifier-url ${VERIFIER_URL} --watch
 
 	forge verify-contract ${LIQUIDITY_LOCKER_FACTORY_ADDRESS} ./contracts/pool/LiquidityLockerFactory.sol:LiquidityLockerFactory \
@@ -59,6 +62,9 @@ verify_all:
 	forge verify-contract ${USDT_ADDRESS} ./forge-test/mocks/MockTokenERC20.sol:MockTokenERC20 \
 		--constructor-args $(shell cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC) \
 		--verifier-url ${VERIFIER_URL} --watch
+
+initialize-all:
+	forge script ./script/InitializeScript.s.sol:InitializeScript --rpc-url ${RPC_URL} --broadcast -vvvv
 
 format:
 	forge fmt

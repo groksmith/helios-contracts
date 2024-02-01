@@ -1,5 +1,11 @@
-# Helios Contracts Hardhat Project
+# Helios Contracts Forge Project
 
+## Prerequisites 
+
+Install Just
+```
+https://github.com/casey/just
+```
 
 ## Contracts build, test and metrics
 

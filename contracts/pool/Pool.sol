@@ -57,7 +57,8 @@ contract Pool is AbstractPool {
             }
             blendedPool.requestLiquidityAssets(amountMissing);
             _mint(address(blendedPool), amountMissing);
-            totalMinted += amountMissing;
+            totalDeposited += amountMissing;
+
             require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
 
             emit RewardClaimed(msg.sender, callerRewards);

@@ -259,8 +259,8 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         // now let's deplete the pool's balance
         vm.startPrank(OWNER_ADDRESS);
-        uint256 drawdownAmount = blendedPool.totalSupply() - blendedPool.principalOut();
-        blendedPool.drawdown(OWNER_ADDRESS, drawdownAmount);
+        uint256 borrowAmount = blendedPool.totalSupply() - blendedPool.principalOut();
+        blendedPool.borrow(OWNER_ADDRESS, borrowAmount);
         vm.stopPrank();
 
         //..and claim rewards as user1
@@ -281,7 +281,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         mintLiquidityAsset(OWNER_ADDRESS, 1000);
         vm.startPrank(OWNER_ADDRESS);
         liquidityAsset.approve(address(blendedPool), 1000);
-        blendedPool.adminDeposit(1000);
+        blendedPool.repay(1000);
         blendedPool.concludePendingReward(user);
 
         uint256 user1BalanceAfter = liquidityAsset.balanceOf(user);
@@ -315,15 +315,15 @@ contract BlendedPoolTest is Test, FixtureContract {
         address[] memory holders = new address[](1);
         holders[0] = user;
         pool.distributeRewards(100, holders);
-        pool.drawdown(OWNER_ADDRESS, 100);
+        pool.borrow(OWNER_ADDRESS, 100);
         vm.stopPrank();
 
-        //now let's deposit LA to the blended pool
+        //now let's repay LA to the blended pool
         vm.startPrank(OWNER_ADDRESS);
         blendedPool.addPool(poolAddress);
         mintLiquidityAsset(OWNER_ADDRESS, 100);
         liquidityAsset.approve(address(blendedPool), 100);
-        blendedPool.adminDeposit(100);
+        blendedPool.repay(100);
         vm.stopPrank();
 
         //now let's claim reward. The blended pool will help

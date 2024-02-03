@@ -23,7 +23,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
     address public immutable superFactory; // The factory that deployed this Pool
 
-    uint256 internal totalMinted;
+    uint256 public totalDeposited;
     uint256 public principalOut;
 
     mapping(address => uint256) public rewards;
@@ -148,7 +148,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         require(rewards[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
 
         _mint(msg.sender, _amount);
-        totalMinted += _amount;
+        totalDeposited += _amount;
 
         rewards[msg.sender] -= _amount;
         _emitBalanceUpdatedEvent();
@@ -196,15 +196,14 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         emit PendingRewardConcluded(_recipient, amount);
     }
 
-    /// @notice  Use the pool's money for investment
-    function drawdown(address _to, uint256 _amount) external onlyAdmin {
+    /// @notice Borrow the pool's money for investment
+    function borrow(address _to, uint256 _amount) external onlyAdmin {
         principalOut += _amount;
-        uint256 amount = _drawdownAmount();
-        _transferLiquidityLockerFunds(_to, amount);
+        _transferLiquidityLockerFunds(_to, _amount);
     }
 
-    /// @notice  Deposit liquidityAsset without minimal threshold or getting LP in return
-    function adminDeposit(uint256 _amount) external onlyAdmin {
+    /// @notice Repay liquidityAsset without minimal threshold or getting LP in return
+    function repay(uint256 _amount) external onlyAdmin {
         require(liquidityAsset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
         if (_amount >= principalOut) {
             principalOut = 0;
@@ -223,11 +222,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "BP:FUNDS_LOCKED");
 
         return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
-    }
-
-    /// @notice Get Total minted ever
-    function totalDeposited() external view returns (uint256) {
-        return totalMinted;
     }
 
     /// @notice Get Liquidity Locker instance
@@ -256,7 +250,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         _token.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
 
         _mint(msg.sender, _amount);
-        totalMinted += _amount;
+        totalDeposited += _amount;
 
         _emitBalanceUpdatedEvent();
         emit Deposit(msg.sender, _amount);
@@ -270,11 +264,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice  Transfers Liquidity Locker assets to given `to` address
     function _transferLiquidityLockerFunds(address _to, uint256 _value) internal returns (bool) {
         return liquidityLocker.transfer(_to, _value);
-    }
-
-    // Get drawdown available amount
-    function _drawdownAmount() internal view returns (uint256) {
-        return totalSupply() - principalOut;
     }
 
     // Emits a `BalanceUpdated` event for LiquidityLocker

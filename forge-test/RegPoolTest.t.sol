@@ -127,7 +127,7 @@ contract RegPoolTest is FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
         mintLiquidityAsset(OWNER_ADDRESS, rewardGenerated);
         liquidityAsset.approve(address(regPool1), rewardGenerated);
-        regPool1.adminDeposit(rewardGenerated);
+        regPool1.repay(rewardGenerated);
         regPool1.distributeRewards(rewardGenerated, holders);
         vm.stopPrank();
 
@@ -201,7 +201,7 @@ contract RegPoolTest is FixtureContract {
         mintLiquidityAsset(OWNER_ADDRESS, 1000);
         liquidityAsset.approve(address(regPool1), 1000);
 
-        regPool1.adminDeposit(1000);
+        regPool1.repay(1000);
         regPool1.distributeRewards(1000, holders);
         vm.stopPrank();
 

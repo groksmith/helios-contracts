@@ -127,18 +127,14 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.deposit(user2Deposit);
         vm.stopPrank();
 
-        address[] memory holders = new address[](2);
-        holders[0] = user1;
-        holders[1] = user2;
-
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
         vm.expectRevert("PF:NOT_ADMIN");
-        blendedPool.distributeYields(1000, holders);
+        blendedPool.distributeYields(1000);
 
         //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(1000, holders);
+        blendedPool.distributeYields(1000);
 
         //now we need to test if the users got assigned the correct yields
         uint256 user1Yields = blendedPool.yields(user1);
@@ -201,18 +197,14 @@ contract BlendedPoolTest is Test, FixtureContract {
         pool.deposit(user2Deposit);
         vm.stopPrank();
 
-        address[] memory holders = new address[](2);
-        holders[0] = user1;
-        holders[1] = user2;
-
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
         vm.expectRevert("PF:NOT_ADMIN");
-        pool.distributeYields(1000, holders);
+        pool.distributeYields(1000);
 
         //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
-        pool.distributeYields(1000, holders);
+        pool.distributeYields(1000);
 
         //now we need to test if the users got assigned the correct yields
         uint256 user1Yields = pool.yields(user1);
@@ -248,12 +240,13 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.deposit(user1Deposit);
         vm.stopPrank();
 
-        address[] memory holders = new address[](1);
-        holders[0] = user;
-
         //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(1000, holders);
+        blendedPool.distributeYields(1000);
+
+        vm.prank(OWNER_ADDRESS);
+        vm.expectRevert("BP:INVALID_VALUE");
+        blendedPool.distributeYields(0);
 
         assertEq(blendedPool.yields(user), 1000, "yields should be 1000 atm");
 
@@ -311,9 +304,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         //the admin distributes yields and takes all the LA, emptying the pool
         vm.startPrank(OWNER_ADDRESS);
 
-        address[] memory holders = new address[](1);
-        holders[0] = user;
-        pool.distributeYields(100, holders);
+        pool.distributeYields(100);
         pool.borrow(OWNER_ADDRESS, 100);
         vm.stopPrank();
 
@@ -369,15 +360,11 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.deposit(user1Deposit);
         vm.stopPrank();
 
-        address[] memory holders = new address[](1);
-        holders[0] = user;
-
         //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(1000, holders);
+        blendedPool.distributeYields(1000);
 
         mintLiquidityAsset(blendedPool.getLiquidityLocker(), 1003);
-        //liquidityAssetElevated.mint(blendedPool.getLiquidityLocker(), 1003);
 
         //now the user wishes to reinvest
         uint256 userYields = blendedPool.yields(user);

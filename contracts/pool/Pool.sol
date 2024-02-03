@@ -62,12 +62,10 @@ contract Pool is AbstractPool {
 
     /// @notice Used to distribute yields among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
-    /// @param  _holders the list of investors must be provided externally due to Solidity limitations
-    function distributeYields(uint256 _amount, address[] calldata _holders) external override onlyAdmin nonReentrant {
+    function distributeYields(uint256 _amount) external override onlyAdmin nonReentrant {
         require(_amount > 0, "P:INVALID_VALUE");
-        require(_holders.length > 0, "P:ZERO_HOLDERS");
-        for (uint256 i = 0; i < _holders.length; i++) {
-            address holder = _holders[i];
+        for (uint256 i = 0; i < depositsHolder.getHoldersCount(); i++) {
+            address holder = depositsHolder.getHolderByIndex(i);
 
             uint256 holderBalance = balanceOf(holder);
             uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;

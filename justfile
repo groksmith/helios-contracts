@@ -89,7 +89,7 @@ format: && _timer
 	forge fmt
 
 test-all: && _timer
-	forge test -vvvv
+	forge test -vvvvv
 
 coverage-all: && _timer
 	forge coverage --report lcov

@@ -10,6 +10,8 @@ import {ILiquidityLocker} from "../interfaces/ILiquidityLocker.sol";
 import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
+import {DepositsHolder} from "./DepositsHolder.sol";
+import {DepositInstance} from "./DepositsHolder.sol";
 
 abstract contract AbstractPool is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -28,7 +30,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingYields;
 
-    mapping(address => DepositInstance[]) public userDeposits;
+    DepositsHolder public depositsHolder;
 
     uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
     uint256 public withdrawPeriod; // Timeframe for the withdrawal limit
@@ -59,12 +61,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         uint256 withdrawThreshold;
     }
 
-    struct DepositInstance {
-        IERC20 token;
-        uint256 amount;
-        uint256 unlockTime;
-    }
-
     PoolInfo public poolInfo;
 
     constructor(
@@ -75,6 +71,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         uint256 _withdrawLimit,
         uint256 _withdrawPeriod
     ) ERC20(_tokenName, _tokenSymbol) {
+        depositsHolder = new DepositsHolder();
+
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_liquidityLockerFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
@@ -106,8 +104,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         for (uint256 i = 0; i < _indices.length; i++) {
             uint256 _index = _indices[i];
             uint256 _amount = _amounts[i];
-            require(_index < userDeposits[msg.sender].length, "P:INVALID_INDEX");
-            DepositInstance memory aDeposit = userDeposits[msg.sender][_index];
+
+            DepositInstance memory aDeposit = depositsHolder.getDepositsByHolder(msg.sender)[_index];
             require(block.timestamp >= aDeposit.unlockTime, "P:TOKENS_LOCKED");
             require(aDeposit.amount >= _amount && balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
 
@@ -123,21 +121,13 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             aDeposit.amount -= _amount;
 
             if (aDeposit.amount == 0) {
-                removeDeposit(msg.sender, _index);
+                depositsHolder.deleteDeposit(msg.sender, _index);
             }
 
             _transferLiquidityLockerFunds(msg.sender, _amount);
             _emitBalanceUpdatedEvent();
             emit Withdrawal(msg.sender, _amount);
         }
-    }
-
-    function removeDeposit(address _user, uint256 _index) private {
-        uint256 lastIndex = userDeposits[_user].length - 1;
-        if (_index != lastIndex) {
-            userDeposits[_user][_index] = userDeposits[_user][lastIndex];
-        }
-        userDeposits[_user].pop();
     }
 
     /// @notice Used to reinvest yields into more LP tokens
@@ -155,8 +145,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice check how much funds already unlocked
     function unlockedToWithdraw(address _user, uint256 _index) external view returns (uint256) {
-        require(_index < userDeposits[_user].length, "P:INVALID_INDEX");
-        DepositInstance memory depositInstance = userDeposits[_user][_index];
+        require(depositsHolder.getDepositsByHolder(_user).length >= _index, "P:INVALID_INDEX");
+
+        DepositInstance memory depositInstance = depositsHolder.getDepositsByHolder(_user)[_index];
         if (block.timestamp >= depositInstance.unlockTime) {
             return depositInstance.amount;
         } else {
@@ -170,7 +161,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     Admin flow
     */
 
-    function distributeYields(uint256 _amount, address[] calldata _holders) external virtual;
+    function distributeYields(uint256 _amount) external virtual;
 
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _recipient address of the recipient who didn't get the liquidity
@@ -236,9 +227,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     function _depositLogic(uint256 _amount, IERC20 _token) internal {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-        userDeposits[msg.sender].push(
-            DepositInstance({token: _token, amount: _amount, unlockTime: block.timestamp + withdrawPeriod})
-        );
+
+        depositsHolder.addDeposit(msg.sender, _token, _amount, block.timestamp + withdrawPeriod);
 
         _token.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
 

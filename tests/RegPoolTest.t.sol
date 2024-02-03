@@ -104,6 +104,14 @@ contract RegPoolTest is FixtureContract {
 
         vm.warp(currentTime + 1000);
 
+        //attempt to withdraw too early fails
+        uint16[] memory indicesWrong = new uint16[](2);
+        indicesWrong[0] = 0;
+        indicesWrong[1] = 1;
+
+        vm.expectRevert("P:ARRAYS_INCONSISTENT");
+        regPool1.withdraw(amounts, indicesWrong);
+
         regPool1.withdraw(amounts, indices);
 
         // but he cannot withdraw more
@@ -206,23 +214,24 @@ contract RegPoolTest is FixtureContract {
         liquidityAsset.approve(address(regPool1), user2Deposit);
         regPool1.deposit(user2Deposit);
         vm.stopPrank();
-        address[] memory holders = new address[](2);
-        holders[0] = user1;
-        holders[1] = user2;
 
         uint256 yieldGenerated = 10000;
 
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
         vm.expectRevert("PF:NOT_ADMIN");
-        regPool1.distributeYields(yieldGenerated, holders);
+        regPool1.distributeYields(yieldGenerated);
 
         //only the pool admin can call distributeYields()
         vm.startPrank(OWNER_ADDRESS);
+
+        vm.expectRevert("P:INVALID_VALUE");
+        regPool1.distributeYields(0);
+
         mintLiquidityAsset(OWNER_ADDRESS, yieldGenerated);
         liquidityAsset.approve(address(regPool1), yieldGenerated);
         regPool1.repay(yieldGenerated);
-        regPool1.distributeYields(yieldGenerated, holders);
+        regPool1.distributeYields(yieldGenerated);
         vm.stopPrank();
 
         //now we need to test if the users got assigned the correct yields
@@ -286,9 +295,6 @@ contract RegPoolTest is FixtureContract {
         regPool1.deposit(user1Deposit);
         vm.stopPrank();
 
-        address[] memory holders = new address[](1);
-        holders[0] = user;
-
         //only the pool admin can call distributeYields()
         vm.startPrank(OWNER_ADDRESS);
 
@@ -296,7 +302,7 @@ contract RegPoolTest is FixtureContract {
         liquidityAsset.approve(address(regPool1), 1000);
 
         regPool1.repay(1000);
-        regPool1.distributeYields(1000, holders);
+        regPool1.distributeYields(1000);
         vm.stopPrank();
 
         //now the user wishes to reinvest
@@ -305,6 +311,13 @@ contract RegPoolTest is FixtureContract {
         assertEq(userYields, 10);
 
         liquidityAsset.approve(address(regPool1), userYields);
+
+        vm.expectRevert(bytes("P:INVALID_VALUE"));
+        regPool1.reinvestYield(0);
+
+        vm.expectRevert(bytes("P:INSUFFICIENT_BALANCE"));
+        regPool1.reinvestYield(userYields + 100);
+
         regPool1.reinvestYield(userYields);
 
         uint256 userBalanceNow = regPool1.balanceOf(user);

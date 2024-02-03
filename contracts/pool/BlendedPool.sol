@@ -60,14 +60,6 @@ contract BlendedPool is AbstractPool {
         return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
     }
 
-    function totalDeposited() external view returns (uint256) {
-        return totalMinted;
-    }
-
-    function decimals() public view override returns (uint8) {
-        return uint8(liquidityAssetDecimals);
-    }
-
     /// @notice Used to transfer the investor's rewards to him
     function claimReward() external override returns (bool) {
         uint256 callerRewards = rewards[msg.sender];
@@ -86,7 +78,7 @@ contract BlendedPool is AbstractPool {
         return true;
     }
 
-    /// @notice Only called by a RegPool when it doesn't have enough LA
+    /// @notice Only called by a RegPool when it doesn't have enough Liquidity Assets
     function requestLiquidityAssets(uint256 _amountMissing) external onlyPool {
         require(_amountMissing > 0, "BP:INVALID_INPUT");
         require(liquidityLockerTotalBalance() >= _amountMissing, "BP:NOT_ENOUGH_LA_BP");
@@ -97,12 +89,10 @@ contract BlendedPool is AbstractPool {
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
-    function deposit(uint256 _amount) external override whenNotPaused nonReentrant {
+    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "BP:DEP_AMT_BELOW_MIN");
 
-        IERC20 mainLA = liquidityLocker.liquidityAsset();
-
-        depositLogic(_amount, mainLA);
+        _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
     /// @notice Register a new pool to the Blended Pool
@@ -120,15 +110,6 @@ contract BlendedPool is AbstractPool {
     /// @notice Remove a pool when it's no longer actual
     function removePool(address _pool) external onlyAdmin {
         delete pools[_pool];
-    }
-
-    // Returns the LiquidityLocker instance
-    function _liquidityLocker() internal view returns (ILiquidityLocker) {
-        return ILiquidityLocker(liquidityLocker);
-    }
-
-    function _globals(address poolFactory) internal override view returns (IHeliosGlobals) {
-        return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 
     /*

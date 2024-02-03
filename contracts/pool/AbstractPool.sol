@@ -12,19 +12,18 @@ import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
-abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
-    string public constant NAME = "Helios TKN Pool";
+abstract contract AbstractPool is ERC20, ReentrancyGuard {
+    string public constant NAME = "Helios Pool TKN";
     string public constant SYMBOL = "HLS-P";
 
     using SafeERC20 for IERC20;
 
     ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contract
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
-    uint256 internal immutable liquidityAssetDecimals; // The precision for the Liquidity Asset (i.e. `decimals()`)
+    address public immutable superFactory; // The factory that deployed this Pool
+
     uint256 internal totalMinted;
     uint256 public principalOut;
-
-    address public immutable superFactory; // The factory that deployed this Pool
 
     mapping(address => uint256) public rewards;
     mapping(address => uint256) public pendingWithdrawals;
@@ -73,8 +72,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
         uint256 _withdrawPeriod
     ) ERC20(_tokenName, _tokenSymbol) {
         liquidityAsset = IERC20(_liquidityAsset);
-        liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
-        liquidityLocker = ILiquidityLocker(ILiquidityLockerFactory(_liquidityLockerFactory).newLocker(_liquidityAsset));
+
+        ILiquidityLockerFactory liquidityLockerFactory = ILiquidityLockerFactory(_liquidityLockerFactory);
+        liquidityLocker = ILiquidityLocker(liquidityLockerFactory.CreateLiquidityLocker(_liquidityAsset));
         withdrawLimit = _withdrawLimit;
         withdrawPeriod = _withdrawPeriod;
         superFactory = msg.sender;
@@ -85,33 +85,17 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
     */
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
-    function deposit(uint256 _amount) external virtual whenNotPaused nonReentrant {
+    function deposit(uint256 _amount) external virtual whenProtocolNotPaused nonReentrant {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        IERC20 mainLA = liquidityLocker.liquidityAsset();
-
-        depositLogic(_amount, mainLA);
-    }
-
-    function depositLogic(uint256 _amount, IERC20 _token) internal {
-        userDeposits[msg.sender].push(
-            DepositInstance({token: _token, amount: _amount, unlockTime: block.timestamp + withdrawPeriod})
-        );
-
-        _token.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
-
-        _mint(msg.sender, _amount);
-        totalMinted += _amount;
-
-        _emitBalanceUpdatedEvent();
-        emit Deposit(msg.sender, _amount);
+        _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
     /// @notice withdraws the caller's liquidity assets
-    /// @param  _amounts the amount of LA to be withdrawn
+    /// @param  _amounts the amount of Liquidity Asset to be withdrawn
     /// @param  _indices the indices of the DepositInstance
-    function withdraw(uint256[] calldata _amounts, uint16[] calldata _indices) public whenNotPaused {
+    function withdraw(uint256[] calldata _amounts, uint16[] calldata _indices) public whenProtocolNotPaused {
         require(_amounts.length == _indices.length, "P:ARRAYS_INCONSISTENT");
         for (uint256 i = 0; i < _indices.length; i++) {
             uint256 _index = _indices[i];
@@ -131,8 +115,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
             }
 
             aDeposit.amount -= _amount;
-            // TODO: Tigran. Check what is it for?
-            // uint256 tokenAmountInDeposit = aDeposit.token.balanceOf(address(liquidityLocker));
 
             if (aDeposit.amount == 0) {
                 removeDeposit(msg.sender, _index);
@@ -154,7 +136,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
 
     /// @notice Used to reinvest rewards into more LP tokens
     /// @param  _amount the amount of rewards to be converted into LP
-    function reinvest(uint256 _amount) external {
+    function reinvest(uint256 _amount) whenProtocolNotPaused external {
         require(_amount > 0, "P:INVALID_VALUE");
         require(rewards[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
 
@@ -214,7 +196,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
         _transferLiquidityLockerFunds(_to, amount);
     }
 
-    /// @notice  Deposit LA without minimal threshold or getting LP in return
+    /// @notice  Deposit liquidityAsset without minimal threshold or getting LP in return
     function adminDeposit(uint256 _amount) external onlyAdmin {
         require(liquidityAsset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
         if (_amount >= principalOut) {
@@ -230,6 +212,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
     Helpers
     */
 
+    /// @notice Get Total minted ever
+    function totalDeposited() external view returns (uint256) {
+        return totalMinted;
+    }
+
+    /// @notice Get Liquidity Locker instance
     function getLiquidityLocker() external view returns (address) {
         return address(liquidityLocker);
     }
@@ -239,13 +227,36 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
         return liquidityLocker.totalBalance();
     }
 
+    function decimals() public view override returns (uint8) {
+        return ERC20(address(liquidityAsset)).decimals();
+    }
+
     /*
     Internals
     */
 
+    function _depositLogic(uint256 _amount, IERC20 _token) internal {
+        userDeposits[msg.sender].push(
+            DepositInstance({token: _token, amount: _amount, unlockTime: block.timestamp + withdrawPeriod})
+        );
+
+        _token.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
+
+        _mint(msg.sender, _amount);
+        totalMinted += _amount;
+
+        _emitBalanceUpdatedEvent();
+        emit Deposit(msg.sender, _amount);
+    }
+
+    // Returns the LiquidityLocker instance
+    function _liquidityLocker() internal view returns (ILiquidityLocker) {
+        return ILiquidityLocker(liquidityLocker);
+    }
+
     /// @notice  Transfers Liquidity Locker assets to given `to` address
-    function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool) {
-        return liquidityLocker.transfer(to, value);
+    function _transferLiquidityLockerFunds(address _to, uint256 _value) internal returns (bool) {
+        return liquidityLocker.transfer(_to, _value);
     }
 
     // Get drawdown available amount
@@ -259,11 +270,19 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
     }
 
     // Returns the HeliosGlobals instance
-    function _globals(address poolFactory) internal virtual view returns (IHeliosGlobals);
+    function _globals(address _poolFactory) internal view returns (IHeliosGlobals) {
+        return IHeliosGlobals(IPoolFactory(_poolFactory).globals());
+    }
 
     /*
     Modifiers
     */
+
+    // Checks that the protocol is not in a paused state
+    modifier whenProtocolNotPaused() {
+        require(!_globals(superFactory).protocolPaused(), "P:PROTO_PAUSED");
+        _;
+    }
 
     modifier onlyAdmin() {
         require(_globals(superFactory).isAdmin(msg.sender), "PF:NOT_ADMIN");

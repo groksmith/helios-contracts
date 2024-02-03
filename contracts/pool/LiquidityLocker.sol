@@ -21,9 +21,9 @@ contract LiquidityLocker is ILiquidityLocker {
     }
 
     // Transfers amount of Liquidity Asset to a destination account. Only the Pool can call this function
-    function transfer(address dst, uint256 amount) external override isPool returns (bool) {
-        require(dst != address(0), "LL:NULL_DST");
-        liquidityAsset.safeTransfer(dst, amount);
+    function transfer(address _to, uint256 _amount) external override isPool returns (bool) {
+        require(_to != address(0), "LL:NULL_DST");
+        liquidityAsset.safeTransfer(_to, _amount);
         return true;
     }
 

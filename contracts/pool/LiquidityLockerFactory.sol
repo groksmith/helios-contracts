@@ -19,11 +19,11 @@ contract LiquidityLockerFactory is ILiquidityLockerFactory {
     event LiquidityLockerCreated(address indexed owner, address liquidityLocker, address liquidityAsset);
 
     // Instantiates a LiquidityLocker contract
-    function newLocker(address liquidityAsset) external override returns (address liquidityLocker) {
-        liquidityLocker = address(new LiquidityLocker(liquidityAsset, msg.sender));
+    function CreateLiquidityLocker(address _liquidityAsset) external override returns (address liquidityLocker) {
+        liquidityLocker = address(new LiquidityLocker(_liquidityAsset, msg.sender));
         owner[liquidityLocker] = msg.sender;
         isLocker[liquidityLocker] = true;
 
-        emit LiquidityLockerCreated(msg.sender, liquidityLocker, liquidityAsset);
+        emit LiquidityLockerCreated(msg.sender, liquidityLocker, _liquidityAsset);
     }
 }

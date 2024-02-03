@@ -49,7 +49,7 @@ contract Pool is AbstractPool {
     }
 
     /// @notice Used to transfer the investor's rewards to him
-    function claimReward() external override returns (bool) {
+    function claimReward() external override whenProtocolNotPaused returns (bool) {
         uint256 callerRewards = rewards[msg.sender];
         require(callerRewards >= 0, "P:NOT_HOLDER");
         uint256 totalBalance = liquidityLockerTotalBalance();
@@ -78,23 +78,10 @@ contract Pool is AbstractPool {
         return true;
     }
 
-    function canWithdraw(uint256 amount) external view returns (bool) {
-        _canWithdraw(msg.sender, amount);
-        return true;
-    }
-
     function withdrawableOf(address _holder) external view returns (uint256) {
         require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
 
         return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
-    }
-
-    function totalDeposited() external view returns (uint256) {
-        return totalMinted;
-    }
-
-    function decimals() public view override returns (uint8) {
-        return uint8(liquidityAssetDecimals);
     }
 
     /// @notice Used to distribute rewards among investors (LP token holders)
@@ -115,36 +102,5 @@ contract Pool is AbstractPool {
 
     function setBlendedPool(address _blendedPool) external onlyAdmin {
         blendedPool = BlendedPool(_blendedPool);
-    }
-
-    function _canWithdraw(address account, uint256 amount) internal view {
-        require(depositDate[account] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
-        require(balanceOf(account) >= amount, "P:INSUFFICIENT_BALANCE");
-        require(amount <= _balanceOfLiquidityLocker(), "P:INSUFFICIENT_LIQUIDITY");
-    }
-
-    // Get LiquidityLocker balance
-    function _balanceOfLiquidityLocker() internal view returns (uint256) {
-        return liquidityAsset.balanceOf(address(liquidityLocker));
-    }
-
-    // Checks that the protocol is not in a paused state
-    function _whenProtocolNotPaused() internal view {
-        require(!_globals(superFactory).protocolPaused(), "P:PROTO_PAUSED");
-    }
-
-    // Transfers Liquidity Asset to given `to` address
-    function _transferLiquidityAssetFrom(address from, address to, uint256 value) internal {
-        liquidityAsset.safeTransferFrom(from, to, value);
-    }
-
-    // Returns the LiquidityLocker instance
-    function _liquidityLocker() internal view returns (ILiquidityLocker) {
-        return ILiquidityLocker(liquidityLocker);
-    }
-
-    // Returns the HeliosGlobals instance
-    function _globals(address poolFactory) internal override view returns (IHeliosGlobals) {
-        return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
 }

@@ -25,9 +25,9 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     }
 
     // Sets HeliosGlobals instance. Only the Admin can call this function
-    function setGlobals(address newGlobals) external onlyAdmin {
-        require(newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
-        globals = IHeliosGlobals(newGlobals);
+    function setGlobals(address _newGlobals) external onlyAdmin {
+        require(_newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
+        globals = IHeliosGlobals(_newGlobals);
     }
 
     // Instantiates a Pool
@@ -106,8 +106,8 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     }
 
     // Checks that the mapping key is valid (unique)
-    function _isMappingKeyValid(string memory key) internal view {
-        require(pools[key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
+    function _isMappingKeyValid(string memory _key) internal view {
+        require(pools[_key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 
     /*

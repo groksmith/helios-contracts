@@ -4,5 +4,5 @@ pragma solidity 0.8.20;
 import {ISubFactory} from "./ISubFactory.sol";
 
 interface ILiquidityLockerFactory is ISubFactory {
-    function newLocker(address liquidityAsset) external returns (address liquidityLocker);
+    function CreateLiquidityLocker(address liquidityAsset) external returns (address liquidityLocker);
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -71,13 +72,19 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         uint256 _withdrawLimit,
         uint256 _withdrawPeriod
     ) ERC20(_tokenName, _tokenSymbol) {
+        require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
+        require(_liquidityLockerFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
+
+        superFactory = msg.sender;
+        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
+        require(_globals(superFactory).isValidLiquidityLockerFactory(_liquidityLockerFactory), "P:INVALID_LL_FACTORY");
+
         liquidityAsset = IERC20(_liquidityAsset);
 
         ILiquidityLockerFactory liquidityLockerFactory = ILiquidityLockerFactory(_liquidityLockerFactory);
         liquidityLocker = ILiquidityLocker(liquidityLockerFactory.CreateLiquidityLocker(_liquidityAsset));
         withdrawLimit = _withdrawLimit;
         withdrawPeriod = _withdrawPeriod;
-        superFactory = msg.sender;
     }
 
     /*
@@ -211,6 +218,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /*
     Helpers
     */
+
+    function withdrawableOf(address _holder) external view returns (uint256) {
+        require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "BP:FUNDS_LOCKED");
+
+        return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
+    }
 
     /// @notice Get Total minted ever
     function totalDeposited() external view returns (uint256) {

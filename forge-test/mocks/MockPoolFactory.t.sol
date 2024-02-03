@@ -21,7 +21,7 @@ contract MockPoolFactory is PoolFactory {
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
-    ) external override whenNotPaused nonReentrant returns (address poolAddress) {
+    ) external override whenProtocolNotPaused nonReentrant returns (address poolAddress) {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
@@ -52,7 +52,7 @@ contract MockPoolFactory is PoolFactory {
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
-    ) external override whenNotPaused nonReentrant returns (address poolAddress) {
+    ) external override whenProtocolNotPaused nonReentrant returns (address poolAddress) {
         BlendedPool pool = new BlendedPool(
             liquidityAsset,
             liquidityLockerFactory,

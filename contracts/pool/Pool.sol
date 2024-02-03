@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -26,8 +25,6 @@ contract Pool is AbstractPool {
         Deactivated
     }
 
-    event PoolAdminSet(address indexed poolAdmin, bool allowed);
-
     constructor(
         address _liquidityAsset,
         address _liquidityLockerFactory,
@@ -39,13 +36,8 @@ contract Pool is AbstractPool {
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_liquidityAsset, _liquidityLockerFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
-        require(_liquidityLockerFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
         poolInfo =
             PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
-
-        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
-        require(_globals(superFactory).isValidLiquidityLockerFactory(_liquidityLockerFactory), "P:INVALID_LL_FACTORY");
     }
 
     /// @notice Used to transfer the investor's rewards to him
@@ -76,12 +68,6 @@ contract Pool is AbstractPool {
 
         emit RewardClaimed(msg.sender, callerRewards);
         return true;
-    }
-
-    function withdrawableOf(address _holder) external view returns (uint256) {
-        require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "P:FUNDS_LOCKED");
-
-        return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
     }
 
     /// @notice Used to distribute rewards among investors (LP token holders)

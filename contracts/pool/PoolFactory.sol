@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import {Pool} from "./Pool.sol";
@@ -10,7 +9,7 @@ import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
 // PoolFactory instantiates Pools
-contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
+contract PoolFactory is IPoolFactory, ReentrancyGuard {
     IHeliosGlobals public override globals; // A HeliosGlobals instance
 
     address public blendedPool; // Address of Blended Pool
@@ -42,7 +41,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
-    ) external virtual onlyAdmin whenNotPaused nonReentrant returns (address poolAddress) {
+    ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address poolAddress) {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
@@ -74,7 +73,7 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
-    ) external virtual onlyAdmin whenNotPaused nonReentrant returns (address blendedPoolAddress) {
+    ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address blendedPoolAddress) {
 
         require(blendedPool == address (0));
 
@@ -95,16 +94,6 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         emit BlendedPoolCreated(liquidityAsset, blendedPoolAddress, msg.sender);
     }
 
-    // Triggers paused state. Halts functionality for certain functions. Only Admin or a PoolFactory Admin can call this function
-    function pause() external onlyAdmin {
-        super._pause();
-    }
-
-    // Triggers unpaused state. Restores functionality for certain functions. Only Admin or a PoolFactory Admin can call this function
-    function unpause() external onlyAdmin {
-        super._unpause();
-    }
-
     // Checks that the mapping key is valid (unique)
     function _isMappingKeyValid(string memory _key) internal view {
         require(pools[_key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
@@ -113,9 +102,16 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     /*
     Modifiers
     */
+
     // Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {
         require(globals.isAdmin(msg.sender), "PF:NOT_ADMIN");
+        _;
+    }
+
+    // Checks that the protocol is not in a paused state
+    modifier whenProtocolNotPaused() {
+        require(!globals.protocolPaused(), "P:PROTO_PAUSED");
         _;
     }
 }

@@ -9,37 +9,57 @@ contract PoolFactoryTest is Test, FixtureContract {
         fixture();
     }
 
-    function test_admin_Pause() public {
+    function test_Pause() public {
         vm.startPrank(OWNER_ADDRESS);
 
         //Asserts if initial state of contract is paused
-        assertEq(poolFactory.paused(), false);
+        assertEq(heliosGlobals.protocolPaused(), false);
 
-        //Sets contract paused
-        poolFactory.pause();
+        poolFactory.createPool(
+            "1",
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            100000,
+            100,
+            500,
+            1000
+        );
+
+        heliosGlobals.setProtocolPause(true);
 
         //Asserts if after pausing contract paused
-        assertEq(poolFactory.paused(), true);
+        assertEq(heliosGlobals.protocolPaused(), true);
 
-        poolFactory.unpause();
+        vm.expectRevert(bytes("P:PROTO_PAUSED"));
+        poolFactory.createPool(
+            "2",
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            100000,
+            100,
+            500,
+            1000
+        );
 
-        assertEq(poolFactory.paused(), false);
+        vm.expectRevert(bytes("P:PROTO_PAUSED"));
+        poolFactory.createBlendedPool(
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            10,
+            1000,
+            100000,
+            100,
+            500,
+            1000
+        );
 
-        vm.stopPrank();
-    }
-
-    function test_not_admin_Pause(address user) public {
-        vm.assume(user != OWNER_ADDRESS);
-        vm.startPrank(user);
-
-        //Asserts if initial state of contract is paused
-        assertEq(poolFactory.paused(), false);
-
-        //Sets contract paused
-        vm.expectRevert(bytes("PF:NOT_ADMIN"));
-        poolFactory.pause();
-
-        vm.stopPrank();
+    vm.stopPrank();
     }
 
     function test_admin_setGlobals() public {
@@ -68,5 +88,66 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         vm.expectRevert(bytes("PF:NOT_ADMIN"));
         poolFactory.setGlobals(newGlobalsAddress);
+    }
+
+    function test_pool_already_exists() public {
+        vm.startPrank(OWNER_ADDRESS);
+
+        poolFactory.createPool(
+            "1",
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            100000,
+            100,
+            500,
+            1000
+        );
+
+        vm.expectRevert(bytes("PF:POOL_ID_ALREADY_EXISTS"));
+        poolFactory.createPool(
+            "1",
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            100000,
+            100,
+            500,
+            1000
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_pool_create(
+        string calldata poolId,
+        uint256 lockupPeriod,
+        uint256 apy,
+        uint256 duration,
+        uint256 investmentPoolSize,
+        uint256 minInvestmentAmount,
+        uint256 withdrawThreshold,
+        uint256 withdrawPeriod
+    ) public {
+        vm.startPrank(OWNER_ADDRESS);
+
+        poolFactory.createPool(
+            poolId,
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            lockupPeriod,
+            apy,
+            duration,
+            investmentPoolSize,
+            minInvestmentAmount,
+            withdrawThreshold,
+            withdrawPeriod
+        );
+
+        vm.stopPrank();
     }
 }

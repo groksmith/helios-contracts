@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
@@ -30,12 +29,6 @@ contract BlendedPool is AbstractPool {
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_liquidityAsset, _liquidityLockerFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        require(_liquidityAsset != address(0), "BP:ZERO_LIQ_ASSET");
-        require(_liquidityLockerFactory != address(0), "BP:ZERO_LIQ_LOCKER_FACTORY");
-
-        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "BP:INVALID_LIQ_ASSET");
-        require(_globals(superFactory).isValidLiquidityLockerFactory(_liquidityLockerFactory), "BP:INVALID_LL_FACTORY");
-
         poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
     }
 
@@ -52,12 +45,6 @@ contract BlendedPool is AbstractPool {
             uint256 holderShare = (_amount * holderBalance) / totalSupply();
             rewards[holder] += holderShare;
         }
-    }
-
-    function withdrawableOf(address _holder) external view returns (uint256) {
-        require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "BP:FUNDS_LOCKED");
-
-        return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
     }
 
     /// @notice Used to transfer the investor's rewards to him

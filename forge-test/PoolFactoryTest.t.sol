@@ -59,7 +59,7 @@ contract PoolFactoryTest is Test, FixtureContract {
             1000
         );
 
-    vm.stopPrank();
+        vm.stopPrank();
     }
 
     function test_admin_setGlobals() public {
@@ -74,10 +74,13 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         assertEq(address(poolFactory.globals()), newGlobalsAddress);
 
+        vm.expectRevert(bytes("PF:ZERO_NEW_GLOBALS"));
+        poolFactory.setGlobals(address(0));
+
         vm.stopPrank();
     }
 
-    function test_not_admin_setGlobals(address user) public {
+    function testFuzz_not_admin_setGlobals(address user) public {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(user);
 
@@ -123,7 +126,26 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_pool_create(
+    function test_blended_pool_already_exists() public {
+        vm.startPrank(OWNER_ADDRESS);
+
+        // Already created in parent FixtureContract
+        vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
+        poolFactory.createBlendedPool(
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            10,
+            1000,
+            100000,
+            100,
+            500,
+            1000
+        );
+
+        vm.stopPrank();
+    }
+
+    function testFuzz_pool_create(
         string calldata poolId,
         uint256 lockupPeriod,
         uint256 apy,

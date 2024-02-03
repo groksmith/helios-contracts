@@ -37,7 +37,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_when_not_owner_setPaused(address user) public {
+    function testFuzz_when_not_owner_setPaused(address user) public {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(user);
 
@@ -68,7 +68,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_when_not_owner_setValidPoolFactory(address user) public {
+    function testFuzz_when_not_owner_setValidPoolFactory(address user) public {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(user);
 
@@ -93,7 +93,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_when_not_owner_setLiquidityAsset(address user) public {
+    function testFuzz_when_not_owner_setLiquidityAsset(address user) public {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(user);
 
@@ -120,7 +120,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_when_not_owner_setValidLiquidityLockerFactory(address user) public {
+    function testFuzz_when_not_owner_setValidLiquidityLockerFactory(address user) public {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(OWNER_ADDRESS);
 

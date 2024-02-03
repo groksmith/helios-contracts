@@ -75,7 +75,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         uint256 withdrawPeriod
     ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address blendedPoolAddress) {
 
-        require(blendedPool == address (0));
+        require(blendedPool == address(0), "PF:BLENDED_POOL_ALREADY_CREATED");
 
         BlendedPool pool = new BlendedPool(
             liquidityAsset,

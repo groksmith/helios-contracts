@@ -108,8 +108,8 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test complete scenario of depositing, distribution of yield and claim
-    function test_distributeYieldsAndClaim(address user1, address user2) external {
+    /// @notice Test complete scenario of depositing, distribution of yield and withdraw
+    function test_distributeYieldsAndWithdraw(address user1, address user2) external {
         createInvestorAndMintLiquidityAsset(user1, 1000);
         createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -148,25 +148,25 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
         vm.prank(user1);
-        blendedPool.claimYield();
+        blendedPool.withdrawYield();
         assertEq(
             liquidityAsset.balanceOf(user1) - user1BalanceBefore,
             90,
-            "user1 balance not upd after claimYield()"
+            "user1 balance not upd after withdrawYield()"
         );
 
         uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
         vm.prank(user2);
-        blendedPool.claimYield();
+        blendedPool.withdrawYield();
         assertEq(
             liquidityAsset.balanceOf(user2) - user2BalanceBefore,
             909,
-            "user2 balance not upd after claimYield()"
+            "user2 balance not upd after withdrawYield()"
         );
     }
 
-    /// @notice Test complete scenario of depositing, distribution of yields and claim
-    function test_distributeYieldsAndClaimRegPool(address user1, address user2) external {
+    /// @notice Test complete scenario of depositing, distribution of yields and withdraw
+    function test_distributeYieldsAndWithdrawRegPool(address user1, address user2) external {
         createInvestorAndMintLiquidityAsset(user1, 1000);
         createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -222,23 +222,23 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
         vm.prank(user1);
-        pool.claimYield();
+        pool.withdrawYield();
         assertEq(
-            liquidityAsset.balanceOf(user1) - user1BalanceBefore, 1, "user1 balance not upd after claimYield()"
+            liquidityAsset.balanceOf(user1) - user1BalanceBefore, 1, "user1 balance not upd after withdrawYield()"
         );
 
         uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
         vm.prank(user2);
-        pool.claimYield();
+        pool.withdrawYield();
         assertEq(
             liquidityAsset.balanceOf(user2) - user2BalanceBefore,
             10,
-            "user2 balance not upd after claimYield()"
+            "user2 balance not upd after withdrawYield()"
         );
     }
 
     /// @notice Test scenario when there are not enough funds on the pool
-    function test_insufficientFundsClaimYield(address user) external {
+    function test_insufficientFundsWithdrawYield(address user) external {
         createInvestorAndMintLiquidityAsset(user, 1000);
 
         //firstly the users need to deposit before withdrawing
@@ -263,18 +263,18 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.borrow(OWNER_ADDRESS, borrowAmount);
         vm.stopPrank();
 
-        //..and claim yields as user1
+        //..and withdraw yields as user1
         vm.startPrank(user);
         vm.expectEmit(false, false, false, false);
         // The expected event signature
         emit PendingYield(user, 1000);
-        assertFalse(blendedPool.claimYield(), "should return false if not enough LA");
+        assertFalse(blendedPool.withdrawYield(), "should return false if not enough LA");
 
         vm.stopPrank();
 
-        assertEq(blendedPool.yields(user), 0, "yields should be 0 after claim attempt");
+        assertEq(blendedPool.yields(user), 0, "yields should be 0 after withdraw attempt");
 
-        assertEq(blendedPool.pendingYields(user), 1000, "pending yields should be 1000 after claim attempt");
+        assertEq(blendedPool.pendingYields(user), 1000, "pending yields should be 1000 after withdraw attempt");
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user);
 
@@ -324,10 +324,10 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.repay(100);
         vm.stopPrank();
 
-        //now let's claim yield. The blended pool will help
+        //now let's withdraw yield. The blended pool will help
         vm.startPrank(user);
         liquidityAsset.approve(poolAddress, 10000);
-        pool.claimYield();
+        pool.withdrawYield();
     }
 
     function test_maxPoolSize(address user, uint256 _maxPoolSize) external {
@@ -359,7 +359,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_reinvest(address user) external {
+    function test_reinvestYield(address user) external {
         createInvestorAndMintLiquidityAsset(user, 1000);
 
         //firstly the user needs to deposit
@@ -382,7 +382,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         //now the user wishes to reinvest
         uint256 userYields = blendedPool.yields(user);
         vm.startPrank(user);
-        blendedPool.reinvest(1000);
+        blendedPool.reinvestYield(1000);
         uint256 userBalanceNow = blendedPool.balanceOf(user);
         uint256 expected = user1Deposit + userYields;
         assertEq(userBalanceNow, expected);

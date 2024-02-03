@@ -85,6 +85,7 @@ contract RegPoolTest is FixtureContract {
         regPool1.withdraw(amounts, indices);
 
         vm.warp(currentTime + 1000);
+
         regPool1.withdraw(amounts, indices);
 
         // but he cannot withdraw more
@@ -94,8 +95,41 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test complete scenario of depositing, distribution of yield and claim
-    function test_distributeYieldsAndClaim(address user1, address user2) external {
+    /// @notice Test attempt to withdraw; both happy and unhappy paths
+    function test_unlockedToWithdraw(address user) external {
+        user = createInvestorAndMintLiquidityAsset(user, 1000);
+
+        vm.startPrank(user);
+        uint256 depositAmount = 150;
+        uint256 currentTime = block.timestamp;
+
+        liquidityAsset.approve(address(regPool1), depositAmount);
+        //the user can withdraw the sum he has deposited earlier
+        regPool1.deposit(depositAmount);
+
+        uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 0);
+        assertEq(unlockedFundsAmount, 0);
+
+        vm.warp(currentTime + 1000);
+
+        liquidityAsset.approve(address(regPool1), depositAmount);
+        //the user can withdraw the sum he has deposited earlier
+        regPool1.deposit(depositAmount);
+
+        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 0);
+        assertEq(unlockedFundsAmount, depositAmount);
+
+        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 1);
+        assertEq(unlockedFundsAmount, 0);
+
+        vm.expectRevert("P:INVALID_INDEX");
+        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 4);
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test complete scenario of depositing, distribution of yield and withdraw
+    function test_distributeYieldsAndWithdraw(address user1, address user2) external {
         user1 = createInvestorAndMintLiquidityAsset(user1, 1000);
         user2 = createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -140,20 +174,20 @@ contract RegPoolTest is FixtureContract {
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
         vm.prank(user1);
-        regPool1.claimYield();
+        regPool1.withdrawYield();
         assertEq(
             liquidityAsset.balanceOf(user1) - user1BalanceBefore,
             10,
-            "user1 balance not upd after claimYield()"
+            "user1 balance not upd after withdrawYield()"
         );
 
         uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
         vm.prank(user2);
-        regPool1.claimYield();
+        regPool1.withdrawYield();
         assertEq(
             liquidityAsset.balanceOf(user2) - user2BalanceBefore,
             100,
-            "user2 balance not upd after claimYield()"
+            "user2 balance not upd after withdrawYield()"
         );
     }
 
@@ -211,7 +245,7 @@ contract RegPoolTest is FixtureContract {
         assertEq(userYields, 10);
 
         liquidityAsset.approve(address(regPool1), userYields);
-        regPool1.reinvest(userYields);
+        regPool1.reinvestYield(userYields);
 
         uint256 userBalanceNow = regPool1.balanceOf(user);
         uint256 expected = user1Deposit + userYields;

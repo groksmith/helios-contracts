@@ -28,7 +28,7 @@ contract Pool is AbstractPool {
     }
 
     /// @notice Used to transfer the investor's yield to him
-    function claimYield() external override whenProtocolNotPaused returns (bool) {
+    function withdrawYield() external override whenProtocolNotPaused returns (bool) {
         uint256 callerYields = yields[msg.sender];
         require(callerYields >= 0, "P:NOT_HOLDER");
         uint256 totalBalance = liquidityLockerTotalBalance();
@@ -50,13 +50,13 @@ contract Pool is AbstractPool {
 
             require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
 
-            emit YieldClaimed(msg.sender, callerYields);
+            emit YieldWithdrawn(msg.sender, callerYields);
             return true;
         }
 
         require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
 
-        emit YieldClaimed(msg.sender, callerYields);
+        emit YieldWithdrawn(msg.sender, callerYields);
         return true;
     }
 

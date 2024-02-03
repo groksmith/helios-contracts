@@ -41,7 +41,7 @@ contract BlendedPool is AbstractPool {
     }
 
     /// @notice Used to transfer the investor's yields to him
-    function claimYield() external override returns (bool) {
+    function withdrawYield() external override returns (bool) {
         uint256 callerYields = yields[msg.sender];
         uint256 totalBalance = liquidityLockerTotalBalance();
         yields[msg.sender] = 0;
@@ -54,7 +54,7 @@ contract BlendedPool is AbstractPool {
 
         require(_transferLiquidityLockerFunds(msg.sender, callerYields), "BP:ERROR_TRANSFERRING_YIELD");
 
-        emit YieldClaimed(msg.sender, callerYields);
+        emit YieldWithdrawn(msg.sender, callerYields);
         return true;
     }
 

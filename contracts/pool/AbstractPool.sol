@@ -37,8 +37,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     event Withdrawal(address indexed investor, uint256 indexed amount);
     event PendingWithdrawal(address indexed investor, uint256 indexed amount);
     event PendingWithdrawalConcluded(address indexed investor, uint256 indexed amount);
-    event YieldClaimed(address indexed recipient, uint256 indexed amount);
-    event Reinvest(address indexed investor, uint256 indexed amount);
+    event YieldWithdrawn(address indexed recipient, uint256 indexed amount);
+    event ReinvestYield(address indexed investor, uint256 indexed amount);
     event PendingYield(address indexed recipient, uint256 indexed amount);
     event PendingYieldConcluded(address indexed recipient, uint256 indexed amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
@@ -142,7 +142,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Used to reinvest yields into more LP tokens
     /// @param  _amount the amount of yield to be converted into LP
-    function reinvest(uint256 _amount) whenProtocolNotPaused external {
+    function reinvestYield(uint256 _amount) whenProtocolNotPaused external {
         require(_amount > 0, "P:INVALID_VALUE");
         require(yields[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
 
@@ -150,11 +150,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         yields[msg.sender] -= _amount;
         _emitBalanceUpdatedEvent();
-        emit Reinvest(msg.sender, _amount);
+        emit ReinvestYield(msg.sender, _amount);
     }
 
-    /// @notice check how many funds
-    function availableToWithdraw(address _user, uint256 _index) external view returns (uint256) {
+    /// @notice check how much funds already unlocked
+    function unlockedToWithdraw(address _user, uint256 _index) external view returns (uint256) {
         require(_index < userDeposits[_user].length, "P:INVALID_INDEX");
         DepositInstance memory depositInstance = userDeposits[_user][_index];
         if (block.timestamp >= depositInstance.unlockTime) {
@@ -164,7 +164,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         }
     }
 
-    function claimYield() external virtual returns (bool);
+    function withdrawYield() external virtual returns (bool);
 
     /*
     Admin flow
@@ -183,7 +183,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         emit PendingWithdrawalConcluded(_recipient, amount);
     }
 
-    /// @notice Admin function used for unhappy path after yield claiming failure
+    /// @notice Admin function used for unhappy path after yield withdraw failure
     /// @param _recipient address of the recipient who didn't get the yield
     function concludePendingYield(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingYields[_recipient];

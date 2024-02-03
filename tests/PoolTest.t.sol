@@ -12,7 +12,7 @@ import {BlendedPool} from "../contracts/pool/BlendedPool.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract BlendedPoolTest is Test, FixtureContract {
-    event PendingReward(address indexed recipient, uint256 indexed amount);
+    event PendingYield(address indexed recipient, uint256 indexed amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
 
     function setUp() public {
@@ -108,8 +108,8 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test complete scenario of depositing, distribution of rewards and claim
-    function test_distributeRewardsAndClaim(address user1, address user2) external {
+    /// @notice Test complete scenario of depositing, distribution of yield and claim
+    function test_distributeYieldsAndClaim(address user1, address user2) external {
         createInvestorAndMintLiquidityAsset(user1, 1000);
         createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -131,42 +131,42 @@ contract BlendedPoolTest is Test, FixtureContract {
         holders[0] = user1;
         holders[1] = user2;
 
-        //a non-pool-admin address shouldn't be able to call distributeRewards()
+        //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
         vm.expectRevert("PF:NOT_ADMIN");
-        blendedPool.distributeRewards(1000, holders);
+        blendedPool.distributeYields(1000, holders);
 
-        //only the pool admin can call distributeRewards()
+        //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeRewards(1000, holders);
+        blendedPool.distributeYields(1000, holders);
 
-        //now we need to test if the users got assigned the correct rewards
-        uint256 user1Rewards = blendedPool.rewards(user1);
-        uint256 user2Rewards = blendedPool.rewards(user2);
-        assertEq(user1Rewards, 90, "wrong reward user1");
-        assertEq(user2Rewards, 909, "wrong reward user2"); //NOTE: 1 is lost as a dust value :(
+        //now we need to test if the users got assigned the correct yields
+        uint256 user1Yields = blendedPool.yields(user1);
+        uint256 user2Yields = blendedPool.yields(user2);
+        assertEq(user1Yields, 90, "wrong yield user1");
+        assertEq(user2Yields, 909, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
         vm.prank(user1);
-        blendedPool.claimReward();
+        blendedPool.claimYield();
         assertEq(
             liquidityAsset.balanceOf(user1) - user1BalanceBefore,
             90,
-            "user1 balance not upd after claimReward()"
+            "user1 balance not upd after claimYield()"
         );
 
         uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
         vm.prank(user2);
-        blendedPool.claimReward();
+        blendedPool.claimYield();
         assertEq(
             liquidityAsset.balanceOf(user2) - user2BalanceBefore,
             909,
-            "user2 balance not upd after claimReward()"
+            "user2 balance not upd after claimYield()"
         );
     }
 
-    /// @notice Test complete scenario of depositing, distribution of rewards and claim
-    function test_distributeRewardsAndClaimRegPool(address user1, address user2) external {
+    /// @notice Test complete scenario of depositing, distribution of yields and claim
+    function test_distributeYieldsAndClaimRegPool(address user1, address user2) external {
         createInvestorAndMintLiquidityAsset(user1, 1000);
         createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -205,40 +205,40 @@ contract BlendedPoolTest is Test, FixtureContract {
         holders[0] = user1;
         holders[1] = user2;
 
-        //a non-pool-admin address shouldn't be able to call distributeRewards()
+        //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
         vm.expectRevert("PF:NOT_ADMIN");
-        pool.distributeRewards(1000, holders);
+        pool.distributeYields(1000, holders);
 
-        //only the pool admin can call distributeRewards()
+        //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
-        pool.distributeRewards(1000, holders);
+        pool.distributeYields(1000, holders);
 
-        //now we need to test if the users got assigned the correct rewards
-        uint256 user1Rewards = pool.rewards(user1);
-        uint256 user2Rewards = pool.rewards(user2);
-        assertEq(user1Rewards, 1, "wrong reward user1");
-        assertEq(user2Rewards, 10, "wrong reward user2"); //NOTE: 1 is lost as a dust value :(
+        //now we need to test if the users got assigned the correct yields
+        uint256 user1Yields = pool.yields(user1);
+        uint256 user2Yields = pool.yields(user2);
+        assertEq(user1Yields, 1, "wrong yield user1");
+        assertEq(user2Yields, 10, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
         vm.prank(user1);
-        pool.claimReward();
+        pool.claimYield();
         assertEq(
-            liquidityAsset.balanceOf(user1) - user1BalanceBefore, 1, "user1 balance not upd after claimReward()"
+            liquidityAsset.balanceOf(user1) - user1BalanceBefore, 1, "user1 balance not upd after claimYield()"
         );
 
         uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
         vm.prank(user2);
-        pool.claimReward();
+        pool.claimYield();
         assertEq(
             liquidityAsset.balanceOf(user2) - user2BalanceBefore,
             10,
-            "user2 balance not upd after claimReward()"
+            "user2 balance not upd after claimYield()"
         );
     }
 
     /// @notice Test scenario when there are not enough funds on the pool
-    function test_insufficientFundsClaimReward(address user) external {
+    function test_insufficientFundsClaimYield(address user) external {
         createInvestorAndMintLiquidityAsset(user, 1000);
 
         //firstly the users need to deposit before withdrawing
@@ -251,11 +251,11 @@ contract BlendedPoolTest is Test, FixtureContract {
         address[] memory holders = new address[](1);
         holders[0] = user;
 
-        //only the pool admin can call distributeRewards()
+        //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeRewards(1000, holders);
+        blendedPool.distributeYields(1000, holders);
 
-        assertEq(blendedPool.rewards(user), 1000, "rewards should be 1000 atm");
+        assertEq(blendedPool.yields(user), 1000, "yields should be 1000 atm");
 
         // now let's deplete the pool's balance
         vm.startPrank(OWNER_ADDRESS);
@@ -263,18 +263,18 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.borrow(OWNER_ADDRESS, borrowAmount);
         vm.stopPrank();
 
-        //..and claim rewards as user1
+        //..and claim yields as user1
         vm.startPrank(user);
         vm.expectEmit(false, false, false, false);
         // The expected event signature
-        emit PendingReward(user, 1000);
-        assertFalse(blendedPool.claimReward(), "should return false if not enough LA");
+        emit PendingYield(user, 1000);
+        assertFalse(blendedPool.claimYield(), "should return false if not enough LA");
 
         vm.stopPrank();
 
-        assertEq(blendedPool.rewards(user), 0, "rewards should be 0 after claim attempt");
+        assertEq(blendedPool.yields(user), 0, "yields should be 0 after claim attempt");
 
-        assertEq(blendedPool.pendingRewards(user), 1000, "pending rewards should be 1000 after claim attempt");
+        assertEq(blendedPool.pendingYields(user), 1000, "pending yields should be 1000 after claim attempt");
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user);
 
@@ -282,7 +282,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
         liquidityAsset.approve(address(blendedPool), 1000);
         blendedPool.repay(1000);
-        blendedPool.concludePendingReward(user);
+        blendedPool.concludePendingYield(user);
 
         uint256 user1BalanceAfter = liquidityAsset.balanceOf(user);
 
@@ -308,12 +308,12 @@ contract BlendedPoolTest is Test, FixtureContract {
         pool.deposit(500);
         vm.stopPrank();
 
-        //the admin distributes rewards and takes all the LA, emptying the pool
+        //the admin distributes yields and takes all the LA, emptying the pool
         vm.startPrank(OWNER_ADDRESS);
 
         address[] memory holders = new address[](1);
         holders[0] = user;
-        pool.distributeRewards(100, holders);
+        pool.distributeYields(100, holders);
         pool.borrow(OWNER_ADDRESS, 100);
         vm.stopPrank();
 
@@ -324,10 +324,10 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.repay(100);
         vm.stopPrank();
 
-        //now let's claim reward. The blended pool will help
+        //now let's claim yield. The blended pool will help
         vm.startPrank(user);
         liquidityAsset.approve(poolAddress, 10000);
-        pool.claimReward();
+        pool.claimYield();
     }
 
     function test_maxPoolSize(address user, uint256 _maxPoolSize) external {
@@ -372,19 +372,19 @@ contract BlendedPoolTest is Test, FixtureContract {
         address[] memory holders = new address[](1);
         holders[0] = user;
 
-        //only the pool admin can call distributeRewards()
+        //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeRewards(1000, holders);
+        blendedPool.distributeYields(1000, holders);
 
         mintLiquidityAsset(blendedPool.getLiquidityLocker(), 1003);
         //liquidityAssetElevated.mint(blendedPool.getLiquidityLocker(), 1003);
 
         //now the user wishes to reinvest
-        uint256 userRewards = blendedPool.rewards(user);
+        uint256 userYields = blendedPool.yields(user);
         vm.startPrank(user);
         blendedPool.reinvest(1000);
         uint256 userBalanceNow = blendedPool.balanceOf(user);
-        uint256 expected = user1Deposit + userRewards;
+        uint256 expected = user1Deposit + userYields;
         assertEq(userBalanceNow, expected);
     }
 }

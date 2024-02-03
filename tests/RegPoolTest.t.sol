@@ -10,7 +10,7 @@ import {Pool} from "../contracts/pool/Pool.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract RegPoolTest is FixtureContract {
-    event PendingReward(address indexed recipient, uint256 indexed amount);
+    event PendingYield(address indexed recipient, uint256 indexed amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
 
     function setUp() public {
@@ -94,8 +94,8 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test complete scenario of depositing, distribution of rewards and claim
-    function test_distributeRewardsAndClaim(address user1, address user2) external {
+    /// @notice Test complete scenario of depositing, distribution of yield and claim
+    function test_distributeYieldsAndClaim(address user1, address user2) external {
         user1 = createInvestorAndMintLiquidityAsset(user1, 1000);
         user2 = createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -116,44 +116,44 @@ contract RegPoolTest is FixtureContract {
         holders[0] = user1;
         holders[1] = user2;
 
-        uint256 rewardGenerated = 10000;
+        uint256 yieldGenerated = 10000;
 
-        //a non-pool-admin address shouldn't be able to call distributeRewards()
+        //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
         vm.expectRevert("PF:NOT_ADMIN");
-        regPool1.distributeRewards(rewardGenerated, holders);
+        regPool1.distributeYields(yieldGenerated, holders);
 
-        //only the pool admin can call distributeRewards()
+        //only the pool admin can call distributeYields()
         vm.startPrank(OWNER_ADDRESS);
-        mintLiquidityAsset(OWNER_ADDRESS, rewardGenerated);
-        liquidityAsset.approve(address(regPool1), rewardGenerated);
-        regPool1.repay(rewardGenerated);
-        regPool1.distributeRewards(rewardGenerated, holders);
+        mintLiquidityAsset(OWNER_ADDRESS, yieldGenerated);
+        liquidityAsset.approve(address(regPool1), yieldGenerated);
+        regPool1.repay(yieldGenerated);
+        regPool1.distributeYields(yieldGenerated, holders);
         vm.stopPrank();
 
-        //now we need to test if the users got assigned the correct rewards
-        uint256 user1Rewards = regPool1.rewards(user1);
-        uint256 user2Rewards = regPool1.rewards(user2);
+        //now we need to test if the users got assigned the correct yields
+        uint256 user1Yields = regPool1.yields(user1);
+        uint256 user2Yields = regPool1.yields(user2);
 
-        assertEq(user1Rewards, 10, "wrong reward user1");
-        assertEq(user2Rewards, 100, "wrong reward user2"); //NOTE: 1 is lost as a dust value :(
+        assertEq(user1Yields, 10, "wrong yield user1");
+        assertEq(user2Yields, 100, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
 
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
         vm.prank(user1);
-        regPool1.claimReward();
+        regPool1.claimYield();
         assertEq(
             liquidityAsset.balanceOf(user1) - user1BalanceBefore,
             10,
-            "user1 balance not upd after claimReward()"
+            "user1 balance not upd after claimYield()"
         );
 
         uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
         vm.prank(user2);
-        regPool1.claimReward();
+        regPool1.claimYield();
         assertEq(
             liquidityAsset.balanceOf(user2) - user2BalanceBefore,
             100,
-            "user2 balance not upd after claimReward()"
+            "user2 balance not upd after claimYield()"
         );
     }
 
@@ -195,30 +195,30 @@ contract RegPoolTest is FixtureContract {
         address[] memory holders = new address[](1);
         holders[0] = user;
 
-        //only the pool admin can call distributeRewards()
+        //only the pool admin can call distributeYields()
         vm.startPrank(OWNER_ADDRESS);
 
         mintLiquidityAsset(OWNER_ADDRESS, 1000);
         liquidityAsset.approve(address(regPool1), 1000);
 
         regPool1.repay(1000);
-        regPool1.distributeRewards(1000, holders);
+        regPool1.distributeYields(1000, holders);
         vm.stopPrank();
 
         //now the user wishes to reinvest
         vm.startPrank(user);
-        uint256 userRewards = regPool1.rewards(user);
-        assertEq(userRewards, 10);
+        uint256 userYields = regPool1.yields(user);
+        assertEq(userYields, 10);
 
-        liquidityAsset.approve(address(regPool1), userRewards);
-        regPool1.reinvest(userRewards);
+        liquidityAsset.approve(address(regPool1), userYields);
+        regPool1.reinvest(userYields);
 
         uint256 userBalanceNow = regPool1.balanceOf(user);
-        uint256 expected = user1Deposit + userRewards;
+        uint256 expected = user1Deposit + userYields;
         assertEq(userBalanceNow, expected);
 
-        userRewards = regPool1.rewards(user);
-        assertEq(userRewards, 0);
+        userYields = regPool1.yields(user);
+        assertEq(userYields, 0);
 
         vm.stopPrank();
     }

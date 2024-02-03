@@ -25,10 +25,10 @@ contract BlendedPool is AbstractPool {
         _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
-    /// @notice Used to distribute rewards among investors (LP token holders)
+    /// @notice Used to distribute yields among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
     /// @param  _holders the list of investors must be provided externally due to Solidity limitations
-    function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyAdmin nonReentrant {
+    function distributeYields(uint256 _amount, address[] calldata _holders) external override onlyAdmin nonReentrant {
         require(_amount > 0, "BP:INVALID_VALUE");
         require(_holders.length > 0, "BP:ZERO_HOLDERS");
         for (uint256 i = 0; i < _holders.length; i++) {
@@ -36,25 +36,25 @@ contract BlendedPool is AbstractPool {
 
             uint256 holderBalance = balanceOf(holder);
             uint256 holderShare = (_amount * holderBalance) / totalSupply();
-            rewards[holder] += holderShare;
+            yields[holder] += holderShare;
         }
     }
 
-    /// @notice Used to transfer the investor's rewards to him
-    function claimReward() external override returns (bool) {
-        uint256 callerRewards = rewards[msg.sender];
+    /// @notice Used to transfer the investor's yields to him
+    function claimYield() external override returns (bool) {
+        uint256 callerYields = yields[msg.sender];
         uint256 totalBalance = liquidityLockerTotalBalance();
-        rewards[msg.sender] = 0;
+        yields[msg.sender] = 0;
 
-        if (totalBalance < callerRewards) {
-            pendingRewards[msg.sender] += callerRewards;
-            emit PendingReward(msg.sender, callerRewards);
+        if (totalBalance < callerYields) {
+            pendingYields[msg.sender] += callerYields;
+            emit PendingYield(msg.sender, callerYields);
             return false;
         }
 
-        require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "BP:ERROR_TRANSFERRING_REWARD");
+        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "BP:ERROR_TRANSFERRING_YIELD");
 
-        emit RewardClaimed(msg.sender, callerRewards);
+        emit YieldClaimed(msg.sender, callerYields);
         return true;
     }
 

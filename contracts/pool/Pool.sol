@@ -27,43 +27,43 @@ contract Pool is AbstractPool {
         _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
-    /// @notice Used to transfer the investor's rewards to him
-    function claimReward() external override whenProtocolNotPaused returns (bool) {
-        uint256 callerRewards = rewards[msg.sender];
-        require(callerRewards >= 0, "P:NOT_HOLDER");
+    /// @notice Used to transfer the investor's yield to him
+    function claimYield() external override whenProtocolNotPaused returns (bool) {
+        uint256 callerYields = yields[msg.sender];
+        require(callerYields >= 0, "P:NOT_HOLDER");
         uint256 totalBalance = liquidityLockerTotalBalance();
 
         BlendedPool blendedPool = getBlendedPool();
 
-        rewards[msg.sender] = 0;
+        yields[msg.sender] = 0;
 
-        if (totalBalance < callerRewards) {
-            uint256 amountMissing = callerRewards - totalBalance;
+        if (totalBalance < callerYields) {
+            uint256 amountMissing = callerYields - totalBalance;
 
             if (blendedPool.liquidityLockerTotalBalance() < amountMissing) {
-                pendingRewards[msg.sender] += callerRewards;
-                emit PendingReward(msg.sender, callerRewards);
+                pendingYields[msg.sender] += callerYields;
+                emit PendingYield(msg.sender, callerYields);
                 return false;
             }
             blendedPool.requestLiquidityAssets(amountMissing);
             _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
 
-            require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
+            require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
 
-            emit RewardClaimed(msg.sender, callerRewards);
+            emit YieldClaimed(msg.sender, callerYields);
             return true;
         }
 
-        require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
+        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
 
-        emit RewardClaimed(msg.sender, callerRewards);
+        emit YieldClaimed(msg.sender, callerYields);
         return true;
     }
 
-    /// @notice Used to distribute rewards among investors (LP token holders)
+    /// @notice Used to distribute yields among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
     /// @param  _holders the list of investors must be provided externally due to Solidity limitations
-    function distributeRewards(uint256 _amount, address[] calldata _holders) external override onlyAdmin nonReentrant {
+    function distributeYields(uint256 _amount, address[] calldata _holders) external override onlyAdmin nonReentrant {
         require(_amount > 0, "P:INVALID_VALUE");
         require(_holders.length > 0, "P:ZERO_HOLDERS");
         for (uint256 i = 0; i < _holders.length; i++) {
@@ -71,8 +71,8 @@ contract Pool is AbstractPool {
 
             uint256 holderBalance = balanceOf(holder);
             uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;
-            uint256 holderRewards = holderShare * _amount / 1e18;
-            rewards[holder] += holderRewards;
+            uint256 holderYields = holderShare * _amount / 1e18;
+            yields[holder] += holderYields;
         }
     }
 

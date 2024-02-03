@@ -24,9 +24,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     uint256 public totalDeposited;
     uint256 public principalOut;
 
-    mapping(address => uint256) public rewards;
+    mapping(address => uint256) public yields;
     mapping(address => uint256) public pendingWithdrawals;
-    mapping(address => uint256) public pendingRewards;
+    mapping(address => uint256) public pendingYields;
 
     mapping(address => DepositInstance[]) public userDeposits;
 
@@ -37,10 +37,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     event Withdrawal(address indexed investor, uint256 indexed amount);
     event PendingWithdrawal(address indexed investor, uint256 indexed amount);
     event PendingWithdrawalConcluded(address indexed investor, uint256 indexed amount);
-    event RewardClaimed(address indexed recipient, uint256 indexed amount);
+    event YieldClaimed(address indexed recipient, uint256 indexed amount);
     event Reinvest(address indexed investor, uint256 indexed amount);
-    event PendingReward(address indexed recipient, uint256 indexed amount);
-    event PendingRewardConcluded(address indexed recipient, uint256 indexed amount);
+    event PendingYield(address indexed recipient, uint256 indexed amount);
+    event PendingYieldConcluded(address indexed recipient, uint256 indexed amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
     event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
 
@@ -140,15 +140,15 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         userDeposits[_user].pop();
     }
 
-    /// @notice Used to reinvest rewards into more LP tokens
-    /// @param  _amount the amount of rewards to be converted into LP
+    /// @notice Used to reinvest yields into more LP tokens
+    /// @param  _amount the amount of yield to be converted into LP
     function reinvest(uint256 _amount) whenProtocolNotPaused external {
         require(_amount > 0, "P:INVALID_VALUE");
-        require(rewards[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
+        require(yields[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
 
         _mintAndUpdateTotalDeposited(msg.sender, _amount);
 
-        rewards[msg.sender] -= _amount;
+        yields[msg.sender] -= _amount;
         _emitBalanceUpdatedEvent();
         emit Reinvest(msg.sender, _amount);
     }
@@ -164,13 +164,13 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         }
     }
 
-    function claimReward() external virtual returns (bool);
+    function claimYield() external virtual returns (bool);
 
     /*
     Admin flow
     */
 
-    function distributeRewards(uint256 _amount, address[] calldata _holders) external virtual;
+    function distributeYields(uint256 _amount, address[] calldata _holders) external virtual;
 
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _recipient address of the recipient who didn't get the liquidity
@@ -183,15 +183,15 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         emit PendingWithdrawalConcluded(_recipient, amount);
     }
 
-    /// @notice Admin function used for unhappy path after reward claiming failure
-    /// @param _recipient address of the recipient who didn't get the reward
-    function concludePendingReward(address _recipient) external nonReentrant onlyAdmin {
-        uint256 amount = pendingRewards[_recipient];
-        require(_transferLiquidityLockerFunds(_recipient, amount), "P:CONCLUDE_REWARD_FAILED");
+    /// @notice Admin function used for unhappy path after yield claiming failure
+    /// @param _recipient address of the recipient who didn't get the yield
+    function concludePendingYield(address _recipient) external nonReentrant onlyAdmin {
+        uint256 amount = pendingYields[_recipient];
+        require(_transferLiquidityLockerFunds(_recipient, amount), "P:CONCLUDE_YIELD_FAILED");
 
         //remove from pendingWithdrawals mapping:
-        delete pendingRewards[_recipient];
-        emit PendingRewardConcluded(_recipient, amount);
+        delete pendingYields[_recipient];
+        emit PendingYieldConcluded(_recipient, amount);
     }
 
     /// @notice Borrow the pool's money for investment

@@ -71,6 +71,7 @@ abstract contract FixtureContract is Test {
 
         blendedPool = BlendedPool(blendedPoolAddress);
         assertEq(blendedPool.decimals(), liquidityAsset.decimals());
+        assertEq(poolFactory.getBlendedPool(), address(blendedPool));
 
         vm.stopPrank();
     }

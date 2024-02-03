@@ -103,6 +103,10 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         return isPool[_pool];
     }
 
+    function getBlendedPool() external override view returns (address) {
+        return blendedPool;
+    }
+
     /*
     Modifiers
     */

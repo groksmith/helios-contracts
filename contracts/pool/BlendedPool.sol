@@ -20,6 +20,11 @@ contract BlendedPool is AbstractPool {
         poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
     }
 
+    /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
+    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
+        _depositLogic(_amount, liquidityLocker.liquidityAsset());
+    }
+
     /// @notice Used to distribute rewards among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
     /// @param  _holders the list of investors must be provided externally due to Solidity limitations
@@ -61,11 +66,6 @@ contract BlendedPool is AbstractPool {
         require(_transferLiquidityLockerFunds(poolLiquidityLocker, _amountMissing), "BP:REQUEST_FROM_BP_FAIL");
 
         emit RegPoolDeposit(msg.sender, _amountMissing);
-    }
-
-    /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
-    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
-        _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
     /*

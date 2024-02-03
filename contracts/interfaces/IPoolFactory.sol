@@ -7,4 +7,6 @@ interface IPoolFactory {
     function globals() external view returns (IHeliosGlobals);
 
     function isValidPool(address) external view returns (bool);
+
+    function getBlendedPool() external view returns (address);
 }

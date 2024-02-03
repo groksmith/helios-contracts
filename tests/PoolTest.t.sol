@@ -300,7 +300,6 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         Pool pool = Pool(poolAddress);
 
-        pool.setBlendedPool(address(blendedPool));
         vm.stopPrank();
 
         //a user deposits some LA to the RegPool

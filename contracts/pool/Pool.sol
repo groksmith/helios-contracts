@@ -6,8 +6,6 @@ import {BlendedPool} from "./BlendedPool.sol";
 
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is AbstractPool {
-    BlendedPool public blendedPool;
-
     constructor(
         address _liquidityAsset,
         address _liquidityLockerFactory,
@@ -19,8 +17,14 @@ contract Pool is AbstractPool {
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_liquidityAsset, _liquidityLockerFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo =
-            PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
+        poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
+    }
+
+    /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
+    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
+        require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
+
+        _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
     /// @notice Used to transfer the investor's rewards to him
@@ -28,6 +32,9 @@ contract Pool is AbstractPool {
         uint256 callerRewards = rewards[msg.sender];
         require(callerRewards >= 0, "P:NOT_HOLDER");
         uint256 totalBalance = liquidityLockerTotalBalance();
+
+        BlendedPool blendedPool = getBlendedPool();
+
         rewards[msg.sender] = 0;
 
         if (totalBalance < callerRewards) {
@@ -69,7 +76,7 @@ contract Pool is AbstractPool {
         }
     }
 
-    function setBlendedPool(address _blendedPool) external onlyAdmin {
-        blendedPool = BlendedPool(_blendedPool);
+    function getBlendedPool() internal view returns (BlendedPool) {
+        return BlendedPool(poolFactory.getBlendedPool());
     }
 }

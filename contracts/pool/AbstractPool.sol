@@ -96,11 +96,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     */
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
-    function deposit(uint256 _amount) external virtual whenProtocolNotPaused nonReentrant {
-        require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
-
-        _depositLogic(_amount, liquidityLocker.liquidityAsset());
-    }
+    function deposit(uint256 _amount) external virtual;
 
     /// @notice withdraws the caller's liquidity assets
     /// @param  _amounts the amount of Liquidity Asset to be withdrawn

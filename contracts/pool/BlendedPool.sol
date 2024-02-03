@@ -61,10 +61,6 @@ contract BlendedPool is AbstractPool {
         return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
     }
 
-    function totalLA() external view returns (uint256) {
-        return liquidityLocker.totalBalance();
-    }
-
     function totalDeposited() external view returns (uint256) {
         return totalMinted;
     }
@@ -76,7 +72,7 @@ contract BlendedPool is AbstractPool {
     /// @notice Used to transfer the investor's rewards to him
     function claimReward() external override returns (bool) {
         uint256 callerRewards = rewards[msg.sender];
-        uint256 totalBalance = liquidityLocker.totalBalance();
+        uint256 totalBalance = liquidityLockerTotalBalance();
         rewards[msg.sender] = 0;
 
         if (totalBalance < callerRewards) {
@@ -94,16 +90,11 @@ contract BlendedPool is AbstractPool {
     /// @notice Only called by a RegPool when it doesn't have enough LA
     function requestLiquidityAssets(uint256 _amountMissing) external onlyPool {
         require(_amountMissing > 0, "BP:INVALID_INPUT");
-        require(totalSupplyLA() >= _amountMissing, "BP:NOT_ENOUGH_LA_BP");
-        address poolLL = AbstractPool(msg.sender).getLL();
-        require(_transferLiquidityLockerFunds(poolLL, _amountMissing), "BP:REQUEST_FROM_BP_FAIL");
+        require(liquidityLockerTotalBalance() >= _amountMissing, "BP:NOT_ENOUGH_LA_BP");
+        address poolLiquidityLocker = AbstractPool(msg.sender).getLiquidityLocker();
+        require(_transferLiquidityLockerFunds(poolLiquidityLocker, _amountMissing), "BP:REQUEST_FROM_BP_FAIL");
 
         emit RegPoolDeposit(msg.sender, _amountMissing);
-    }
-
-    /// @notice Get the amount of Liquidity Assets in the Blended Pool
-    function totalSupplyLA() public view returns (uint256) {
-        return liquidityLocker.totalBalance();
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
@@ -140,6 +131,10 @@ contract BlendedPool is AbstractPool {
     function _globals(address poolFactory) internal override view returns (IHeliosGlobals) {
         return IHeliosGlobals(IPoolFactory(poolFactory).globals());
     }
+
+    /*
+    Modifiers
+    */
 
     modifier onlyPool() {
         require(pools[msg.sender], "P:NOT_POOL");

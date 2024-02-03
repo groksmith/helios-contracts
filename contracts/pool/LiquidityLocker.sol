@@ -54,6 +54,10 @@ contract LiquidityLocker is ILiquidityLocker {
         return secondaryLiquidityAssets[_assetAddr];
     }
 
+    /*
+    Modifiers
+    */
+
     // Checks that `msg.sender` is the Pool
     modifier isPool() {
         require(msg.sender == pool, "LL:NOT_P");

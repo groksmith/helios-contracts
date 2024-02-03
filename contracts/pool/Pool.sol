@@ -52,13 +52,13 @@ contract Pool is AbstractPool {
     function claimReward() external override returns (bool) {
         uint256 callerRewards = rewards[msg.sender];
         require(callerRewards >= 0, "P:NOT_HOLDER");
-        uint256 totalBalance = liquidityLocker.totalBalance();
+        uint256 totalBalance = liquidityLockerTotalBalance();
         rewards[msg.sender] = 0;
 
         if (totalBalance < callerRewards) {
             uint256 amountMissing = callerRewards - totalBalance;
 
-            if (blendedPool.totalLA() < amountMissing) {
+            if (blendedPool.liquidityLockerTotalBalance() < amountMissing) {
                 pendingRewards[msg.sender] += callerRewards;
                 emit PendingReward(msg.sender, callerRewards);
                 return false;

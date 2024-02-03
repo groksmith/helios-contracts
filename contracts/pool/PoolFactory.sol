@@ -105,14 +105,17 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         super._unpause();
     }
 
+    // Checks that the mapping key is valid (unique)
+    function _isMappingKeyValid(string memory key) internal view {
+        require(pools[key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
+    }
+
+    /*
+    Modifiers
+    */
     // Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {
         require(globals.isAdmin(msg.sender), "PF:NOT_ADMIN");
         _;
-    }
-
-    // Checks that the mapping key is valid (unique)
-    function _isMappingKeyValid(string memory key) internal view {
-        require(pools[key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 }

@@ -55,6 +55,9 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
         emit LiquidityAssetSet(asset, IERC20Metadata(asset).decimals(), IERC20Metadata(asset).symbol(), valid);
     }
 
+    /*
+    Modifiers
+    */
     /// @dev Restricted to members of the admin role.
     modifier onlyAdmin() {
         require(isAdmin(msg.sender), "HG:NOT_ADMIN");

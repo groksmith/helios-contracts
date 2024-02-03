@@ -35,7 +35,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //testing initial condition i.e. zeroes
         assertEq(blendedPool.balanceOf(user1), 0);
-        assertEq(blendedPool.totalLA(), 0);
+        assertEq(blendedPool.liquidityLockerTotalBalance(), 0);
         assertEq(blendedPool.totalDeposited(), 0);
 
         uint256 user1Deposit = 100;
@@ -46,7 +46,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(blendedPool.balanceOf(user1), user1Deposit, "wrong LP balance for user1");
 
         //pool's total LA balance should be user1Deposit now
-        assertEq(blendedPool.totalLA(), user1Deposit, "wrong LA balance after user1 deposit");
+        assertEq(blendedPool.liquidityLockerTotalBalance(), user1Deposit, "wrong LA balance after user1 deposit");
 
         //pool's total minted should also be user1Deposit
         assertEq(blendedPool.totalDeposited(), user1Deposit, "wrong totalDeposit after user1 deposit");
@@ -63,7 +63,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(blendedPool.balanceOf(user2), user2Deposit, "wrong user2 LP balance");
 
         //pool's total LA balance should be user1Deposit now
-        assertEq(blendedPool.totalLA(), user1Deposit + user2Deposit, "wrong totalLA after user2");
+        assertEq(blendedPool.liquidityLockerTotalBalance(), user1Deposit + user2Deposit, "wrong totalLA after user2");
 
         //pool's total minted should also be user1Deposit
         assertEq(blendedPool.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
@@ -378,8 +378,8 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.prank(OWNER_ADDRESS);
         blendedPool.distributeRewards(1000, holders);
 
-        mintLiquidityAsset(blendedPool.getLL(), 1003);
-        //liquidityAssetElevated.mint(blendedPool.getLL(), 1003);
+        mintLiquidityAsset(blendedPool.getLiquidityLocker(), 1003);
+        //liquidityAssetElevated.mint(blendedPool.getLiquidityLocker(), 1003);
 
         //now the user wishes to reinvest
         uint256 userRewards = blendedPool.rewards(user);

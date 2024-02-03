@@ -68,11 +68,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
     constructor(
         address _liquidityAsset,
         address _liquidityLockerFactory,
-        string memory tokenName,
-        string memory tokenSymbol,
+        string memory _tokenName,
+        string memory _tokenSymbol,
         uint256 _withdrawLimit,
         uint256 _withdrawPeriod
-    ) ERC20(tokenName, tokenSymbol) {
+    ) ERC20(_tokenName, _tokenSymbol) {
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
         liquidityLocker = ILiquidityLocker(ILiquidityLockerFactory(_liquidityLockerFactory).newLocker(_liquidityAsset));
@@ -80,6 +80,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
         withdrawPeriod = _withdrawPeriod;
         superFactory = msg.sender;
     }
+
+    /*
+    Investor flow
+    */
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     function deposit(uint256 _amount) external virtual whenNotPaused nonReentrant {
@@ -89,18 +93,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
         IERC20 mainLA = liquidityLocker.liquidityAsset();
 
         depositLogic(_amount, mainLA);
-    }
-
-    /// @notice used to deposit secondary liquidity assets (non-USDT)
-    /// @param _assetAddr the address of the stablecoin
-    function depositSecondaryAsset(uint256 _amount, address _assetAddr) external whenNotPaused nonReentrant {
-        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-        require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
-        require(liquidityLocker.secondaryAssetExists(_assetAddr), "P:UNKNOWN_ASSET");
-
-        IERC20 token = IERC20(_assetAddr);
-
-        depositLogic(_amount, token);
     }
 
     function depositLogic(uint256 _amount, IERC20 _token) internal {
@@ -133,7 +125,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
             _burn(msg.sender, _amount);
 
             //unhappy path - the withdrawal is then added in the 'pending' to be processed by the admin
-            if (liquidityLocker.totalBalance() < _amount) {
+            if (liquidityLockerTotalBalance() < _amount) {
                 pendingWithdrawals[msg.sender] += _amount;
                 emit PendingWithdrawal(msg.sender, _amount);
                 continue;
@@ -186,6 +178,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
         }
     }
 
+    function claimReward() external virtual returns (bool);
+
+    /*
+    Admin flow
+    */
+
     function distributeRewards(uint256 _amount, address[] calldata _holders) external virtual;
 
     /// @notice Admin function used for unhappy path after withdrawal failure
@@ -229,23 +227,22 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
         liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
     }
 
-    function setSecondaryLiquidityAsset(address _liquidityAsset) external onlyAdmin {
-        liquidityLocker.setSecondaryLiquidityAsset(_liquidityAsset);
-    }
+    /*
+    Helpers
+    */
 
-    function deleteSecondaryLiquidityAsset(address _liquidityAsset) external {
-        liquidityLocker.deleteSecondaryLiquidityAsset(_liquidityAsset);
-    }
-
-    function setSecondaryLiquidityAssets(address[] calldata _liquidityAssets) external {
-        liquidityLocker.setSecondaryLiquidityAssets(_liquidityAssets);
-    }
-
-    function getLL() external view returns (address) {
+    function getLiquidityLocker() external view returns (address) {
         return address(liquidityLocker);
     }
 
-    function claimReward() external virtual returns (bool);
+    /// @notice Get the amount of Liquidity Assets in the Pool
+    function liquidityLockerTotalBalance() public view returns (uint256) {
+        return liquidityLocker.totalBalance();
+    }
+
+    /*
+    Internals
+    */
 
     /// @notice  Transfers Liquidity Locker assets to given `to` address
     function _transferLiquidityLockerFunds(address to, uint256 value) internal returns (bool) {
@@ -259,11 +256,15 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
 
     // Emits a `BalanceUpdated` event for LiquidityLocker
     function _emitBalanceUpdatedEvent() internal {
-        emit BalanceUpdated(address(liquidityLocker), address(liquidityAsset), liquidityLocker.totalBalance());
+        emit BalanceUpdated(address(liquidityLocker), address(liquidityAsset), liquidityLockerTotalBalance());
     }
 
     // Returns the HeliosGlobals instance
     function _globals(address poolFactory) internal virtual view returns (IHeliosGlobals);
+
+    /*
+    Modifiers
+    */
 
     modifier onlyAdmin() {
         require(_globals(superFactory).isAdmin(msg.sender), "PF:NOT_ADMIN");

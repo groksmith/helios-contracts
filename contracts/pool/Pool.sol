@@ -1,22 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
-import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol";
-import {ILiquidityLocker} from "../interfaces/ILiquidityLocker.sol";
-import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {AbstractPool} from "./AbstractPool.sol";
 import {BlendedPool} from "./BlendedPool.sol";
 
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is AbstractPool {
-    using SafeERC20 for IERC20;
-
     BlendedPool public blendedPool;
 
     constructor(

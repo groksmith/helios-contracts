@@ -3,8 +3,6 @@ pragma solidity 0.8.20;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -21,7 +19,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contract
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
-    address public immutable superFactory; // The factory that deployed this Pool
+    IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
 
     uint256 public totalDeposited;
     uint256 public principalOut;
@@ -81,9 +79,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_liquidityLockerFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
-        superFactory = msg.sender;
-        require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
-        require(_globals(superFactory).isValidLiquidityLockerFactory(_liquidityLockerFactory), "P:INVALID_LL_FACTORY");
+        poolFactory = IPoolFactory(msg.sender);
+
+        require(poolFactory.globals().isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
+        require(poolFactory.globals().isValidLiquidityLockerFactory(_liquidityLockerFactory), "P:INVALID_LL_FACTORY");
 
         liquidityAsset = IERC20(_liquidityAsset);
 
@@ -281,23 +280,18 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         emit BalanceUpdated(address(liquidityLocker), address(liquidityAsset), liquidityLockerTotalBalance());
     }
 
-    // Returns the HeliosGlobals instance
-    function _globals(address _poolFactory) internal view returns (IHeliosGlobals) {
-        return IHeliosGlobals(IPoolFactory(_poolFactory).globals());
-    }
-
     /*
     Modifiers
     */
 
     // Checks that the protocol is not in a paused state
     modifier whenProtocolNotPaused() {
-        require(!_globals(superFactory).protocolPaused(), "P:PROTO_PAUSED");
+        require(!poolFactory.globals().protocolPaused(), "P:PROTO_PAUSED");
         _;
     }
 
     modifier onlyAdmin() {
-        require(_globals(superFactory).isAdmin(msg.sender), "PF:NOT_ADMIN");
+        require(poolFactory.globals().isAdmin(msg.sender), "PF:NOT_ADMIN");
         _;
     }
 }

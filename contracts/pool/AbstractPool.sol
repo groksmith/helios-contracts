@@ -12,10 +12,10 @@ import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
 abstract contract AbstractPool is ERC20, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     string public constant NAME = "Helios Pool TKN";
     string public constant SYMBOL = "HLS-P";
-
-    using SafeERC20 for IERC20;
 
     ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contract
     IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
@@ -28,7 +28,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingRewards;
 
-    mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
     mapping(address => DepositInstance[]) public userDeposits;
 
     uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
@@ -98,7 +97,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     function deposit(uint256 _amount) external virtual whenProtocolNotPaused nonReentrant {
-        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
         _depositLogic(_amount, liquidityLocker.liquidityAsset());
@@ -222,12 +220,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     Helpers
     */
 
-    function withdrawableOf(address _holder) external view returns (uint256) {
-        require(depositDate[_holder] + poolInfo.lockupPeriod <= block.timestamp, "BP:FUNDS_LOCKED");
-
-        return Math.min(liquidityAsset.balanceOf(address(liquidityLocker)), super.balanceOf(_holder));
-    }
-
     /// @notice Get Liquidity Locker instance
     function getLiquidityLocker() external view returns (address) {
         return address(liquidityLocker);
@@ -247,6 +239,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     */
 
     function _depositLogic(uint256 _amount, IERC20 _token) internal {
+        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
         userDeposits[msg.sender].push(
             DepositInstance({token: _token, amount: _amount, unlockTime: block.timestamp + withdrawPeriod})
         );
@@ -257,11 +250,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         _emitBalanceUpdatedEvent();
         emit Deposit(msg.sender, _amount);
-    }
-
-    // Returns the LiquidityLocker instance
-    function _liquidityLocker() internal view returns (ILiquidityLocker) {
-        return ILiquidityLocker(liquidityLocker);
     }
 
     /// @notice  Transfers Liquidity Locker assets to given `to` address

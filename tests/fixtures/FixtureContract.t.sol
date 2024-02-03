@@ -56,6 +56,8 @@ abstract contract FixtureContract is Test {
 
         regPool1 = Pool(poolAddress);
 
+        assertEq(regPool1.decimals(), liquidityAsset.decimals());
+
         address blendedPoolAddress = poolFactory.createBlendedPool(
             address(liquidityAsset),
             address(liquidityLockerFactory),
@@ -68,6 +70,7 @@ abstract contract FixtureContract is Test {
         );
 
         blendedPool = BlendedPool(blendedPoolAddress);
+        assertEq(blendedPool.decimals(), liquidityAsset.decimals());
 
         vm.stopPrank();
     }

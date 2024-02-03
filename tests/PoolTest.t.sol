@@ -74,7 +74,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     function test_depositFailure(address user) external {
         vm.startPrank(user);
         uint256 depositAmountBelowMin = 1;
-        vm.expectRevert("BP:DEP_AMT_BELOW_MIN");
+        vm.expectRevert("P:DEP_AMT_BELOW_MIN");
         blendedPool.deposit(depositAmountBelowMin);
     }
 

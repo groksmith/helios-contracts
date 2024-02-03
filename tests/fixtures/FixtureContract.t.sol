@@ -88,4 +88,9 @@ abstract contract FixtureContract is Test {
     function mintLiquidityAsset(address user, uint256 amount) public {
         liquidityAssetElevated.mint(user, amount);
     }
+
+    function burnLiquidityAsset(address user, uint256 amount) public {
+        liquidityAssetElevated.burn(user, amount);
+    }
+
 }

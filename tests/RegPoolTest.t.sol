@@ -56,11 +56,29 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to deposit below minimum
-    function test_depositFailure(address user) external {
-        vm.startPrank(user);
-        uint256 depositAmountBelowMin = 1;
+    function test_depositFailure(address user1, address user2) external {
+        uint256 depositAmountMax = 100000;
+
+        vm.startPrank(user1);
+        createInvestorAndMintLiquidityAsset(user1, depositAmountMax + 1);
+        liquidityAsset.approve(address(regPool1), depositAmountMax + 1);
+
+        uint256 depositAmountBelowMin = 99;
         vm.expectRevert("P:DEP_AMT_BELOW_MIN");
         regPool1.deposit(depositAmountBelowMin);
+
+        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
+        regPool1.deposit(depositAmountMax + 1);
+
+        regPool1.deposit(depositAmountMax);
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        createInvestorAndMintLiquidityAsset(user2, depositAmountMax + 1);
+        liquidityAsset.approve(address(regPool1), depositAmountMax + 1);
+        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
+        regPool1.deposit(1);
+        vm.stopPrank();
     }
 
     /// @notice Test attempt to withdraw; both happy and unhappy paths
@@ -124,6 +142,48 @@ contract RegPoolTest is FixtureContract {
 
         vm.expectRevert("P:INVALID_INDEX");
         unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 4);
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test attempt to withdraw; both happy and unhappy paths
+    function test_repay(address investor) external {
+        vm.startPrank(investor);
+        createInvestorAndMintLiquidityAsset(investor, 1000);
+
+        uint256 depositAmount = 150;
+        uint256 yieldAmount = 15;
+
+        liquidityAsset.approve(address(regPool1), depositAmount);
+        //the user can withdraw the sum he has deposited earlier
+        regPool1.deposit(depositAmount);
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+        liquidityAsset.approve(address(regPool1), depositAmount + yieldAmount);
+        mintLiquidityAsset(OWNER_ADDRESS, yieldAmount);
+
+        // Just toying with multiple borrow and repay
+        regPool1.borrow(OWNER_ADDRESS, depositAmount - 10);
+        assertEq(regPool1.principalOut(), depositAmount - 10);
+
+        regPool1.borrow(OWNER_ADDRESS, 10);
+        assertEq(regPool1.principalOut(), depositAmount);
+
+        regPool1.repay(depositAmount - 10);
+        assertEq(regPool1.principalOut(), 10);
+        regPool1.repay(10);
+        assertEq(regPool1.principalOut(), 0);
+
+        regPool1.repay(yieldAmount);
+        assertEq(regPool1.principalOut(), 0);
+
+        uint256 balance = liquidityAsset.balanceOf(OWNER_ADDRESS);
+        liquidityAsset.approve(address(regPool1), 2 * balance);
+
+        vm.expectRevert(bytes("P:NOT_ENOUGH_BALANCE"));
+        regPool1.repay(balance + 10);
+        // Stop toying
 
         vm.stopPrank();
     }

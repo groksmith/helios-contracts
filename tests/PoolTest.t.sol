@@ -320,7 +320,6 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //now let's repay LA to the blended pool
         vm.startPrank(OWNER_ADDRESS);
-        blendedPool.addPool(poolAddress);
         mintLiquidityAsset(OWNER_ADDRESS, 100);
         liquidityAsset.approve(address(blendedPool), 100);
         blendedPool.repay(100);

@@ -5,8 +5,6 @@ import {AbstractPool} from "./AbstractPool.sol";
 
 /// @title Blended Pool
 contract BlendedPool is AbstractPool {
-    mapping(address => bool) public pools;
-
     event RegPoolDeposit(address indexed regPool, uint256 amount);
 
     constructor(
@@ -72,29 +70,12 @@ contract BlendedPool is AbstractPool {
         _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
-    /// @notice Register a new pool to the Blended Pool
-    function addPool(address _pool) external onlyAdmin {
-        pools[_pool] = true;
-    }
-
-    /// @notice Register new pools in batch to the Blended Pool
-    function addPools(address[] memory _pools) external onlyAdmin {
-        for (uint256 i = 0; i < _pools.length; i++) {
-            pools[_pools[i]] = true;
-        }
-    }
-
-    /// @notice Remove a pool when it's no longer actual
-    function removePool(address _pool) external onlyAdmin {
-        delete pools[_pool];
-    }
-
     /*
     Modifiers
     */
 
     modifier onlyPool() {
-        require(pools[msg.sender], "P:NOT_POOL");
+        require(poolFactory.isValidPool(msg.sender), "P:NOT_POOL");
         _;
     }
 }

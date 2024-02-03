@@ -153,11 +153,12 @@ contract PoolFactoryTest is Test, FixtureContract {
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
-        uint256 withdrawPeriod
+        uint256 withdrawPeriod,
+        address randomAddress
     ) public {
         vm.startPrank(OWNER_ADDRESS);
 
-        poolFactory.createPool(
+        address poolAddress = poolFactory.createPool(
             poolId,
             address(liquidityAsset),
             address(liquidityLockerFactory),
@@ -169,6 +170,11 @@ contract PoolFactoryTest is Test, FixtureContract {
             withdrawThreshold,
             withdrawPeriod
         );
+
+        assertEq(poolFactory.isValidPool(poolAddress), true);
+
+        vm.assume(randomAddress != poolAddress);
+        assertEq(poolFactory.isValidPool(randomAddress), false);
 
         vm.stopPrank();
     }

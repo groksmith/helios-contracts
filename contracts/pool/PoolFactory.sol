@@ -99,6 +99,10 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         require(pools[_key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 
+    function isValidPool(address _pool) external override view returns (bool) {
+        return isPool[_pool];
+    }
+
     /*
     Modifiers
     */

@@ -178,7 +178,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _recipient address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingWithdrawals[_recipient];
-        require(liquidityLocker.transfer(_recipient, amount), "P:CONCLUDE_WITHDRAWAL_FAILED");
+        require(_transferLiquidityLockerFunds(_recipient, amount), "P:CONCLUDE_WITHDRAWAL_FAILED");
 
         //remove from pendingWithdrawals mapping:
         delete pendingWithdrawals[_recipient];
@@ -189,7 +189,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _recipient address of the recipient who didn't get the reward
     function concludePendingReward(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingRewards[_recipient];
-        require(liquidityLocker.transfer(_recipient, amount), "P:CONCLUDE_REWARD_FAILED");
+        require(_transferLiquidityLockerFunds(_recipient, amount), "P:CONCLUDE_REWARD_FAILED");
 
         //remove from pendingWithdrawals mapping:
         delete pendingRewards[_recipient];

@@ -17,12 +17,12 @@ contract LiquidityLocker is ILiquidityLocker {
         require(_liquidityAsset != address(0), "LL:ZERO_LIQ_ASSET");
         require(_pool != address(0), "LL:ZERO_P");
         liquidityAsset = IERC20(_liquidityAsset);
+
         pool = _pool;
     }
 
     // Transfers amount of Liquidity Asset to a destination account. Only the Pool can call this function
     function transfer(address _to, uint256 _amount) external override isPool returns (bool) {
-        require(_to != address(0), "LL:NULL_DST");
         liquidityAsset.safeTransfer(_to, _amount);
         return true;
     }

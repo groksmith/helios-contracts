@@ -30,7 +30,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingRewards;
 
-    // TODO: Tigran. Not initialized?
     mapping(address => uint256) public depositDate; // Used for deposit/withdraw logic
     mapping(address => DepositInstance[]) public userDeposits;
 

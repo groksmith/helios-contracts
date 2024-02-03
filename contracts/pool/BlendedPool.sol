@@ -16,7 +16,6 @@ import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol
 contract BlendedPool is AbstractPool {
     using SafeERC20 for IERC20;
 
-    address public borrower; // Address of borrower for this Pool.
     mapping(address => bool) public pools;
 
     event RegPoolDeposit(address indexed regPool, uint256 amount);

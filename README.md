@@ -3,7 +3,10 @@
 ## Prerequisites 
 
 Install Just
-```https://github.com/casey/just```
+https://github.com/casey/just
+
+Install Foundry
+https://book.getfoundry.sh/getting-started/installation
 
 ## Contracts build, test and metrics
 

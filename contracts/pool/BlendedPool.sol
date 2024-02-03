@@ -23,19 +23,19 @@ contract BlendedPool is AbstractPool {
 
     constructor(
         address _liquidityAsset,
-        address _llFactory,
+        address _liquidityLockerFactory,
         uint256 _lockupPeriod,
         uint256 _apy,
         uint256 _duration,
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    ) AbstractPool(_liquidityAsset, _llFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
+    ) AbstractPool(_liquidityAsset, _liquidityLockerFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         require(_liquidityAsset != address(0), "BP:ZERO_LIQ_ASSET");
-        require(_llFactory != address(0), "BP:ZERO_LIQ_LOCKER_FACTORY");
+        require(_liquidityLockerFactory != address(0), "BP:ZERO_LIQ_LOCKER_FACTORY");
 
         require(_globals(superFactory).isValidLiquidityAsset(_liquidityAsset), "BP:INVALID_LIQ_ASSET");
-        require(_globals(superFactory).isValidLiquidityLockerFactory(_llFactory), "BP:INVALID_LL_FACTORY");
+        require(_globals(superFactory).isValidLiquidityLockerFactory(_liquidityLockerFactory), "BP:INVALID_LL_FACTORY");
 
         poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
     }

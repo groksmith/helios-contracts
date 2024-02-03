@@ -13,7 +13,7 @@ contract MockPoolFactory is PoolFactory {
     function createPool(
         string calldata poolId,
         address liquidityAsset,
-        address llFactory,
+        address liquidityLockerFactory,
         uint256 lockupPeriod,
         uint256 apy,
         uint256 duration,
@@ -26,7 +26,7 @@ contract MockPoolFactory is PoolFactory {
 
         Pool pool = new Pool(
             liquidityAsset,
-            llFactory,
+            liquidityLockerFactory,
             lockupPeriod,
             apy,
             duration,
@@ -45,7 +45,7 @@ contract MockPoolFactory is PoolFactory {
 
     function createBlendedPool(
         address liquidityAsset,
-        address llFactory,
+        address liquidityLockerFactory,
         uint256 lockupPeriod,
         uint256 apy,
         uint256 duration,
@@ -55,7 +55,7 @@ contract MockPoolFactory is PoolFactory {
     ) external override whenNotPaused nonReentrant returns (address poolAddress) {
         BlendedPool pool = new BlendedPool(
             liquidityAsset,
-            llFactory,
+            liquidityLockerFactory,
             lockupPeriod,
             apy,
             duration,

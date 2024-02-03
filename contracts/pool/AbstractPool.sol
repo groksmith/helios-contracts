@@ -67,7 +67,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
 
     constructor(
         address _liquidityAsset,
-        address _llFactory,
+        address _liquidityLockerFactory,
         string memory tokenName,
         string memory tokenSymbol,
         uint256 _withdrawLimit,
@@ -75,7 +75,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, Pausable {
     ) ERC20(tokenName, tokenSymbol) {
         liquidityAsset = IERC20(_liquidityAsset);
         liquidityAssetDecimals = ERC20(_liquidityAsset).decimals();
-        liquidityLocker = ILiquidityLocker(ILiquidityLockerFactory(_llFactory).newLocker(_liquidityAsset));
+        liquidityLocker = ILiquidityLocker(ILiquidityLockerFactory(_liquidityLockerFactory).newLocker(_liquidityAsset));
         withdrawLimit = _withdrawLimit;
         withdrawPeriod = _withdrawPeriod;
         superFactory = msg.sender;

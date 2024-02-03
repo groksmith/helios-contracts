@@ -47,6 +47,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
     event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
 
+    enum State {
+        Initialized,
+        Finalized,
+        Deactivated
+    }
+
     struct PoolInfo {
         uint256 lockupPeriod;
         uint256 apy;
@@ -147,8 +153,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         require(_amount > 0, "P:INVALID_VALUE");
         require(rewards[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
 
-        _mint(msg.sender, _amount);
-        totalDeposited += _amount;
+        _mintAndUpdateTotalDeposited(msg.sender, _amount);
 
         rewards[msg.sender] -= _amount;
         _emitBalanceUpdatedEvent();
@@ -249,8 +254,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         _token.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
 
-        _mint(msg.sender, _amount);
-        totalDeposited += _amount;
+        _mintAndUpdateTotalDeposited(msg.sender, _amount);
 
         _emitBalanceUpdatedEvent();
         emit Deposit(msg.sender, _amount);
@@ -259,6 +263,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     // Returns the LiquidityLocker instance
     function _liquidityLocker() internal view returns (ILiquidityLocker) {
         return ILiquidityLocker(liquidityLocker);
+    }
+
+    /// @notice  Transfers Liquidity Locker assets to given `to` address
+    function _mintAndUpdateTotalDeposited(address _account, uint256 _amount) internal {
+        _mint(_account, _amount);
+        totalDeposited += _amount;
     }
 
     /// @notice  Transfers Liquidity Locker assets to given `to` address

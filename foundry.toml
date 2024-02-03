@@ -2,7 +2,7 @@
 src = 'contracts'
 out = 'out'
 libs = ['lib']
-test = 'forge-test'
+test = 'tests'
 cache_path  = 'cache_forge'
 optimizer = true
 optimizer-runs = 10_000_000

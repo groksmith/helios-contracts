@@ -19,12 +19,6 @@ contract Pool is AbstractPool {
 
     BlendedPool public blendedPool;
 
-    enum State {
-        Initialized,
-        Finalized,
-        Deactivated
-    }
-
     constructor(
         address _liquidityAsset,
         address _liquidityLockerFactory,
@@ -56,8 +50,7 @@ contract Pool is AbstractPool {
                 return false;
             }
             blendedPool.requestLiquidityAssets(amountMissing);
-            _mint(address(blendedPool), amountMissing);
-            totalDeposited += amountMissing;
+            _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
 
             require(_transferLiquidityLockerFunds(msg.sender, callerRewards), "P:ERROR_TRANSFERRING_REWARD");
 

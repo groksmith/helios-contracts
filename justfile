@@ -78,7 +78,7 @@ verify-all: && _timer
 		--constructor-args `cast abi-encode "constructor()"` --verifier-url {{ VERIFIER_URL }} --watch
 
 	#SKIP IN PROD
-	forge verify-contract {{ USDT_ADDRESS }} ./forge-test/mocks/MockTokenERC20.sol:MockTokenERC20 \
+	forge verify-contract {{ USDT_ADDRESS }} ./tests/mocks/MockTokenERC20.sol:MockTokenERC20 \
 		--constructor-args `cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
@@ -89,7 +89,7 @@ format: && _timer
 	forge fmt
 
 test-all: && _timer
-	forge test -vvvvv
+	forge test -vvvv
 
 coverage-all: && _timer
 	forge coverage --report lcov

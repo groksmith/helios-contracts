@@ -142,7 +142,23 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         }
     }
 
-    function withdrawYield() external virtual returns (bool);
+    /// @notice Used to transfer the investor's yields to him
+    function withdrawYield() external virtual returns (bool) {
+        uint256 callerYields = yields[msg.sender];
+        uint256 totalBalance = liquidityLockerTotalBalance();
+        yields[msg.sender] = 0;
+
+        if (totalBalance < callerYields) {
+            pendingYields[msg.sender] += callerYields;
+            emit PendingYield(msg.sender, callerYields);
+            return false;
+        }
+
+        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
+
+        emit YieldWithdrawn(msg.sender, callerYields);
+        return true;
+    }
 
     /*
     Admin flow

@@ -28,39 +28,40 @@ contract Pool is AbstractPool {
         _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
+    /// TODO: Tigran. I guess we don't need request funds compensation from Blended Pool here. Should be revisited!
     /// @notice Used to transfer the investor's yield to him
-    function withdrawYield() external override whenProtocolNotPaused returns (bool) {
-        uint256 callerYields = yields[msg.sender];
-        require(callerYields >= 0, "P:NOT_HOLDER");
-        uint256 totalBalance = liquidityLockerTotalBalance();
-
-        BlendedPool blendedPool = getBlendedPool();
-
-        yields[msg.sender] = 0;
-
-        if (totalBalance < callerYields) {
-            uint256 amountMissing = callerYields - totalBalance;
-
-            if (blendedPool.liquidityLockerTotalBalance() < amountMissing) {
-                pendingYields[msg.sender] += callerYields;
-                emit PendingYield(msg.sender, callerYields);
-                return false;
-            }
-
-            blendedPool.requestLiquidityAssets(amountMissing);
-            _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
-
-            require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
-
-            emit YieldWithdrawn(msg.sender, callerYields);
-            return true;
-        }
-
-        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
-
-        emit YieldWithdrawn(msg.sender, callerYields);
-        return true;
-    }
+//    function withdrawYield() external override whenProtocolNotPaused returns (bool) {
+//        uint256 callerYields = yields[msg.sender];
+//        require(callerYields >= 0, "P:NOT_HOLDER");
+//        uint256 totalBalance = liquidityLockerTotalBalance();
+//
+//        BlendedPool blendedPool = getBlendedPool();
+//
+//        yields[msg.sender] = 0;
+//
+//        if (totalBalance < callerYields) {
+//            uint256 amountMissing = callerYields - totalBalance;
+//
+//            if (blendedPool.liquidityLockerTotalBalance() < amountMissing) {
+//                pendingYields[msg.sender] += callerYields;
+//                emit PendingYield(msg.sender, callerYields);
+//                return false;
+//            }
+//
+//            blendedPool.requestLiquidityAssets(amountMissing);
+//            _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
+//
+//            require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
+//
+//            emit YieldWithdrawn(msg.sender, callerYields);
+//            return true;
+//        }
+//
+//        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
+//
+//        emit YieldWithdrawn(msg.sender, callerYields);
+//        return true;
+//    }
 
     /// @notice Used to distribute yields among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors

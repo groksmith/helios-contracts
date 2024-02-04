@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
+import {Pool} from "./Pool.sol";
 
 /// @title Blended Pool
 contract BlendedPool is AbstractPool {
@@ -33,29 +34,10 @@ contract BlendedPool is AbstractPool {
 
         for (uint256 i = 0; i < depositsHolder.getHoldersCount(); i++) {
             address holder = depositsHolder.getHolderByIndex(i);
-
             uint256 holderBalance = balanceOf(holder);
             uint256 holderShare = (_amount * holderBalance) / totalSupply();
             yields[holder] += holderShare;
         }
-    }
-
-    /// @notice Used to transfer the investor's yields to him
-    function withdrawYield() external override returns (bool) {
-        uint256 callerYields = yields[msg.sender];
-        uint256 totalBalance = liquidityLockerTotalBalance();
-        yields[msg.sender] = 0;
-
-        if (totalBalance < callerYields) {
-            pendingYields[msg.sender] += callerYields;
-            emit PendingYield(msg.sender, callerYields);
-            return false;
-        }
-
-        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "BP:ERROR_TRANSFERRING_YIELD");
-
-        emit YieldWithdrawn(msg.sender, callerYields);
-        return true;
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Liquidity Assets

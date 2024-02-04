@@ -54,11 +54,14 @@ contract DepositsHolderTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function testFuzz_delete_deposit(address holder, uint256 amount) public {
+    function testFuzz_delete_deposit(address pool, address notPool, address holder, uint256 amount) public {
+        vm.assume(pool != address(0));
+        vm.assume(notPool != address(0));
+        vm.assume(pool != notPool);
         vm.assume(holder != address(0));
 
-        vm.startPrank(holder, holder);
-        DepositsHolder depositsHolder = new DepositsHolder(holder);
+        vm.startPrank(pool, pool);
+        DepositsHolder depositsHolder = new DepositsHolder(pool);
         depositsHolder.addDeposit(holder, liquidityAsset, amount, vm.getBlockTimestamp());
         depositsHolder.addDeposit(holder, liquidityAsset, amount, vm.getBlockTimestamp());
 
@@ -72,15 +75,22 @@ contract DepositsHolderTest is Test, FixtureContract {
         PoolLibrary.DepositInstance[] memory depositsAfter = depositsHolder.getDepositsByHolder(holder);
         assertEq(depositsAfter.length, 0);
 
+        depositsHolder.addDeposit(holder, liquidityAsset, amount, vm.getBlockTimestamp());
+        vm.stopPrank();
+
+        vm.startPrank(notPool, notPool);
+        vm.expectRevert(bytes("DH:NOT_POOL"));
+        depositsHolder.deleteDeposit(holder, 0);
         vm.stopPrank();
     }
 
-    function testFuzz_get_holder(address holder, address nonHolder, uint256 amount) public {
+    function testFuzz_get_holder(address pool, address holder, address nonHolder, uint256 amount) public {
+        vm.assume(pool != address(0));
         vm.assume(holder != address(0));
         vm.assume(holder != nonHolder);
 
-        vm.startPrank(holder, holder);
-        DepositsHolder depositsHolder = new DepositsHolder(holder);
+        vm.startPrank(pool, pool);
+        DepositsHolder depositsHolder = new DepositsHolder(pool);
         // Initial state
         assertEq(depositsHolder.getHoldersCount(), 0);
 

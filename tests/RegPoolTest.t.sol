@@ -55,6 +55,10 @@ contract RegPoolTest is FixtureContract {
 
         //pool's total minted should also be user1Deposit
         assertEq(regPool1.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
+
+        address[] memory holders = regPool1.getHolders();
+        assertEq(holders.length, 2, "wrong holder number");
+
         vm.stopPrank();
     }
 

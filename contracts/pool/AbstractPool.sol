@@ -220,6 +220,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     */
 
     /// @notice Get Liquidity Locker instance
+    function getHolders() external view returns (address[] memory) {
+        return depositsHolder.getHolders();
+    }
+
+    /// @notice Get Liquidity Locker instance
     function getLiquidityLocker() external view returns (address) {
         return address(liquidityLocker);
     }

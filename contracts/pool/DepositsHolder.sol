@@ -53,6 +53,10 @@ contract DepositsHolder {
         return holders[index];
     }
 
+    function getHolders() external view returns (address[] memory) {
+        return holders;
+    }
+
     // Get deposits for a specific holder
     function getDepositsByHolder(address holder) external view returns (PoolLibrary.DepositInstance[] memory) {
         require(isHolderExists(holder), "DH:INVALID_HOLDER");

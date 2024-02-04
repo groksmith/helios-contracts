@@ -28,6 +28,12 @@ contract Pool is AbstractPool {
         _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
+    function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
+        uint256 holderBalance = balanceOf(_holder);
+        uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;
+        return holderShare * _amount / 1e18;
+    }
+
     /// TODO: Tigran. I guess we don't need request funds compensation from Blended Pool here. Should be revisited!
     /// @notice Used to transfer the investor's yield to him
 //    function withdrawYield() external override whenProtocolNotPaused returns (bool) {
@@ -62,10 +68,4 @@ contract Pool is AbstractPool {
 //        emit YieldWithdrawn(msg.sender, callerYields);
 //        return true;
 //    }
-
-    function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
-        uint256 holderBalance = balanceOf(_holder);
-        uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;
-        return holderShare * _amount / 1e18;
-    }
 }

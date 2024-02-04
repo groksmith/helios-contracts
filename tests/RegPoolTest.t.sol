@@ -6,10 +6,13 @@ import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
+import {PoolLibrary} from "../contracts/library/PoolLibrary.sol";
 
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract RegPoolTest is FixtureContract {
+    using PoolLibrary for PoolLibrary.PoolInfo;
+
     event PendingYield(address indexed recipient, uint256 indexed amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
 
@@ -18,7 +21,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
-    function test_depositSuccess(address user1, address user2) external {
+    function testFuzz_depositSuccess(address user1, address user2) external {
         user1 = createInvestorAndMintLiquidityAsset(user1, 1000);
         user2 = createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -56,7 +59,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to deposit below minimum
-    function test_depositFailure(address user1, address user2) external {
+    function testFuzz_depositFailure(address user1, address user2) external {
         uint256 depositAmountMax = 100000;
 
         vm.startPrank(user1);
@@ -82,7 +85,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function test_withdraw(address user) external {
+    function testFuzz_withdraw(address user) external {
         user = createInvestorAndMintLiquidityAsset(user, 1000);
 
         vm.startPrank(user);
@@ -122,7 +125,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function test_unlockedToWithdraw(address user) external {
+    function testFuzz_unlockedToWithdraw(address user) external {
         user = createInvestorAndMintLiquidityAsset(user, 1000);
 
         vm.startPrank(user);
@@ -154,13 +157,15 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function test_repay(address investor) external {
+    /// @notice Test repay
+    function testFuzz_repay(address investor, uint256 depositAmount, uint256 yieldAmount) external {
         vm.startPrank(investor);
-        createInvestorAndMintLiquidityAsset(investor, 1000);
+        PoolLibrary.PoolInfo memory poolInfo = regPool1.getPoolInfo();
+        vm.assume(depositAmount > poolInfo.minInvestmentAmount);
+        vm.assume(depositAmount < poolInfo.investmentPoolSize);
+        vm.assume(yieldAmount < liquidityAsset.totalSupply());
 
-        uint256 depositAmount = 150;
-        uint256 yieldAmount = 15;
+        createInvestorAndMintLiquidityAsset(investor, depositAmount);
 
         liquidityAsset.approve(address(regPool1), depositAmount);
         //the user can withdraw the sum he has deposited earlier
@@ -197,7 +202,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function test_distributeYieldsAndWithdraw(address user1, address user2) external {
+    function testFuzz_distributeYieldsAndWithdraw(address user1, address user2) external {
         user1 = createInvestorAndMintLiquidityAsset(user1, 1000);
         user2 = createInvestorAndMintLiquidityAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -260,7 +265,7 @@ contract RegPoolTest is FixtureContract {
         );
     }
 
-    function test_maxPoolSize(uint256 _maxPoolSize) external {
+    function testFuzz_maxPoolSize(uint256 _maxPoolSize) external {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
         _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
@@ -285,7 +290,7 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    function test_reinvest(address user) external {
+    function testFuzz_reinvest(address user) external {
         user = createInvestorAndMintLiquidityAsset(user, 1000);
         vm.startPrank(user);
 

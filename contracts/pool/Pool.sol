@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {BlendedPool} from "./BlendedPool.sol";
+import {PoolLibrary} from "../library/PoolLibrary.sol";
 
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is AbstractPool {
@@ -17,7 +18,7 @@ contract Pool is AbstractPool {
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_liquidityAsset, _liquidityLockerFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
+        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
@@ -45,6 +46,7 @@ contract Pool is AbstractPool {
                 emit PendingYield(msg.sender, callerYields);
                 return false;
             }
+
             blendedPool.requestLiquidityAssets(amountMissing);
             _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
 

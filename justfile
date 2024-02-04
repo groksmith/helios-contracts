@@ -91,6 +91,9 @@ format: && _timer
 test-all: && _timer
 	forge test -vvvvv
 
+test-gas: && _timer
+    forge test --gas-report
+
 coverage-all: && _timer
 	forge coverage --report lcov
 	genhtml -o coverage_report --branch-coverage lcov.info --ignore-errors category

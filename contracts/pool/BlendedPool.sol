@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
+import {PoolLibrary} from "../library/PoolLibrary.sol";
 
 /// @title Blended Pool
 contract BlendedPool is AbstractPool {
@@ -17,7 +18,7 @@ contract BlendedPool is AbstractPool {
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_liquidityAsset, _liquidityLockerFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo = PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
+        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address

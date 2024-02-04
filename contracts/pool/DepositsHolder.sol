@@ -2,17 +2,12 @@
 pragma solidity 0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-struct DepositInstance {
-    IERC20 token;
-    uint256 amount;
-    uint256 unlockTime;
-}
+import {PoolLibrary} from "../library/PoolLibrary.sol";
 
 contract DepositsHolder {
     // TODO: Tigran. I hate doing that, need something better
     address[] private holders;
-    mapping(address => DepositInstance[]) private userDeposits;
+    mapping(address => PoolLibrary.DepositInstance[]) private userDeposits;
 
     constructor(){}
 
@@ -31,7 +26,7 @@ contract DepositsHolder {
         }
 
         // Add the deposit to the userDeposits mapping
-        userDeposits[holder].push(DepositInstance({
+        userDeposits[holder].push(PoolLibrary.DepositInstance({
             token: token,
             amount: amount,
             unlockTime: unlockTime
@@ -59,7 +54,7 @@ contract DepositsHolder {
     }
 
     // Get deposits for a specific holder
-    function getDepositsByHolder(address holder) external view returns (DepositInstance[] memory) {
+    function getDepositsByHolder(address holder) external view returns (PoolLibrary.DepositInstance[] memory) {
         require(isHolderExists(holder), "DH:INVALID_HOLDER");
         return userDeposits[holder];
     }

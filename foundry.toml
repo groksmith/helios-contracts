@@ -11,6 +11,9 @@ remappings = [
     '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
 ]
 
+[fuzz]
+runs = 1000
+
 [rpc_endpoints]
 base_sepolia = "${RPC_URL}"
 

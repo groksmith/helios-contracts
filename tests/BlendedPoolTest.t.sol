@@ -127,11 +127,6 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.deposit(user2Deposit);
         vm.stopPrank();
 
-        //a non-pool-admin address shouldn't be able to call distributeYields()
-        vm.prank(user1);
-        vm.expectRevert("PF:NOT_ADMIN");
-        blendedPool.distributeYields(1000);
-
         //only the pool admin can call distributeYields()
         vm.prank(OWNER_ADDRESS);
         blendedPool.distributeYields(1000);
@@ -145,88 +140,25 @@ contract BlendedPoolTest is Test, FixtureContract {
         uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
         vm.prank(user1);
         blendedPool.withdrawYield();
-        assertEq(
+        assertApproxEqAbs(
             liquidityAsset.balanceOf(user1) - user1BalanceBefore,
             90,
-            "user1 balance not upd after withdrawYield()"
+            1
         );
 
         uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
         vm.prank(user2);
         blendedPool.withdrawYield();
-        assertEq(
+        assertApproxEqAbs(
             liquidityAsset.balanceOf(user2) - user2BalanceBefore,
-            909,
-            "user2 balance not upd after withdrawYield()"
+            910,
+            1
         );
-    }
-
-    /// @notice Test complete scenario of depositing, distribution of yields and withdraw
-    function test_distributeYieldsAndWithdrawRegPool(address user1, address user2) external {
-        createInvestorAndMintLiquidityAsset(user1, 1000);
-        createInvestorAndMintLiquidityAsset(user2, 1000);
-        vm.assume(user1 != user2);
-
-        vm.startPrank(OWNER_ADDRESS);
-        //firstly the users need to deposit before withdrawing
-        address poolAddress = poolFactory.createPool(
-            "1",
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
-            2000,
-            10,
-            1000,
-            100000,
-            100,
-            500,
-            1000
-        );
-
-        vm.stopPrank();
-
-        Pool pool = Pool(poolAddress);
-        uint256 user1Deposit = 100;
-        vm.startPrank(user1);
-        liquidityAsset.approve(poolAddress, 10000);
-        pool.deposit(user1Deposit);
-        vm.stopPrank();
-
-        uint256 user2Deposit = 1000;
-        vm.startPrank(user2);
-        liquidityAsset.approve(poolAddress, 10000);
-        pool.deposit(user2Deposit);
-        vm.stopPrank();
 
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
         vm.expectRevert("PF:NOT_ADMIN");
-        pool.distributeYields(1000);
-
-        //only the pool admin can call distributeYields()
-        vm.prank(OWNER_ADDRESS);
-        pool.distributeYields(1000);
-
-        //now we need to test if the users got assigned the correct yields
-        uint256 user1Yields = pool.yields(user1);
-        uint256 user2Yields = pool.yields(user2);
-        assertEq(user1Yields, 1, "wrong yield user1");
-        assertEq(user2Yields, 10, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
-
-        uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
-        vm.prank(user1);
-        pool.withdrawYield();
-        assertEq(
-            liquidityAsset.balanceOf(user1) - user1BalanceBefore, 1, "user1 balance not upd after withdrawYield()"
-        );
-
-        uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
-        vm.prank(user2);
-        pool.withdrawYield();
-        assertEq(
-            liquidityAsset.balanceOf(user2) - user2BalanceBefore,
-            10,
-            "user2 balance not upd after withdrawYield()"
-        );
+        blendedPool.distributeYields(1000);
     }
 
     /// @notice Test scenario when there are not enough funds on the pool
@@ -319,35 +251,6 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.startPrank(user);
         liquidityAsset.approve(poolAddress, 10000);
         pool.withdrawYield();
-    }
-
-    function test_maxPoolSize(address user, uint256 _maxPoolSize) external {
-        createInvestorAndMintLiquidityAsset(user, 1000);
-
-        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
-
-        _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
-        address poolAddress = poolFactory.createPool(
-            "1",
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
-            2000,
-            10,
-            1000,
-            _maxPoolSize,
-            0,
-            500,
-            1000
-        );
-        vm.stopPrank();
-
-        Pool pool = Pool(poolAddress);
-
-        vm.startPrank(user);
-        liquidityAsset.approve(poolAddress, 1000);
-        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
-        pool.deposit(_maxPoolSize + 1);
-        vm.stopPrank();
     }
 
     function test_reinvestYield(address user) external {

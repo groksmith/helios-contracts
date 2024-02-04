@@ -35,8 +35,7 @@ contract DepositsHolderTest is Test, FixtureContract {
     function testFuzz_add_deposit_from_not_pool(address holder, address pool, address notPool) public {
         vm.assume(holder != address(0));
         vm.assume(pool != address(0));
-        vm.assume(pool != holder);
-        vm.assume(notPool != address(0));
+        vm.assume(pool != notPool);
 
         vm.startPrank(pool, pool);
         vm.expectRevert(bytes("DH:INVALID_POOL"));

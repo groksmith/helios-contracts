@@ -32,6 +32,9 @@ contract RegPoolTest is FixtureContract {
         assertEq(regPool1.balanceOf(user1), 0);
         assertEq(regPool1.totalDeposited(), 0);
 
+        address[] memory holders = regPool1.getHolders();
+        assertEq(holders.length, 0, "wrong holder number");
+
         uint256 user1Deposit = 100;
         liquidityAsset.approve(address(regPool1), user1Deposit);
         regPool1.deposit(user1Deposit);
@@ -56,7 +59,7 @@ contract RegPoolTest is FixtureContract {
         //pool's total minted should also be user1Deposit
         assertEq(regPool1.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
 
-        address[] memory holders = regPool1.getHolders();
+        holders = regPool1.getHolders();
         assertEq(holders.length, 2, "wrong holder number");
 
         vm.stopPrank();
@@ -165,9 +168,9 @@ contract RegPoolTest is FixtureContract {
     function testFuzz_repay(address investor, uint256 depositAmount, uint256 yieldAmount) external {
         vm.startPrank(investor);
         PoolLibrary.PoolInfo memory poolInfo = regPool1.getPoolInfo();
-        vm.assume(depositAmount > poolInfo.minInvestmentAmount);
-        vm.assume(depositAmount < poolInfo.investmentPoolSize);
-        vm.assume(yieldAmount < liquidityAsset.totalSupply());
+
+        depositAmount = uint64(bound(depositAmount, poolInfo.minInvestmentAmount, poolInfo.investmentPoolSize));
+        yieldAmount = uint64(bound(yieldAmount, 0, liquidityAsset.totalSupply()));
 
         createInvestorAndMintLiquidityAsset(investor, depositAmount);
 
@@ -203,70 +206,6 @@ contract RegPoolTest is FixtureContract {
         // Stop toying
 
         vm.stopPrank();
-    }
-
-    /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function testFuzz_distributeYieldsAndWithdraw(address user1, address user2) external {
-        user1 = createInvestorAndMintLiquidityAsset(user1, 1000);
-        user2 = createInvestorAndMintLiquidityAsset(user2, 1000);
-        vm.assume(user1 != user2);
-
-        //firstly the users need to deposit before withdrawing
-        uint256 user1Deposit = 100;
-        vm.startPrank(user1);
-        liquidityAsset.approve(address(regPool1), user1Deposit);
-        regPool1.deposit(user1Deposit);
-        vm.stopPrank();
-
-        uint256 user2Deposit = 1000;
-        vm.startPrank(user2);
-        liquidityAsset.approve(address(regPool1), user2Deposit);
-        regPool1.deposit(user2Deposit);
-        vm.stopPrank();
-
-        uint256 yieldGenerated = 10000;
-
-        //a non-pool-admin address shouldn't be able to call distributeYields()
-        vm.prank(user1);
-        vm.expectRevert("PF:NOT_ADMIN");
-        regPool1.distributeYields(yieldGenerated);
-
-        //only the pool admin can call distributeYields()
-        vm.startPrank(OWNER_ADDRESS);
-
-        vm.expectRevert("P:INVALID_VALUE");
-        regPool1.distributeYields(0);
-
-        mintLiquidityAsset(OWNER_ADDRESS, yieldGenerated);
-        liquidityAsset.approve(address(regPool1), yieldGenerated);
-        regPool1.repay(yieldGenerated);
-        regPool1.distributeYields(yieldGenerated);
-        vm.stopPrank();
-
-        //now we need to test if the users got assigned the correct yields
-        uint256 user1Yields = regPool1.yields(user1);
-        uint256 user2Yields = regPool1.yields(user2);
-
-        assertEq(user1Yields, 10, "wrong yield user1");
-        assertEq(user2Yields, 100, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
-
-        uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
-        vm.prank(user1);
-        regPool1.withdrawYield();
-        assertEq(
-            liquidityAsset.balanceOf(user1) - user1BalanceBefore,
-            10,
-            "user1 balance not upd after withdrawYield()"
-        );
-
-        uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
-        vm.prank(user2);
-        regPool1.withdrawYield();
-        assertEq(
-            liquidityAsset.balanceOf(user2) - user2BalanceBefore,
-            100,
-            "user2 balance not upd after withdrawYield()"
-        );
     }
 
     function testFuzz_maxPoolSize(uint256 _maxPoolSize) external {
@@ -337,5 +276,98 @@ contract RegPoolTest is FixtureContract {
         assertEq(userYields, 0);
 
         vm.stopPrank();
+    }
+
+    function test_maxPoolSize(address user, uint256 _maxPoolSize) external {
+        createInvestorAndMintLiquidityAsset(user, 1000);
+
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+
+        _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
+        address poolAddress = poolFactory.createPool(
+            "1",
+            address(liquidityAsset),
+            address(liquidityLockerFactory),
+            2000,
+            10,
+            1000,
+            _maxPoolSize,
+            0,
+            500,
+            1000
+        );
+        vm.stopPrank();
+
+        Pool pool = Pool(poolAddress);
+
+        vm.startPrank(user);
+        liquidityAsset.approve(poolAddress, 1000);
+        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
+        pool.deposit(_maxPoolSize + 1);
+        vm.stopPrank();
+    }
+
+    /// @notice Test complete scenario of depositing, distribution of yield and withdraw
+    function testFuzz_distributeYieldsAndWithdraw(address user1, address user2) external {
+        user1 = createInvestorAndMintLiquidityAsset(user1, 1000);
+        user2 = createInvestorAndMintLiquidityAsset(user2, 1000);
+        vm.assume(user1 != user2);
+
+        //firstly the users need to deposit before withdrawing
+        uint256 user1Deposit = 100;
+        vm.startPrank(user1);
+        liquidityAsset.approve(address(regPool1), user1Deposit);
+        regPool1.deposit(user1Deposit);
+        vm.stopPrank();
+
+        uint256 user2Deposit = 1000;
+        vm.startPrank(user2);
+        liquidityAsset.approve(address(regPool1), user2Deposit);
+        regPool1.deposit(user2Deposit);
+        vm.stopPrank();
+
+        uint256 yieldGenerated = 10000;
+
+        //a non-pool-admin address shouldn't be able to call distributeYields()
+        vm.prank(user1);
+        vm.expectRevert("PF:NOT_ADMIN");
+        regPool1.distributeYields(yieldGenerated);
+
+        //only the pool admin can call distributeYields()
+        vm.startPrank(OWNER_ADDRESS);
+
+        vm.expectRevert("P:INVALID_VALUE");
+        regPool1.distributeYields(0);
+
+        mintLiquidityAsset(OWNER_ADDRESS, yieldGenerated);
+        liquidityAsset.approve(address(regPool1), yieldGenerated);
+        regPool1.repay(yieldGenerated);
+        regPool1.distributeYields(yieldGenerated);
+        vm.stopPrank();
+
+        //now we need to test if the users got assigned the correct yields
+        uint256 user1Yields = regPool1.yields(user1);
+        uint256 user2Yields = regPool1.yields(user2);
+
+        assertEq(user1Yields, 10, "wrong yield user1");
+        assertEq(user2Yields, 100, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
+
+        uint256 user1BalanceBefore = liquidityAsset.balanceOf(user1);
+        vm.prank(user1);
+        regPool1.withdrawYield();
+        assertEq(
+            liquidityAsset.balanceOf(user1) - user1BalanceBefore,
+            10,
+            "user1 balance not upd after withdrawYield()"
+        );
+
+        uint256 user2BalanceBefore = liquidityAsset.balanceOf(user2);
+        vm.prank(user2);
+        regPool1.withdrawYield();
+        assertEq(
+            liquidityAsset.balanceOf(user2) - user2BalanceBefore,
+            100,
+            "user2 balance not upd after withdrawYield()"
+        );
     }
 }

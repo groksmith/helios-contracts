@@ -1,8 +1,8 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
-import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
+import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
+import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 
 contract PoolFactoryTest is Test, FixtureContract {
     function setUp() public {

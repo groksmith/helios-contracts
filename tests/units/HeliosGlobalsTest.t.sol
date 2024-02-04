@@ -1,7 +1,7 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
+import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
 
 contract HeliosGlobalsTest is Test, FixtureContract {
     event ProtocolPaused(bool pause);

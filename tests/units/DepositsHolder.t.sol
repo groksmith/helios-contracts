@@ -1,9 +1,9 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
-import {DepositsHolder} from "../contracts/pool/DepositsHolder.sol";
-import {DepositInstance} from "../contracts/pool/DepositsHolder.sol";
+import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
+import {DepositsHolder} from "../../contracts/pool/DepositsHolder.sol";
+import {DepositInstance} from "../../contracts/pool/DepositsHolder.sol";
 
 contract DepositsHolderTest is Test, FixtureContract {
     DepositsHolder public depositsHolder;
@@ -13,7 +13,7 @@ contract DepositsHolderTest is Test, FixtureContract {
         depositsHolder = new DepositsHolder();
     }
 
-    function test_add_deposit(address user, uint256 amount) public {
+    function testFuzz_add_deposit(address user, uint256 amount) public {
         vm.assume(user != address(0));
 
         vm.startPrank(user, user);
@@ -33,7 +33,7 @@ contract DepositsHolderTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_delete_deposit(address holder, uint256 amount) public {
+    function testFuzz_delete_deposit(address holder, uint256 amount) public {
         vm.assume(holder != address(0));
 
         vm.startPrank(holder, holder);
@@ -53,7 +53,7 @@ contract DepositsHolderTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_get_wrong_holder(address holder, address nonHolder, uint256 amount) public {
+    function testFuzz_get_holder(address holder, address nonHolder, uint256 amount) public {
         vm.assume(holder != address(0));
         vm.assume(holder != nonHolder);
 

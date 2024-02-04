@@ -1,17 +1,16 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
-import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
+import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
+import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 
 contract LiquidityLockerFactoryTest is Test, FixtureContract {
     function setUp() public {
         fixture();
     }
 
-    function test_create_liquidity_locker(address liquidityAsset) public {
+    function testFuzz_create_liquidity_locker(address liquidityAsset) public {
         vm.assume(liquidityAsset != address(0));
-
         vm.prank(address(regPool1));
         liquidityLockerFactory.CreateLiquidityLocker(liquidityAsset);
     }

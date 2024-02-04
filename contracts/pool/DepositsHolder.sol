@@ -9,8 +9,8 @@ struct DepositInstance {
     uint256 unlockTime;
 }
 
-// TODO: Tigran. I hate doing that, need something better
 contract DepositsHolder {
+    // TODO: Tigran. I hate doing that, need something better
     address[] private holders;
     mapping(address => DepositInstance[]) private userDeposits;
 

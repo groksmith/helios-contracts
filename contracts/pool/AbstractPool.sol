@@ -56,12 +56,13 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         uint256 _withdrawLimit,
         uint256 _withdrawPeriod
     ) ERC20(_tokenName, _tokenSymbol) {
-        depositsHolder = new DepositsHolder();
+        poolFactory = IPoolFactory(msg.sender);
+
+        depositsHolder = new DepositsHolder(address(this));
 
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
         require(_liquidityLockerFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
 
-        poolFactory = IPoolFactory(msg.sender);
 
         require(poolFactory.globals().isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
         require(poolFactory.globals().isValidLiquidityLockerFactory(_liquidityLockerFactory), "P:INVALID_LL_FACTORY");

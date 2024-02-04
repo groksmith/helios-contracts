@@ -6,17 +6,16 @@ import {PoolLibrary} from "../../contracts/library/PoolLibrary.sol";
 import {DepositsHolder} from "../../contracts/pool/DepositsHolder.sol";
 
 contract DepositsHolderTest is Test, FixtureContract {
-    DepositsHolder public depositsHolder;
-
     function setUp() public {
         fixture();
-        depositsHolder = new DepositsHolder();
     }
 
     function testFuzz_add_deposit(address user, uint256 amount) public {
         vm.assume(user != address(0));
 
         vm.startPrank(user, user);
+        DepositsHolder depositsHolder = new DepositsHolder(user);
+
         assertEq(depositsHolder.getHoldersCount(), 0);
         depositsHolder.addDeposit(user, liquidityAsset, amount, vm.getBlockTimestamp());
 
@@ -33,10 +32,33 @@ contract DepositsHolderTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
+    function testFuzz_add_deposit_from_not_pool(address holder, address pool, address notPool) public {
+        vm.assume(holder != address(0));
+        vm.assume(pool != address(0));
+        vm.assume(pool != holder);
+        vm.assume(notPool != address(0));
+
+        vm.startPrank(pool, pool);
+        vm.expectRevert(bytes("DH:INVALID_POOL"));
+        new DepositsHolder(address(0));
+        vm.stopPrank();
+
+        vm.startPrank(pool, pool);
+        DepositsHolder depositsHolder = new DepositsHolder(pool);
+        depositsHolder.addDeposit(holder, liquidityAsset, 100, vm.getBlockTimestamp());
+        vm.stopPrank();
+
+        vm.startPrank(notPool, notPool);
+        vm.expectRevert(bytes("DH:NOT_POOL"));
+        depositsHolder.addDeposit(holder, liquidityAsset, 100, vm.getBlockTimestamp());
+        vm.stopPrank();
+    }
+
     function testFuzz_delete_deposit(address holder, uint256 amount) public {
         vm.assume(holder != address(0));
 
         vm.startPrank(holder, holder);
+        DepositsHolder depositsHolder = new DepositsHolder(holder);
         depositsHolder.addDeposit(holder, liquidityAsset, amount, vm.getBlockTimestamp());
         depositsHolder.addDeposit(holder, liquidityAsset, amount, vm.getBlockTimestamp());
 
@@ -58,7 +80,7 @@ contract DepositsHolderTest is Test, FixtureContract {
         vm.assume(holder != nonHolder);
 
         vm.startPrank(holder, holder);
-
+        DepositsHolder depositsHolder = new DepositsHolder(holder);
         // Initial state
         assertEq(depositsHolder.getHoldersCount(), 0);
 

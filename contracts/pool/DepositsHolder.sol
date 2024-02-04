@@ -3,13 +3,18 @@ pragma solidity 0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
+import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
+// TODO: Tigran. I hate doing that, need something better
 contract DepositsHolder {
-    // TODO: Tigran. I hate doing that, need something better
+    address private immutable pool;
     address[] private holders;
     mapping(address => PoolLibrary.DepositInstance[]) private userDeposits;
 
-    constructor(){}
+    constructor(address _pool) {
+        require(_pool != address(0), "DH:INVALID_POOL");
+        pool = _pool;
+    }
 
     // Add a deposit for a holder
     function addDeposit(
@@ -17,7 +22,7 @@ contract DepositsHolder {
         IERC20 token,
         uint256 amount,
         uint256 unlockTime
-    ) external {
+    ) external onlyPool {
         bool holderExists = isHolderExists(holder);
 
         // If the holder doesn't exist, add them to the list
@@ -34,7 +39,7 @@ contract DepositsHolder {
     }
 
     // Delete a deposit for a holder. Warning: deposits order will be changed!
-    function deleteDeposit(address holder, uint256 depositIndex) external {
+    function deleteDeposit(address holder, uint256 depositIndex) external onlyPool {
         require(depositIndex < userDeposits[holder].length, "DH:INVALID_INDEX");
 
         // Delete the deposit
@@ -69,5 +74,10 @@ contract DepositsHolder {
             }
         }
         return holderExists;
+    }
+
+    modifier onlyPool() {
+        require(msg.sender == pool, "DH:NOT_POOL");
+        _;
     }
 }

@@ -245,7 +245,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.distributeYields(1000);
 
         vm.prank(OWNER_ADDRESS);
-        vm.expectRevert("BP:INVALID_VALUE");
+        vm.expectRevert("P:INVALID_VALUE");
         blendedPool.distributeYields(0);
 
         assertEq(blendedPool.yields(user), 1000, "yields should be 1000 atm");

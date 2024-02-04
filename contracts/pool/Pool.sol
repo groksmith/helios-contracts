@@ -63,21 +63,9 @@ contract Pool is AbstractPool {
 //        return true;
 //    }
 
-    /// @notice Used to distribute yields among investors (LP token holders)
-    /// @param  _amount the amount to be divided among investors
-    function distributeYields(uint256 _amount) external override onlyAdmin nonReentrant {
-        require(_amount > 0, "P:INVALID_VALUE");
-        for (uint256 i = 0; i < depositsHolder.getHoldersCount(); i++) {
-            address holder = depositsHolder.getHolderByIndex(i);
-
-            uint256 holderBalance = balanceOf(holder);
-            uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;
-            uint256 holderYields = holderShare * _amount / 1e18;
-            yields[holder] += holderYields;
-        }
-    }
-
-    function getBlendedPool() internal view returns (BlendedPool) {
-        return BlendedPool(poolFactory.getBlendedPool());
+    function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
+        uint256 holderBalance = balanceOf(_holder);
+        uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;
+        return holderShare * _amount / 1e18;
     }
 }

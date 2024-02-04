@@ -164,7 +164,15 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     Admin flow
     */
 
-    function distributeYields(uint256 _amount) external virtual;
+    /// @notice Used to distribute yields among investors (LP token holders)
+    /// @param  _amount the amount to be divided among investors
+    function distributeYields(uint256 _amount) external virtual onlyAdmin nonReentrant {
+        require(_amount > 0, "P:INVALID_VALUE");
+        for (uint256 i = 0; i < depositsHolder.getHoldersCount(); i++) {
+            address holder = depositsHolder.getHolderByIndex(i);
+            yields[holder] += _calculateYield(holder, _amount);
+        }
+    }
 
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _recipient address of the recipient who didn't get the liquidity
@@ -231,6 +239,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /*
     Internals
     */
+
+    function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256);
 
     function _depositLogic(uint256 _amount, IERC20 _token) internal {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");

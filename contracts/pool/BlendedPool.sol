@@ -27,19 +27,6 @@ contract BlendedPool is AbstractPool {
         _depositLogic(_amount, liquidityLocker.liquidityAsset());
     }
 
-    /// @notice Used to distribute yields among investors (LP token holders)
-    /// @param  _amount the amount to be divided among investors
-    function distributeYields(uint256 _amount) external override onlyAdmin nonReentrant {
-        require(_amount > 0, "BP:INVALID_VALUE");
-
-        for (uint256 i = 0; i < depositsHolder.getHoldersCount(); i++) {
-            address holder = depositsHolder.getHolderByIndex(i);
-            uint256 holderBalance = balanceOf(holder);
-            uint256 holderShare = (_amount * holderBalance) / totalSupply();
-            yields[holder] += holderShare;
-        }
-    }
-
     /// @notice Only called by a RegPool when it doesn't have enough Liquidity Assets
     function requestLiquidityAssets(uint256 _amountMissing) external onlyPool {
         require(_amountMissing > 0, "BP:INVALID_INPUT");
@@ -48,6 +35,11 @@ contract BlendedPool is AbstractPool {
         require(_transferLiquidityLockerFunds(poolLiquidityLocker, _amountMissing), "BP:REQUEST_FROM_BP_FAIL");
 
         emit RegPoolDeposit(msg.sender, _amountMissing);
+    }
+
+    function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
+        uint256 holderBalance = balanceOf(_holder);
+        return (_amount * holderBalance) / totalSupply();
     }
 
     /*

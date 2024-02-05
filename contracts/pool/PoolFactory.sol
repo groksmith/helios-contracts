@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
+// @author Tigran Arakelyan
 pragma solidity 0.8.20;
 
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import {Pool} from "./Pool.sol";
@@ -10,7 +10,7 @@ import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
 // PoolFactory instantiates Pools
-contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
+contract PoolFactory is IPoolFactory, ReentrancyGuard {
     IHeliosGlobals public override globals; // A HeliosGlobals instance
 
     address public blendedPool; // Address of Blended Pool
@@ -25,16 +25,16 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     }
 
     // Sets HeliosGlobals instance. Only the Admin can call this function
-    function setGlobals(address newGlobals) external onlyAdmin {
-        require(newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
-        globals = IHeliosGlobals(newGlobals);
+    function setGlobals(address _newGlobals) external onlyAdmin {
+        require(_newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
+        globals = IHeliosGlobals(_newGlobals);
     }
 
     // Instantiates a Pool
     function createPool(
         string memory poolId,
         address liquidityAsset,
-        address llFactory,
+        address liquidityLockerFactory,
         uint256 lockupPeriod,
         uint256 apy,
         uint256 duration,
@@ -42,12 +42,12 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
-    ) external virtual onlyAdmin whenNotPaused nonReentrant returns (address poolAddress) {
+    ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address poolAddress) {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
             liquidityAsset,
-            llFactory,
+            liquidityLockerFactory,
             lockupPeriod,
             apy,
             duration,
@@ -67,20 +67,20 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
     // Instantiates a Pool
     function createBlendedPool(
         address liquidityAsset,
-        address llFactory,
+        address liquidityLockerFactory,
         uint256 lockupPeriod,
         uint256 apy,
         uint256 duration,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
-    ) external virtual onlyAdmin whenNotPaused nonReentrant returns (address blendedPoolAddress) {
+    ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address blendedPoolAddress) {
 
-        require(blendedPool == address (0));
+        require(blendedPool == address(0), "PF:BLENDED_POOL_ALREADY_CREATED");
 
         BlendedPool pool = new BlendedPool(
             liquidityAsset,
-            llFactory,
+            liquidityLockerFactory,
             lockupPeriod,
             apy,
             duration,
@@ -95,15 +95,22 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         emit BlendedPoolCreated(liquidityAsset, blendedPoolAddress, msg.sender);
     }
 
-    // Triggers paused state. Halts functionality for certain functions. Only Admin or a PoolFactory Admin can call this function
-    function pause() external onlyAdmin {
-        super._pause();
+    // Checks that the mapping key is valid (unique)
+    function _isMappingKeyValid(string memory _key) internal view {
+        require(pools[_key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 
-    // Triggers unpaused state. Restores functionality for certain functions. Only Admin or a PoolFactory Admin can call this function
-    function unpause() external onlyAdmin {
-        super._unpause();
+    function isValidPool(address _pool) external override view returns (bool) {
+        return isPool[_pool];
     }
+
+    function getBlendedPool() external override view returns (address) {
+        return blendedPool;
+    }
+
+    /*
+    Modifiers
+    */
 
     // Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {
@@ -111,8 +118,9 @@ contract PoolFactory is IPoolFactory, Pausable, ReentrancyGuard {
         _;
     }
 
-    // Checks that the mapping key is valid (unique)
-    function _isMappingKeyValid(string memory key) internal view {
-        require(pools[key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
+    // Checks that the protocol is not in a paused state
+    modifier whenProtocolNotPaused() {
+        require(!globals.protocolPaused(), "P:PROTO_PAUSED");
+        _;
     }
 }

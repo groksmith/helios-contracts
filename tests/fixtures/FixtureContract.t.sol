@@ -56,6 +56,8 @@ abstract contract FixtureContract is Test {
 
         regPool1 = Pool(poolAddress);
 
+        assertEq(regPool1.decimals(), liquidityAsset.decimals());
+
         address blendedPoolAddress = poolFactory.createBlendedPool(
             address(liquidityAsset),
             address(liquidityLockerFactory),
@@ -68,6 +70,8 @@ abstract contract FixtureContract is Test {
         );
 
         blendedPool = BlendedPool(blendedPoolAddress);
+        assertEq(blendedPool.decimals(), liquidityAsset.decimals());
+        assertEq(poolFactory.getBlendedPool(), address(blendedPool));
 
         vm.stopPrank();
     }
@@ -75,6 +79,9 @@ abstract contract FixtureContract is Test {
     function createInvestorAndMintLiquidityAsset(address investor, uint256 amount) public returns (address) {
         vm.assume(investor != address(0));
         vm.assume(investor != OWNER_ADDRESS);
+        vm.assume(investor != address(liquidityAsset));
+        vm.assume(amount < liquidityAssetElevated.totalSupply());
+
         liquidityAssetElevated.mint(investor, amount);
         return investor;
     }
@@ -82,4 +89,9 @@ abstract contract FixtureContract is Test {
     function mintLiquidityAsset(address user, uint256 amount) public {
         liquidityAssetElevated.mint(user, amount);
     }
+
+    function burnLiquidityAsset(address user, uint256 amount) public {
+        liquidityAssetElevated.burn(user, amount);
+    }
+
 }

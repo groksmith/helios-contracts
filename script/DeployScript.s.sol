@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {PoolFactory} from "../contracts/pool/PoolFactory.sol";
 import {LiquidityLockerFactory} from "../contracts/pool/LiquidityLockerFactory.sol";
-import {MockTokenERC20} from "../forge-test/mocks/MockTokenERC20.sol";
+import {MockTokenERC20} from "../tests/mocks/MockTokenERC20.sol";
 
 contract DeployScript is Script {
     function run() external {

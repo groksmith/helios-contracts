@@ -34,38 +34,74 @@ contract Pool is AbstractPool {
         return holderShare * _amount / 1e18;
     }
 
-    /// TODO: Tigran. I guess we don't need request funds compensation from Blended Pool here. Should be revisited!
-    /// @notice Used to transfer the investor's yield to him
-//    function withdrawYield() external override whenProtocolNotPaused returns (bool) {
-//        uint256 callerYields = yields[msg.sender];
-//        require(callerYields >= 0, "P:NOT_HOLDER");
-//        uint256 totalBalance = liquidityLockerTotalBalance();
-//
-//        BlendedPool blendedPool = getBlendedPool();
-//
-//        yields[msg.sender] = 0;
-//
-//        if (totalBalance < callerYields) {
-//            uint256 amountMissing = callerYields - totalBalance;
-//
-//            if (blendedPool.liquidityLockerTotalBalance() < amountMissing) {
-//                pendingYields[msg.sender] += callerYields;
-//                emit PendingYield(msg.sender, callerYields);
-//                return false;
-//            }
-//
-//            blendedPool.requestLiquidityAssets(amountMissing);
-//            _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
-//
-//            require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
-//
-//            emit YieldWithdrawn(msg.sender, callerYields);
-//            return true;
-//        }
-//
-//        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
-//
-//        emit YieldWithdrawn(msg.sender, callerYields);
-//        return true;
-//    }
+    /// @notice withdraws the caller's liquidity assets
+    /// @param  _amounts the amount of Liquidity Asset to be withdrawn
+    /// @param  _indices the indices of the DepositsHolder's DepositInstance
+    function withdraw(uint256[] calldata _amounts, uint16[] calldata _indices) public override whenProtocolNotPaused {
+        PoolLibrary.DepositInstance[] memory deposits = depositsHolder.getDepositsByHolder(msg.sender);
+
+        require(_amounts.length == _indices.length, "P:ARRAYS_INCONSISTENT");
+        require(_indices.length <= deposits.length, "P:ARRAYS_INCONSISTENT");
+
+        uint256 totalBalance = liquidityLockerTotalBalance();
+        BlendedPool blendedPool = BlendedPool(poolFactory.getBlendedPool());
+
+        for (uint256 i = 0; i < _indices.length; i++) {
+            uint256 _index = _indices[i];
+            uint256 _amount = _amounts[i];
+
+            require(block.timestamp >= deposits[_index].unlockTime, "P:TOKENS_LOCKED");
+            require(deposits[_index].amount >= _amount, "P:INSUFFICIENT_FUNDS");
+
+            // Check if there is sufficient amount
+            if (totalBalance < _amount) {
+                // We are out of funds. Don't panic.
+                // Let's borrow funds from Blended Pool. BP Investors will be happy to participate in Regional Pool.
+
+                // Calculate insufficient amount
+                uint256 insufficientAmount = _amount - totalBalance;
+
+                // are we toking about same token?
+                bool sameToken = (liquidityAsset == blendedPool.liquidityAsset());
+
+                // Make sure there is enough funds in Blended Pool to invest
+                bool blendedPoolCapableToCoverInsufficientAmount = (insufficientAmount < blendedPool.liquidityLockerTotalBalance());
+
+                // skip requesting "BP Compensation" for Blended Pool. It doesn't make sense.
+                bool actorIsNotBlendedPool = (msg.sender != address(blendedPool));
+
+                // Requested amount more than compensationThreshold. Will add in the next iteration.
+                bool requestedAmountLessThanCompensationThreshold = true;
+
+                // Validate that we want to do automatic "BP Compensation"
+                if (sameToken &&
+                    blendedPoolCapableToCoverInsufficientAmount &&
+                    actorIsNotBlendedPool &&
+                    requestedAmountLessThanCompensationThreshold)
+                {
+                    // Borrow liquidity from Blended Pool to Regional Pool
+                    // Return back to Blended Pool equal amount of Regional Pool's tokens (so now Blended Pool act as investor for Regional Pool)
+                    blendedPool.requestLiquidityAssets(insufficientAmount);
+                } else {
+                    // Ok, going to manual flow
+                    pendingWithdrawals[msg.sender] += _amount;
+                    emit PendingWithdrawal(msg.sender, _amount);
+                    continue;
+                }
+            }
+
+            // Finish withdraw process and burn investors portion of tokens (we have enough funds)
+            _burn(msg.sender, _amount);
+            deposits[_index].amount -= _amount;
+
+            if (deposits[_index].amount == 0) {
+                depositsHolder.deleteDeposit(msg.sender, _index);
+            }
+
+            _transferLiquidityLockerFunds(msg.sender, _amount);
+            _emitBalanceUpdatedEvent();
+            emit Withdrawal(msg.sender, _amount);
+        }
+    }
 }
+

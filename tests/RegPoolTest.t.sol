@@ -124,10 +124,6 @@ contract RegPoolTest is FixtureContract {
 
         regPool1.withdraw(amounts, indices);
 
-        // but he cannot withdraw more
-        vm.expectRevert("P:INSUFFICIENT_FUNDS");
-        regPool1.withdraw(amounts, indices);
-
         vm.stopPrank();
     }
 

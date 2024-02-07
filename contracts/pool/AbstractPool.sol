@@ -85,7 +85,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice withdraws the caller's liquidity assets
     /// @param  _amounts the amount of Liquidity Asset to be withdrawn
     /// @param  _indices the indices of the DepositsHolder's DepositInstance
-    function withdraw(uint256[] calldata _amounts, uint16[] calldata _indices) public whenProtocolNotPaused {
+    function withdraw(uint256[] calldata _amounts, uint16[] calldata _indices) virtual public whenProtocolNotPaused {
         require(_amounts.length == _indices.length, "P:ARRAYS_INCONSISTENT");
 
         PoolLibrary.DepositInstance[] memory deposits = depositsHolder.getDepositsByHolder(msg.sender);

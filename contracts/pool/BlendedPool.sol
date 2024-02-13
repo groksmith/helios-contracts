@@ -11,28 +11,26 @@ contract BlendedPool is AbstractPool {
 
     constructor(
         address _liquidityAsset,
-        address _liquidityLockerFactory,
         uint256 _lockupPeriod,
         uint256 _apy,
         uint256 _duration,
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    ) AbstractPool(_liquidityAsset, _liquidityLockerFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
+    ) AbstractPool(_liquidityAsset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _apy, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
-        _depositLogic(_amount, liquidityLocker.liquidityAsset());
+        _depositLogic(_amount, liquidityAsset);
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Liquidity Assets
     function requestLiquidityAssets(uint256 _amountMissing) external onlyPool {
         require(_amountMissing > 0, "BP:INVALID_INPUT");
-        require(liquidityLockerTotalBalance() >= _amountMissing, "BP:NOT_ENOUGH_LA_BP");
-        address poolLiquidityLocker = AbstractPool(msg.sender).getLiquidityLocker();
-        require(_transferLiquidityLockerFunds(poolLiquidityLocker, _amountMissing), "BP:REQUEST_FROM_BP_FAIL");
+        require(totalBalance() >= _amountMissing, "BP:NOT_ENOUGH_LA_BP");
+        require(_transferFunds(msg.sender, _amountMissing), "BP:REQUEST_FROM_BP_FAIL");
 
         emit RegPoolDeposit(msg.sender, _amountMissing);
     }

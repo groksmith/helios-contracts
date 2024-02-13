@@ -18,7 +18,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             2000,
             10,
             1000,
@@ -37,7 +36,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "2",
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             2000,
             10,
             1000,
@@ -50,7 +48,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.expectRevert(bytes("P:PROTO_PAUSED"));
         poolFactory.createBlendedPool(
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             10,
             1000,
             100000,
@@ -99,7 +96,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             2000,
             10,
             1000,
@@ -113,7 +109,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             2000,
             10,
             1000,
@@ -133,7 +128,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
         poolFactory.createBlendedPool(
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             10,
             1000,
             100000,
@@ -161,7 +155,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         address poolAddress = poolFactory.createPool(
             poolId,
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             lockupPeriod,
             apy,
             duration,

@@ -215,7 +215,6 @@ contract RegPoolTest is FixtureContract {
         address poolAddress = poolFactory.createPool(
             "1",
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             2000,
             10,
             1000,
@@ -287,7 +286,6 @@ contract RegPoolTest is FixtureContract {
         address poolAddress = poolFactory.createPool(
             "1",
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             2000,
             10,
             1000,

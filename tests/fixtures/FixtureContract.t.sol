@@ -4,7 +4,6 @@ import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
-import {LiquidityLockerFactory} from "../../contracts/pool/LiquidityLockerFactory.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {Pool} from "../../contracts/pool/Pool.sol";
@@ -22,7 +21,6 @@ abstract contract FixtureContract is Test {
     PoolFactory public poolFactory;
     BlendedPool public blendedPool;
     Pool public regPool1;
-    LiquidityLockerFactory public liquidityLockerFactory;
 
     function fixture() public {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
@@ -34,8 +32,6 @@ abstract contract FixtureContract is Test {
         liquidityAssetElevated.mint(OWNER_ADDRESS, 1000000);
         liquidityAssetElevated.mint(USER_ADDRESS, 1000);
 
-        liquidityLockerFactory = new LiquidityLockerFactory();
-        heliosGlobals.setValidLiquidityLockerFactory(address(liquidityLockerFactory), true);
         heliosGlobals.setLiquidityAsset(address(liquidityAsset), true);
 
         poolFactory = new PoolFactory(address(heliosGlobals));
@@ -44,7 +40,6 @@ abstract contract FixtureContract is Test {
         address poolAddress = poolFactory.createPool(
             "reg pool",
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             2000,
             10,
             1000,
@@ -60,7 +55,6 @@ abstract contract FixtureContract is Test {
 
         address blendedPoolAddress = poolFactory.createBlendedPool(
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             1000,
             200,
             300,

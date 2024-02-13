@@ -8,7 +8,6 @@ contract HeliosGlobalsTest is Test, FixtureContract {
     event GlobalAdminSet(address indexed newGlobalAdmin);
     event LiquidityAssetSet(address asset, uint256 decimals, string symbol, bool valid);
     event ValidPoolFactorySet(address indexed poolFactory, bool valid);
-    event ValidLiquidityLockerFactorySet(address indexed liquidityLockerFactory, bool valid);
 
     function setUp() public {
         fixture();
@@ -101,35 +100,6 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.expectRevert(bytes("HG:NOT_ADMIN"));
         heliosGlobals.setLiquidityAsset(liquidityAssetAddress, true);
 
-        vm.stopPrank();
-    }
-
-    function test_when_owner_setValidLiquidityLockerFactory() public {
-        vm.startPrank(OWNER_ADDRESS);
-
-        address liquidityLockerFactoryAddress = address(liquidityLockerFactory);
-
-        heliosGlobals.setValidLiquidityLockerFactory(liquidityLockerFactoryAddress, true);
-
-        vm.expectEmit();
-        emit ValidLiquidityLockerFactorySet(liquidityLockerFactoryAddress, true);
-
-        heliosGlobals.setValidLiquidityLockerFactory(liquidityLockerFactoryAddress, true);
-        assertEq(heliosGlobals.isValidLiquidityLockerFactory(liquidityLockerFactoryAddress), true);
-
-        vm.stopPrank();
-    }
-
-    function testFuzz_when_not_owner_setValidLiquidityLockerFactory(address user) public {
-        vm.assume(user != OWNER_ADDRESS);
-        vm.startPrank(OWNER_ADDRESS);
-
-        address liquidityLockerFactoryAddress = address(liquidityLockerFactory);
-        vm.stopPrank();
-
-        vm.startPrank(user);
-        vm.expectRevert(bytes("HG:NOT_ADMIN"));
-        heliosGlobals.setValidLiquidityLockerFactory(liquidityLockerFactoryAddress, true);
         vm.stopPrank();
     }
 }

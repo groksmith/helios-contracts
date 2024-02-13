@@ -23,8 +23,6 @@ import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 import {Pool} from "../../contracts/pool/Pool.sol";
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
-import {LiquidityLockerFactory} from "../../contracts/pool/LiquidityLockerFactory.sol";
-import {LiquidityLocker} from "../../contracts/pool/LiquidityLocker.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 import {PoolLibrary} from "../../contracts/library/PoolLibrary.sol";
@@ -53,8 +51,6 @@ contract BlendedPoolEchidna {
     MockTokenERC20 private liquidityAssetElevated;
     PoolFactory public poolFactory;
     BlendedPool public blendedPool;
-    LiquidityLockerFactory public liquidityLockerFactory;
-    LiquidityLocker public liquidityLockerBlended;
 
     // Property variables
     uint public netInflows;
@@ -82,9 +78,6 @@ contract BlendedPoolEchidna {
         for (uint i = 0; i < USER_ADDRESSES.length; i++) {
             liquidityAssetElevated.mint(USER_ADDRESSES[i], 1000);
         }
-        liquidityLockerFactory = new LiquidityLockerFactory();
-        hevm.prank(OWNER_ADDRESS);
-        heliosGlobals.setValidLiquidityLockerFactory(address(liquidityLockerFactory), true);
         hevm.prank(OWNER_ADDRESS);
         heliosGlobals.setLiquidityAsset(address(liquidityAsset), true);
         poolFactory = new PoolFactory(address(heliosGlobals));
@@ -93,7 +86,6 @@ contract BlendedPoolEchidna {
         hevm.prank(OWNER_ADDRESS);
         address blendedPoolAddress = poolFactory.createBlendedPool(
             address(liquidityAsset),
-            address(liquidityLockerFactory),
             1000,
             200,
             300,
@@ -102,7 +94,6 @@ contract BlendedPoolEchidna {
             1000
         );
         blendedPool = BlendedPool(blendedPoolAddress);
-        liquidityLockerBlended = LiquidityLocker(address(blendedPool.liquidityLocker()));
     }
 
     /*
@@ -229,7 +220,7 @@ contract BlendedPoolEchidna {
         timesDistributeYieldCalled++;
         uint startingSumYields = sumUserYields();
         uint newYieldToDistribute = 0.1e18;
-        liquidityAssetElevated.mint(address(liquidityLockerBlended), newYieldToDistribute);
+        liquidityAssetElevated.mint(address(blendedPool), newYieldToDistribute);
 
         hevm.prank(OWNER_ADDRESS);
         blendedPool.distributeYields(newYieldToDistribute);
@@ -238,7 +229,7 @@ contract BlendedPoolEchidna {
         yieldPrecisionLoss += newYieldToDistribute - actualChangeInUserYields;
 
         // The maximum precision loss for this distribution is the total number of depositors minus 1
-        // example: if there are 50 depisitors and the distribution is 100049, there is a precision loss of 49
+        // example: if there are 50 depositors and the distribution is 100049, there is a precision loss of 49
         maxPrecisionLossForYields += blendedPool.depositsHolder().getHoldersCount() - 1;
     }
 
@@ -265,7 +256,7 @@ contract BlendedPoolEchidna {
 
     /// Borrow money from the deposits
     function borrow(uint amount) external {
-        amount = amount % blendedPool.liquidityLockerTotalBalance();
+        amount = amount % blendedPool.totalBalance();
         hevm.prank(OWNER_ADDRESS);
         blendedPool.borrow(OWNER_ADDRESS, amount);
         netInflows -= amount;
@@ -293,13 +284,13 @@ contract BlendedPoolEchidna {
     */
 
     // INVARIANT #1
-    // Test that the liquidity locker token balance is equal to:
+    // Test that the pool's token balance is equal to:
     //  + total deposits (net of withdrawals)
     //  - the sum of withdrawals
     //  + total of all yield transferred in to the locker
     //  + total borrowed (net of repayments)
     function echidna_liquidity_locker_balance_equals_tracked_deposits() external returns (bool){
-        return netInflows + netYieldAccrued + netBorrowed == liquidityAsset.balanceOf(address(liquidityLockerBlended)) + blendedPool.principalOut();
+        return netInflows + netYieldAccrued + netBorrowed == liquidityAsset.balanceOf(address(blendedPool)) + blendedPool.principalOut();
     }
 
     // INVARIANT #2

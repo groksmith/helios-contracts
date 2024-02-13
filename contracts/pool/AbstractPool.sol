@@ -6,8 +6,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {ILiquidityLocker} from "../interfaces/ILiquidityLocker.sol";
-import {ILiquidityLockerFactory} from "../interfaces/ILiquidityLockerFactory.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 import {DepositsHolder} from "./DepositsHolder.sol";
@@ -19,8 +17,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     string public constant NAME = "Helios Pool TKN";
     string public constant SYMBOL = "HLS-P";
 
-    ILiquidityLocker public immutable liquidityLocker; // The LiquidityLocker owned by this contract
-    IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the LiquidityLocker
+    IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the Pool
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
 
     uint256 public totalDeposited;
@@ -50,7 +47,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     constructor(
         address _liquidityAsset,
-        address _liquidityLockerFactory,
         string memory _tokenName,
         string memory _tokenSymbol,
         uint256 _withdrawLimit,
@@ -61,16 +57,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         depositsHolder = new DepositsHolder(address(this));
 
         require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
-        require(_liquidityLockerFactory != address(0), "P:ZERO_LIQ_LOCKER_FACTORY");
-
-
         require(poolFactory.globals().isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
-        require(poolFactory.globals().isValidLiquidityLockerFactory(_liquidityLockerFactory), "P:INVALID_LL_FACTORY");
 
         liquidityAsset = IERC20(_liquidityAsset);
 
-        ILiquidityLockerFactory liquidityLockerFactory = ILiquidityLockerFactory(_liquidityLockerFactory);
-        liquidityLocker = ILiquidityLocker(liquidityLockerFactory.CreateLiquidityLocker(_liquidityAsset));
         withdrawLimit = _withdrawLimit;
         withdrawPeriod = _withdrawPeriod;
     }
@@ -100,7 +90,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             _burn(msg.sender, _amount);
 
             //unhappy path - the withdrawal is then added in the 'pending' to be processed by the admin
-            if (liquidityLockerTotalBalance() < _amount) {
+            if (totalBalance() < _amount) {
                 pendingWithdrawals[msg.sender] += _amount;
                 emit PendingWithdrawal(msg.sender, _amount);
                 continue;
@@ -112,7 +102,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
                 depositsHolder.deleteDeposit(msg.sender, _index);
             }
 
-            _transferLiquidityLockerFunds(msg.sender, _amount);
+            _transferFunds(msg.sender, _amount);
             _emitBalanceUpdatedEvent();
             emit Withdrawal(msg.sender, _amount);
         }
@@ -146,16 +136,15 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield() external virtual returns (bool) {
         uint256 callerYields = yields[msg.sender];
-        uint256 totalBalance = liquidityLockerTotalBalance();
         yields[msg.sender] = 0;
 
-        if (totalBalance < callerYields) {
+        if (totalBalance() < callerYields) {
             pendingYields[msg.sender] += callerYields;
             emit PendingYield(msg.sender, callerYields);
             return false;
         }
 
-        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
+        require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
 
         emit YieldWithdrawn(msg.sender, callerYields);
         return true;
@@ -179,7 +168,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _recipient address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingWithdrawals[_recipient];
-        require(_transferLiquidityLockerFunds(_recipient, amount), "P:CONCLUDE_WITHDRAWAL_FAILED");
+        require(_transferFunds(_recipient, amount), "P:CONCLUDE_WITHDRAWAL_FAILED");
 
         //remove from pendingWithdrawals mapping:
         delete pendingWithdrawals[_recipient];
@@ -190,7 +179,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _recipient address of the recipient who didn't get the yield
     function concludePendingYield(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingYields[_recipient];
-        require(_transferLiquidityLockerFunds(_recipient, amount), "P:CONCLUDE_YIELD_FAILED");
+        require(_transferFunds(_recipient, amount), "P:CONCLUDE_YIELD_FAILED");
 
         //remove from pendingWithdrawals mapping:
         delete pendingYields[_recipient];
@@ -200,7 +189,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Borrow the pool's money for investment
     function borrow(address _to, uint256 _amount) external onlyAdmin {
         principalOut += _amount;
-        _transferLiquidityLockerFunds(_to, _amount);
+        _transferFunds(_to, _amount);
     }
 
     /// @notice Repay liquidityAsset without minimal threshold or getting LP in return
@@ -212,26 +201,21 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             principalOut -= _amount;
         }
 
-        liquidityAsset.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
+        liquidityAsset.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     /*
     Helpers
     */
 
-    /// @notice Get Liquidity Locker instance
+    /// @notice Get Deposits Holders instance
     function getHolders() external view returns (address[] memory) {
         return depositsHolder.getHolders();
     }
 
-    /// @notice Get Liquidity Locker instance
-    function getLiquidityLocker() external view returns (address) {
-        return address(liquidityLocker);
-    }
-
     /// @notice Get the amount of Liquidity Assets in the Pool
-    function liquidityLockerTotalBalance() public view returns (uint256) {
-        return liquidityLocker.totalBalance();
+    function totalBalance() public view returns (uint256) {
+        return liquidityAsset.balanceOf(address(this));
     }
 
     function decimals() public view override returns (uint8) {
@@ -253,7 +237,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         depositsHolder.addDeposit(msg.sender, _token, _amount, block.timestamp + withdrawPeriod);
 
-        _token.safeTransferFrom(msg.sender, address(liquidityLocker), _amount);
+        _token.safeTransferFrom(msg.sender, address(this), _amount);
 
         _mintAndUpdateTotalDeposited(msg.sender, _amount);
 
@@ -261,20 +245,20 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         emit Deposit(msg.sender, _amount);
     }
 
-    /// @notice  Transfers Liquidity Locker assets to given `to` address
+    /// @notice  Mint Pool assets to given `to` address
     function _mintAndUpdateTotalDeposited(address _account, uint256 _amount) internal {
         _mint(_account, _amount);
         totalDeposited += _amount;
     }
 
-    /// @notice  Transfers Liquidity Locker assets to given `to` address
-    function _transferLiquidityLockerFunds(address _to, uint256 _value) internal returns (bool) {
-        return liquidityLocker.transfer(_to, _value);
+    /// @notice  Transfers Pool assets to given `to` address
+    function _transferFunds(address _to, uint256 _value) internal returns (bool) {
+        return liquidityAsset.transfer(_to, _value);
     }
 
-    // Emits a `BalanceUpdated` event for LiquidityLocker
+    // Emits a `BalanceUpdated` event for Pool
     function _emitBalanceUpdatedEvent() internal {
-        emit BalanceUpdated(address(liquidityLocker), address(liquidityAsset), liquidityLockerTotalBalance());
+        emit BalanceUpdated(address(this), address(this), totalBalance());
     }
 
     /*

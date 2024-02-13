@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
-import {ISubFactory} from "../interfaces/ISubFactory.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 
 // HeliosGlobals maintains a central source of parameters and allowLists for the Helios protocol.

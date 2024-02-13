@@ -9,5 +9,5 @@ interface IHeliosGlobals {
 
     function isValidPoolFactory(address poolFactory) external view returns (bool);
 
-    function isValidLiquidityAsset(address asset) external view returns (bool);
+    function isValidAsset(address asset) external view returns (bool);
 }

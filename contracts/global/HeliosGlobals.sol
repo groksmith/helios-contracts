@@ -13,11 +13,11 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
 
     bool public override protocolPaused; // Switch to pause the functionality of the entire protocol.
     mapping(address => bool) public override isValidPoolFactory; // Mapping of valid Pool Factories
-    mapping(address => bool) public override isValidLiquidityAsset; // Mapping of valid Liquidity Assets
+    mapping(address => bool) public override isValidAsset; // Mapping of valid Assets
 
     event ProtocolPaused(bool pause);
     event Initialized();
-    event LiquidityAssetSet(address asset, uint256 decimals, string symbol, bool valid);
+    event AssetSet(address asset, uint256 decimals, string symbol, bool valid);
     event ValidPoolFactorySet(address indexed poolFactory, bool valid);
 
     constructor(address _admin) {
@@ -42,10 +42,10 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
         emit ValidPoolFactorySet(_poolFactory, _valid);
     }
 
-    // Sets the validity of an asset for liquidity in Pools. Only the Admin can call this function
-    function setLiquidityAsset(address _asset, bool _valid) external onlyAdmin {
-        isValidLiquidityAsset[_asset] = _valid;
-        emit LiquidityAssetSet(_asset, IERC20Metadata(_asset).decimals(), IERC20Metadata(_asset).symbol(), _valid);
+    // Sets the validity of an asset for Pools. Only the Admin can call this function
+    function setAsset(address _asset, bool _valid) external onlyAdmin {
+        isValidAsset[_asset] = _valid;
+        emit AssetSet(_asset, IERC20Metadata(_asset).decimals(), IERC20Metadata(_asset).symbol(), _valid);
     }
 
     /*

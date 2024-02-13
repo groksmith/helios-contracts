@@ -47,8 +47,8 @@ contract BlendedPoolEchidna {
     ];
 
     HeliosGlobals public heliosGlobals;
-    ERC20 public liquidityAsset;
-    MockTokenERC20 private liquidityAssetElevated;
+    ERC20 public asset;
+    MockTokenERC20 private assetElevated;
     PoolFactory public poolFactory;
     BlendedPool public blendedPool;
 
@@ -62,30 +62,30 @@ contract BlendedPoolEchidna {
     constructor(){
         fixture();
         hevm.prank(OWNER_ADDRESS);
-        liquidityAsset.approve(address(blendedPool), 1000);
+        asset.approve(address(blendedPool), 1000);
         for (uint i; i < USER_ADDRESSES.length; i++) {
             hevm.prank(USER_ADDRESSES[i]);
-            liquidityAsset.approve(address(blendedPool), 1000);
+            asset.approve(address(blendedPool), 1000);
         }
     }
 
     /// Helps set up test, based on FixtureContract
     function fixture() internal {
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
-        liquidityAssetElevated = new MockTokenERC20("USDT", "USDT");
-        liquidityAsset = ERC20(liquidityAssetElevated);
-        liquidityAssetElevated.mint(OWNER_ADDRESS, 1000000);
+        assetElevated = new MockTokenERC20("USDT", "USDT");
+        asset = ERC20(assetElevated);
+        assetElevated.mint(OWNER_ADDRESS, 1000000);
         for (uint i = 0; i < USER_ADDRESSES.length; i++) {
-            liquidityAssetElevated.mint(USER_ADDRESSES[i], 1000);
+            assetElevated.mint(USER_ADDRESSES[i], 1000);
         }
         hevm.prank(OWNER_ADDRESS);
-        heliosGlobals.setLiquidityAsset(address(liquidityAsset), true);
+        heliosGlobals.setAsset(address(asset), true);
         poolFactory = new PoolFactory(address(heliosGlobals));
         hevm.prank(OWNER_ADDRESS);
         heliosGlobals.setValidPoolFactory(address(poolFactory), true);
         hevm.prank(OWNER_ADDRESS);
         address blendedPoolAddress = poolFactory.createBlendedPool(
-            address(liquidityAsset),
+            address(asset),
             1000,
             200,
             300,
@@ -106,12 +106,12 @@ contract BlendedPoolEchidna {
         address user = USER_ADDRESSES[user_idx];
         amount = amount % type(uint80).max;
 
-        if (liquidityAsset.balanceOf(user) < amount) {
-            liquidityAssetElevated.mint(user, amount);
+        if (asset.balanceOf(user) < amount) {
+            assetElevated.mint(user, amount);
         }
 
         hevm.prank(user);
-        liquidityAsset.approve(address(blendedPool), amount);
+        asset.approve(address(blendedPool), amount);
         hevm.prank(user);
         blendedPool.deposit(amount);
         netInflows += amount;
@@ -220,7 +220,7 @@ contract BlendedPoolEchidna {
         timesDistributeYieldCalled++;
         uint startingSumYields = sumUserYields();
         uint newYieldToDistribute = 0.1e18;
-        liquidityAssetElevated.mint(address(blendedPool), newYieldToDistribute);
+        assetElevated.mint(address(blendedPool), newYieldToDistribute);
 
         hevm.prank(OWNER_ADDRESS);
         blendedPool.distributeYields(newYieldToDistribute);
@@ -268,7 +268,7 @@ contract BlendedPoolEchidna {
         if (netInflows == 0) {
             return;
         }
-        amount = amount % liquidityAsset.balanceOf(OWNER_ADDRESS);
+        amount = amount % asset.balanceOf(OWNER_ADDRESS);
         hevm.prank(OWNER_ADDRESS);
         blendedPool.repay(amount);
         netInflows += amount;
@@ -290,7 +290,7 @@ contract BlendedPoolEchidna {
     //  + total of all yield transferred in to the locker
     //  + total borrowed (net of repayments)
     function echidna_liquidity_locker_balance_equals_tracked_deposits() external returns (bool){
-        return netInflows + netYieldAccrued + netBorrowed == liquidityAsset.balanceOf(address(blendedPool)) + blendedPool.principalOut();
+        return netInflows + netYieldAccrued + netBorrowed == asset.balanceOf(address(blendedPool)) + blendedPool.principalOut();
     }
 
     // INVARIANT #2

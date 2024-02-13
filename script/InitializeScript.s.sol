@@ -17,7 +17,7 @@ contract InitializeScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         HeliosGlobals heliosGlobals = HeliosGlobals(heliosGlobalsAddress);
-        heliosGlobals.setLiquidityAsset(usdtAddress, true);
+        heliosGlobals.setAsset(usdtAddress, true);
         heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
 
         vm.stopBroadcast();

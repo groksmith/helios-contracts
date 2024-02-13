@@ -6,7 +6,7 @@ import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
 contract HeliosGlobalsTest is Test, FixtureContract {
     event ProtocolPaused(bool pause);
     event GlobalAdminSet(address indexed newGlobalAdmin);
-    event LiquidityAssetSet(address asset, uint256 decimals, string symbol, bool valid);
+    event AssetSet(address asset, uint256 decimals, string symbol, bool valid);
     event ValidPoolFactorySet(address indexed poolFactory, bool valid);
 
     function setUp() public {
@@ -78,27 +78,27 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_when_owner_setLiquidityAsset() public {
+    function test_when_owner_setAsset() public {
         vm.startPrank(OWNER_ADDRESS);
 
-        address liquidityAssetAddress = address(liquidityAsset);
+        address assetAddress = address(asset);
 
         vm.expectEmit();
-        emit LiquidityAssetSet(liquidityAssetAddress, liquidityAsset.decimals(), liquidityAsset.symbol(), true);
+        emit AssetSet(assetAddress, asset.decimals(), asset.symbol(), true);
 
-        heliosGlobals.setLiquidityAsset(liquidityAssetAddress, true);
-        assertEq(heliosGlobals.isValidLiquidityAsset(liquidityAssetAddress), true);
+        heliosGlobals.setAsset(assetAddress, true);
+        assertEq(heliosGlobals.isValidAsset(assetAddress), true);
 
         vm.stopPrank();
     }
 
-    function testFuzz_when_not_owner_setLiquidityAsset(address user) public {
+    function testFuzz_when_not_owner_setAsset(address user) public {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(user);
 
-        address liquidityAssetAddress = address(liquidityAsset);
+        address assetAddress = address(asset);
         vm.expectRevert(bytes("HG:NOT_ADMIN"));
-        heliosGlobals.setLiquidityAsset(liquidityAssetAddress, true);
+        heliosGlobals.setAsset(assetAddress, true);
 
         vm.stopPrank();
     }

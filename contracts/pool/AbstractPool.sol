@@ -17,7 +17,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     string public constant NAME = "Helios Pool TKN";
     string public constant SYMBOL = "HLS-P";
 
-    IERC20 public immutable liquidityAsset; // The asset deposited by Lenders into the Pool
+    IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
 
     uint256 public totalDeposited;
@@ -32,21 +32,21 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
     uint256 public withdrawPeriod; // Timeframe for the withdrawal limit
 
-    event Deposit(address indexed investor, uint256 indexed amount);
-    event Withdrawal(address indexed investor, uint256 indexed amount);
-    event PendingWithdrawal(address indexed investor, uint256 indexed amount);
-    event PendingWithdrawalConcluded(address indexed investor, uint256 indexed amount);
-    event YieldWithdrawn(address indexed recipient, uint256 indexed amount);
-    event ReinvestYield(address indexed investor, uint256 indexed amount);
-    event PendingYield(address indexed recipient, uint256 indexed amount);
-    event PendingYieldConcluded(address indexed recipient, uint256 indexed amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 indexed amount);
-    event BalanceUpdated(address indexed liquidityProvider, address indexed token, uint256 balance);
+    event Deposit(address indexed investor, uint256 amount);
+    event Withdrawal(address indexed investor, uint256 amount);
+    event PendingWithdrawal(address indexed investor, uint256 amount);
+    event PendingWithdrawalConcluded(address indexed investor, uint256 amount);
+    event YieldWithdrawn(address indexed recipient, uint256 amount);
+    event ReinvestYield(address indexed investor, uint256 amount);
+    event PendingYield(address indexed recipient, uint256 amount);
+    event PendingYieldConcluded(address indexed recipient, uint256 amount);
+    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
+    event BalanceUpdated(address indexed pool, address indexed token, uint256 balance);
 
     PoolLibrary.PoolInfo public poolInfo;
 
     constructor(
-        address _liquidityAsset,
+        address _asset,
         string memory _tokenName,
         string memory _tokenSymbol,
         uint256 _withdrawLimit,
@@ -56,10 +56,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         depositsHolder = new DepositsHolder(address(this));
 
-        require(_liquidityAsset != address(0), "P:ZERO_LIQ_ASSET");
-        require(poolFactory.globals().isValidLiquidityAsset(_liquidityAsset), "P:INVALID_LIQ_ASSET");
+        require(_asset != address(0), "P:ZERO_LIQ_ASSET");
+        require(poolFactory.globals().isValidAsset(_asset), "P:INVALID_LIQ_ASSET");
 
-        liquidityAsset = IERC20(_liquidityAsset);
+        asset = IERC20(_asset);
 
         withdrawLimit = _withdrawLimit;
         withdrawPeriod = _withdrawPeriod;
@@ -192,16 +192,16 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         _transferFunds(_to, _amount);
     }
 
-    /// @notice Repay liquidityAsset without minimal threshold or getting LP in return
+    /// @notice Repay asset without minimal threshold or getting LP in return
     function repay(uint256 _amount) external onlyAdmin {
-        require(liquidityAsset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
+        require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
         if (_amount >= principalOut) {
             principalOut = 0;
         } else {
             principalOut -= _amount;
         }
 
-        liquidityAsset.safeTransferFrom(msg.sender, address(this), _amount);
+        asset.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     /*
@@ -215,11 +215,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Get the amount of Liquidity Assets in the Pool
     function totalBalance() public view returns (uint256) {
-        return liquidityAsset.balanceOf(address(this));
+        return asset.balanceOf(address(this));
     }
 
     function decimals() public view override returns (uint8) {
-        return ERC20(address(liquidityAsset)).decimals();
+        return ERC20(address(asset)).decimals();
     }
 
     function getPoolInfo() public view returns (PoolLibrary.PoolInfo memory) {
@@ -253,7 +253,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice  Transfers Pool assets to given `to` address
     function _transferFunds(address _to, uint256 _value) internal returns (bool) {
-        return liquidityAsset.transfer(_to, _value);
+        return asset.transfer(_to, _value);
     }
 
     // Emits a `BalanceUpdated` event for Pool

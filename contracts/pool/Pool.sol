@@ -8,7 +8,7 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is AbstractPool {
     constructor(
-        address _liquidityAsset,
+        address _asset,
         uint256 _lockupPeriod,
         uint256 _apy,
         uint256 _duration,
@@ -16,7 +16,7 @@ contract Pool is AbstractPool {
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    ) AbstractPool(_liquidityAsset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
+    ) AbstractPool(_asset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
     }
 
@@ -24,7 +24,7 @@ contract Pool is AbstractPool {
     function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        _depositLogic(_amount, liquidityAsset);
+        _depositLogic(_amount, asset);
     }
 
     function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
@@ -53,7 +53,7 @@ contract Pool is AbstractPool {
 //                return false;
 //            }
 //
-//            blendedPool.requestLiquidityAssets(amountMissing);
+//            blendedPool.requestAssets(amountMissing);
 //            _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
 //
 //            require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");

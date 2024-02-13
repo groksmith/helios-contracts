@@ -16,8 +16,8 @@ abstract contract FixtureContract is Test {
     address internal constant INVESTOR_2 = address(uint160(uint256(keccak256("investor2"))));
 
     HeliosGlobals public heliosGlobals;
-    ERC20 public liquidityAsset;
-    MockTokenERC20 private liquidityAssetElevated;
+    ERC20 public asset;
+    MockTokenERC20 private assetElevated;
     PoolFactory public poolFactory;
     BlendedPool public blendedPool;
     Pool public regPool1;
@@ -26,20 +26,20 @@ abstract contract FixtureContract is Test {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
-        liquidityAssetElevated = new MockTokenERC20("USDT", "USDT");
-        liquidityAsset = ERC20(liquidityAssetElevated);
+        assetElevated = new MockTokenERC20("USDT", "USDT");
+        asset = ERC20(assetElevated);
 
-        liquidityAssetElevated.mint(OWNER_ADDRESS, 1000000);
-        liquidityAssetElevated.mint(USER_ADDRESS, 1000);
+        assetElevated.mint(OWNER_ADDRESS, 1000000);
+        assetElevated.mint(USER_ADDRESS, 1000);
 
-        heliosGlobals.setLiquidityAsset(address(liquidityAsset), true);
+        heliosGlobals.setAsset(address(asset), true);
 
         poolFactory = new PoolFactory(address(heliosGlobals));
         heliosGlobals.setValidPoolFactory(address(poolFactory), true);
 
         address poolAddress = poolFactory.createPool(
             "reg pool",
-            address(liquidityAsset),
+            address(asset),
             2000,
             10,
             1000,
@@ -51,10 +51,10 @@ abstract contract FixtureContract is Test {
 
         regPool1 = Pool(poolAddress);
 
-        assertEq(regPool1.decimals(), liquidityAsset.decimals());
+        assertEq(regPool1.decimals(), asset.decimals());
 
         address blendedPoolAddress = poolFactory.createBlendedPool(
-            address(liquidityAsset),
+            address(asset),
             1000,
             200,
             300,
@@ -64,28 +64,28 @@ abstract contract FixtureContract is Test {
         );
 
         blendedPool = BlendedPool(blendedPoolAddress);
-        assertEq(blendedPool.decimals(), liquidityAsset.decimals());
+        assertEq(blendedPool.decimals(), asset.decimals());
         assertEq(poolFactory.getBlendedPool(), address(blendedPool));
 
         vm.stopPrank();
     }
 
-    function createInvestorAndMintLiquidityAsset(address investor, uint256 amount) public returns (address) {
+    function createInvestorAndMintAsset(address investor, uint256 amount) public returns (address) {
         vm.assume(investor != address(0));
         vm.assume(investor != OWNER_ADDRESS);
-        vm.assume(investor != address(liquidityAsset));
-        vm.assume(amount < liquidityAssetElevated.totalSupply());
+        vm.assume(investor != address(asset));
+        vm.assume(amount < assetElevated.totalSupply());
 
-        liquidityAssetElevated.mint(investor, amount);
+        assetElevated.mint(investor, amount);
         return investor;
     }
 
-    function mintLiquidityAsset(address user, uint256 amount) public {
-        liquidityAssetElevated.mint(user, amount);
+    function mintAsset(address user, uint256 amount) public {
+        assetElevated.mint(user, amount);
     }
 
-    function burnLiquidityAsset(address user, uint256 amount) public {
-        liquidityAssetElevated.burn(user, amount);
+    function burnAsset(address user, uint256 amount) public {
+        assetElevated.burn(user, amount);
     }
 
 }

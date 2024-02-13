@@ -54,7 +54,7 @@ remap: && _timer
 build: && _timer
 	forge clean
 	forge remappings > remappings.txt
-	forge build --names
+	forge build --names --sizes
 
 generate-abi: && _timer
     forge clean

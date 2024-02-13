@@ -12,7 +12,7 @@ contract MockPoolFactory is PoolFactory {
     // Instantiates a Pool
     function createPool(
         string calldata poolId,
-        address liquidityAsset,
+        address asset,
         uint256 lockupPeriod,
         uint256 apy,
         uint256 duration,
@@ -24,7 +24,7 @@ contract MockPoolFactory is PoolFactory {
         _isMappingKeyValid(poolId);
 
         Pool pool = new Pool(
-            liquidityAsset,
+            asset,
             lockupPeriod,
             apy,
             duration,
@@ -38,11 +38,11 @@ contract MockPoolFactory is PoolFactory {
         pools[poolId] = poolAddress;
         isPool[poolAddress] = true;
 
-        emit PoolCreated(poolId, liquidityAsset, poolAddress, msg.sender);
+        emit PoolCreated(poolId, asset, poolAddress, msg.sender);
     }
 
     function createBlendedPool(
-        address liquidityAsset,
+        address asset,
         uint256 lockupPeriod,
         uint256 apy,
         uint256 duration,
@@ -51,7 +51,7 @@ contract MockPoolFactory is PoolFactory {
         uint256 withdrawPeriod
     ) external override whenProtocolNotPaused nonReentrant returns (address poolAddress) {
         BlendedPool pool = new BlendedPool(
-            liquidityAsset,
+            asset,
             lockupPeriod,
             apy,
             duration,
@@ -63,6 +63,6 @@ contract MockPoolFactory is PoolFactory {
         poolAddress = address(pool);
         blendedPool = poolAddress;
 
-        emit BlendedPoolCreated(liquidityAsset, blendedPool, msg.sender);
+        emit BlendedPoolCreated(asset, blendedPool, msg.sender);
     }
 }

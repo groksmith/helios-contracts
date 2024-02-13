@@ -10,14 +10,13 @@ contract Pool is AbstractPool {
     constructor(
         address _asset,
         uint256 _lockupPeriod,
-        uint256 _apy,
         uint256 _duration,
         uint256 _investmentPoolSize,
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_asset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
+        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address

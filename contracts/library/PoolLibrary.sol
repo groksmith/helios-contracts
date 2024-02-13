@@ -12,7 +12,6 @@ library PoolLibrary {
 
     struct PoolInfo {
         uint256 lockupPeriod;
-        uint256 apy;
         uint256 duration;
         uint256 investmentPoolSize;
         uint256 minInvestmentAmount;

@@ -87,7 +87,6 @@ contract BlendedPoolEchidna {
         address blendedPoolAddress = poolFactory.createBlendedPool(
             address(asset),
             1000,
-            200,
             300,
             0, // Setting minInvestmentAmount to 0 for testing if this can create larger issues
             500,

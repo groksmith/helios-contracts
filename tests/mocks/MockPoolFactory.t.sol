@@ -14,7 +14,6 @@ contract MockPoolFactory is PoolFactory {
         string calldata poolId,
         address asset,
         uint256 lockupPeriod,
-        uint256 apy,
         uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
@@ -26,7 +25,6 @@ contract MockPoolFactory is PoolFactory {
         Pool pool = new Pool(
             asset,
             lockupPeriod,
-            apy,
             duration,
             investmentPoolSize,
             minInvestmentAmount,
@@ -44,7 +42,6 @@ contract MockPoolFactory is PoolFactory {
     function createBlendedPool(
         address asset,
         uint256 lockupPeriod,
-        uint256 apy,
         uint256 duration,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
@@ -53,7 +50,6 @@ contract MockPoolFactory is PoolFactory {
         BlendedPool pool = new BlendedPool(
             asset,
             lockupPeriod,
-            apy,
             duration,
             minInvestmentAmount,
             withdrawThreshold,

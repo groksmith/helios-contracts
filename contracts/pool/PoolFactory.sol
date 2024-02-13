@@ -35,7 +35,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         string memory poolId,
         address asset,
         uint256 lockupPeriod,
-        uint256 apy,
         uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
@@ -47,7 +46,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         Pool pool = new Pool(
             asset,
             lockupPeriod,
-            apy,
             duration,
             investmentPoolSize,
             minInvestmentAmount,
@@ -66,7 +64,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     function createBlendedPool(
         address asset,
         uint256 lockupPeriod,
-        uint256 apy,
         uint256 duration,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
@@ -78,7 +75,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         BlendedPool pool = new BlendedPool(
             asset,
             lockupPeriod,
-            apy,
             duration,
             minInvestmentAmount,
             withdrawThreshold,

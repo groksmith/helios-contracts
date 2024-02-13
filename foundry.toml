@@ -1,9 +1,10 @@
 [profile.default]
+solc-version = "0.8.20"
 src = 'contracts'
-out = 'out'
+out = 'output/out'
 libs = ['lib']
 test = 'tests'
-cache_path  = 'cache_forge'
+cache_path  = 'output/cache_forge'
 optimizer = true
 optimizer-runs = 10_000_000
 

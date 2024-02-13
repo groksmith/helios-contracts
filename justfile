@@ -60,7 +60,7 @@ build: && _timer
 
 generate-abi: && _timer
     forge clean
-    forge build --names --skip .t.sol .s.sol --extra-output-files abi --out abi
+    forge build --names --skip .t.sol .s.sol --extra-output-files abi --out output/abi
 
 deploy-all: && _timer
 	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url {{ RPC_URL }} --broadcast -vvvv
@@ -91,9 +91,12 @@ format: && _timer
 test-all: && _timer
 	forge test -vvvvv
 
+test-echidna: && _timer
+    echidna ./tests/echidna/*.sol --contract BlendedPoolEchidna --config echidna.yaml
+
 test-gas: && _timer
     forge test --gas-report
 
 coverage-all: && _timer
 	forge coverage --report lcov
-	genhtml -o coverage_report --branch-coverage lcov.info --ignore-errors category
+	genhtml -o tests-results/coverage_report --branch-coverage lcov.info --ignore-errors category

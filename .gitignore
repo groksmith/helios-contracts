@@ -20,3 +20,8 @@ coverage_report
 lcov.info
 
 broadcast
+
+crytic-export
+
+tests-results
+output

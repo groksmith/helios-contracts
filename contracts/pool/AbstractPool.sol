@@ -232,12 +232,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256);
 
-    function _depositLogic(uint256 _amount, IERC20 _token) internal {
+    function _depositLogic(uint256 _amount) internal {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
-        depositsHolder.addDeposit(msg.sender, _token, _amount, block.timestamp + withdrawPeriod);
+        depositsHolder.addDeposit(msg.sender, _amount, block.timestamp + withdrawPeriod);
 
-        _token.safeTransferFrom(msg.sender, address(this), _amount);
+        asset.safeTransferFrom(msg.sender, address(this), _amount);
 
         _mintAndUpdateTotalDeposited(msg.sender, _amount);
 

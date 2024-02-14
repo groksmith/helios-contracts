@@ -22,7 +22,7 @@ contract BlendedPool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
-        _depositLogic(_amount, asset);
+        _depositLogic(_amount);
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets

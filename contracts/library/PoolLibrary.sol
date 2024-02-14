@@ -19,7 +19,6 @@ library PoolLibrary {
     }
 
     struct DepositInstance {
-        IERC20 token;
         uint256 amount;
         uint256 unlockTime;
     }

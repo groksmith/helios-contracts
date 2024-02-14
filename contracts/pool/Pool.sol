@@ -23,7 +23,7 @@ contract Pool is AbstractPool {
     function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        _depositLogic(_amount, asset);
+        _depositLogic(_amount);
     }
 
     function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {

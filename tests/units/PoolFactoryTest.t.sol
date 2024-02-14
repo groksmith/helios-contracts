@@ -156,9 +156,9 @@ contract PoolFactoryTest is Test, FixtureContract {
             withdrawPeriod
         );
 
-        assertEq(poolFactory.isValidPool(poolAddress), true);
-
         vm.assume(randomAddress != poolAddress);
+        
+        assertEq(poolFactory.isValidPool(poolAddress), true);
         assertEq(poolFactory.isValidPool(randomAddress), false);
 
         vm.stopPrank();

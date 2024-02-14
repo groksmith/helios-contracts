@@ -17,7 +17,7 @@ contract DepositsHolder {
     }
 
     // Add a deposit for a holder
-    function addDeposit(address holder, IERC20 token, uint256 amount, uint256 unlockTime) external onlyPool {
+    function addDeposit(address holder, uint256 amount, uint256 unlockTime) external onlyPool {
         bool holderExists = isHolderExists(holder);
 
         // If the holder doesn't exist, add them to the list
@@ -27,7 +27,6 @@ contract DepositsHolder {
 
         // Add the deposit to the userDeposits mapping
         userDeposits[holder].push(PoolLibrary.DepositInstance({
-            token: token,
             amount: amount,
             unlockTime: unlockTime
         }));

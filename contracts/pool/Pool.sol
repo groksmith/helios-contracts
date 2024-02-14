@@ -8,24 +8,22 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is AbstractPool {
     constructor(
-        address _liquidityAsset,
-        address _liquidityLockerFactory,
+        address _asset,
         uint256 _lockupPeriod,
-        uint256 _apy,
         uint256 _duration,
         uint256 _investmentPoolSize,
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
-    ) AbstractPool(_liquidityAsset, _liquidityLockerFactory, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _apy, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
+    ) AbstractPool(_asset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
+        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        _depositLogic(_amount, liquidityLocker.liquidityAsset());
+        _depositLogic(_amount, asset);
     }
 
     function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
@@ -39,7 +37,7 @@ contract Pool is AbstractPool {
 //    function withdrawYield() external override whenProtocolNotPaused returns (bool) {
 //        uint256 callerYields = yields[msg.sender];
 //        require(callerYields >= 0, "P:NOT_HOLDER");
-//        uint256 totalBalance = liquidityLockerTotalBalance();
+//        uint256 totalBalance = totalBalance();
 //
 //        BlendedPool blendedPool = getBlendedPool();
 //
@@ -48,22 +46,22 @@ contract Pool is AbstractPool {
 //        if (totalBalance < callerYields) {
 //            uint256 amountMissing = callerYields - totalBalance;
 //
-//            if (blendedPool.liquidityLockerTotalBalance() < amountMissing) {
+//            if (blendedPool.totalBalance() < amountMissing) {
 //                pendingYields[msg.sender] += callerYields;
 //                emit PendingYield(msg.sender, callerYields);
 //                return false;
 //            }
 //
-//            blendedPool.requestLiquidityAssets(amountMissing);
+//            blendedPool.requestAssets(amountMissing);
 //            _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
 //
-//            require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
+//            require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
 //
 //            emit YieldWithdrawn(msg.sender, callerYields);
 //            return true;
 //        }
 //
-//        require(_transferLiquidityLockerFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
+//        require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
 //
 //        emit YieldWithdrawn(msg.sender, callerYields);
 //        return true;

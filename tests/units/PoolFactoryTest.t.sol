@@ -17,10 +17,8 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         poolFactory.createPool(
             "1",
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
+            address(asset),
             2000,
-            10,
             1000,
             100000,
             100,
@@ -36,10 +34,8 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.expectRevert(bytes("P:PROTO_PAUSED"));
         poolFactory.createPool(
             "2",
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
+            address(asset),
             2000,
-            10,
             1000,
             100000,
             100,
@@ -49,9 +45,7 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         vm.expectRevert(bytes("P:PROTO_PAUSED"));
         poolFactory.createBlendedPool(
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
-            10,
+            address(asset),
             1000,
             100000,
             100,
@@ -98,10 +92,8 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         poolFactory.createPool(
             "1",
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
+            address(asset),
             2000,
-            10,
             1000,
             100000,
             100,
@@ -112,10 +104,8 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.expectRevert(bytes("PF:POOL_ID_ALREADY_EXISTS"));
         poolFactory.createPool(
             "1",
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
+            address(asset),
             2000,
-            10,
             1000,
             100000,
             100,
@@ -132,9 +122,7 @@ contract PoolFactoryTest is Test, FixtureContract {
         // Already created in parent FixtureContract
         vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
         poolFactory.createBlendedPool(
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
-            10,
+            address(asset),
             1000,
             100000,
             100,
@@ -148,7 +136,6 @@ contract PoolFactoryTest is Test, FixtureContract {
     function testFuzz_pool_create(
         string calldata poolId,
         uint256 lockupPeriod,
-        uint256 apy,
         uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
@@ -160,10 +147,8 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         address poolAddress = poolFactory.createPool(
             poolId,
-            address(liquidityAsset),
-            address(liquidityLockerFactory),
+            address(asset),
             lockupPeriod,
-            apy,
             duration,
             investmentPoolSize,
             minInvestmentAmount,

@@ -17,13 +17,13 @@ contract DepositsHolderTest is Test, FixtureContract {
         DepositsHolder depositsHolder = new DepositsHolder(user);
 
         assertEq(depositsHolder.getHoldersCount(), 0);
-        depositsHolder.addDeposit(user, liquidityAsset, amount, block.timestamp);
+        depositsHolder.addDeposit(user, asset, amount, block.timestamp);
 
         assertEq(depositsHolder.getHoldersCount(), 1);
         PoolLibrary.DepositInstance[] memory depositsFirst = depositsHolder.getDepositsByHolder(user);
         assertEq(depositsFirst.length, 1);
 
-        depositsHolder.addDeposit(user, liquidityAsset, amount, block.timestamp);
+        depositsHolder.addDeposit(user, asset, amount, block.timestamp);
 
         assertEq(depositsHolder.getHoldersCount(), 1);
         PoolLibrary.DepositInstance[] memory depositsSecond = depositsHolder.getDepositsByHolder(user);
@@ -44,12 +44,12 @@ contract DepositsHolderTest is Test, FixtureContract {
 
         vm.startPrank(pool, pool);
         DepositsHolder depositsHolder = new DepositsHolder(pool);
-        depositsHolder.addDeposit(holder, liquidityAsset, 100, block.timestamp);
+        depositsHolder.addDeposit(holder, asset, 100, block.timestamp);
         vm.stopPrank();
 
         vm.startPrank(notPool, notPool);
         vm.expectRevert(bytes("DH:NOT_POOL"));
-        depositsHolder.addDeposit(holder, liquidityAsset, 100, block.timestamp);
+        depositsHolder.addDeposit(holder, asset, 100, block.timestamp);
         vm.stopPrank();
     }
 
@@ -61,8 +61,8 @@ contract DepositsHolderTest is Test, FixtureContract {
 
         vm.startPrank(pool, pool);
         DepositsHolder depositsHolder = new DepositsHolder(pool);
-        depositsHolder.addDeposit(holder, liquidityAsset, amount, block.timestamp);
-        depositsHolder.addDeposit(holder, liquidityAsset, amount, block.timestamp);
+        depositsHolder.addDeposit(holder, asset, amount, block.timestamp);
+        depositsHolder.addDeposit(holder, asset, amount, block.timestamp);
 
         depositsHolder.deleteDeposit(holder, 0);
         depositsHolder.deleteDeposit(holder, 0);
@@ -74,7 +74,7 @@ contract DepositsHolderTest is Test, FixtureContract {
         PoolLibrary.DepositInstance[] memory depositsAfter = depositsHolder.getDepositsByHolder(holder);
         assertEq(depositsAfter.length, 0);
 
-        depositsHolder.addDeposit(holder, liquidityAsset, amount, block.timestamp);
+        depositsHolder.addDeposit(holder, asset, amount, block.timestamp);
         vm.stopPrank();
 
         vm.startPrank(notPool, notPool);
@@ -100,7 +100,7 @@ contract DepositsHolderTest is Test, FixtureContract {
         depositsHolder.getDepositsByHolder(holder);
 
         // Add deposit for holder
-        depositsHolder.addDeposit(holder, liquidityAsset, amount, block.timestamp);
+        depositsHolder.addDeposit(holder, asset, amount, block.timestamp);
         assertEq(depositsHolder.getHoldersCount(), 1);
         PoolLibrary.DepositInstance[] memory holdersDeposits = depositsHolder.getDepositsByHolder(holder);
         assertEq(holdersDeposits.length, 1);

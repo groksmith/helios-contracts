@@ -191,20 +191,6 @@ contract BlendedPoolEchidna {
         }
     }
 
-    // / Reinvest yield for a user
-    function reinvestYield(uint random, uint user_idx) external {
-        user_idx = user_idx % USER_ADDRESSES.length;
-        address user = USER_ADDRESSES[user_idx];
-        if (netYieldAccrued == 0) return;
-        uint user_yield = blendedPool.yields(user);
-        uint amountToReinvest = random % user_yield;
-        hevm.prank(user);
-        blendedPool.reinvestYield(amountToReinvest);
-        netYieldAccrued -= amountToReinvest;
-        netInflows += amountToReinvest;
-        netDeposits += amountToReinvest;
-    }
-
     /*
         HANDLERS - Admin Workflow
     */

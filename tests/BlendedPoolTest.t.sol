@@ -252,29 +252,4 @@ contract BlendedPoolTest is Test, FixtureContract {
         asset.approve(poolAddress, 10000);
         pool.withdrawYield();
     }
-
-    function test_reinvestYield(address user) external {
-        createInvestorAndMintAsset(user, 1000);
-
-        //firstly the user needs to deposit
-        uint256 user1Deposit = 100;
-        vm.startPrank(user);
-        asset.approve(address(blendedPool), 10000);
-        blendedPool.deposit(user1Deposit);
-        vm.stopPrank();
-
-        //only the pool admin can call distributeYields()
-        vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(1000);
-
-        mintAsset(address(blendedPool), 1003);
-
-        //now the user wishes to reinvest
-        uint256 userYields = blendedPool.yields(user);
-        vm.startPrank(user);
-        blendedPool.reinvestYield(1000);
-        uint256 userBalanceNow = blendedPool.balanceOf(user);
-        uint256 expected = user1Deposit + userYields;
-        assertEq(userBalanceNow, expected);
-    }
 }

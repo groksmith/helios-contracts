@@ -37,7 +37,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     event PendingWithdrawal(address indexed investor, uint256 amount);
     event PendingWithdrawalConcluded(address indexed investor, uint256 amount);
     event YieldWithdrawn(address indexed recipient, uint256 amount);
-    event ReinvestYield(address indexed investor, uint256 amount);
     event PendingYield(address indexed recipient, uint256 amount);
     event PendingYieldConcluded(address indexed recipient, uint256 amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 amount);
@@ -106,19 +105,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             _emitBalanceUpdatedEvent();
             emit Withdrawal(msg.sender, _amount);
         }
-    }
-
-    /// @notice Used to reinvest yields into more LP tokens
-    /// @param  _amount the amount of yield to be converted into LP
-    function reinvestYield(uint256 _amount) whenProtocolNotPaused external {
-        require(_amount > 0, "P:INVALID_VALUE");
-        require(yields[msg.sender] >= _amount, "P:INSUFFICIENT_BALANCE");
-
-        _mintAndUpdateTotalDeposited(msg.sender, _amount);
-
-        yields[msg.sender] -= _amount;
-        _emitBalanceUpdatedEvent();
-        emit ReinvestYield(msg.sender, _amount);
     }
 
     /// @notice check how much funds already unlocked

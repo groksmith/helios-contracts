@@ -231,51 +231,6 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    function testFuzz_reinvest(address user) external {
-        user = createInvestorAndMintAsset(user, 1000);
-        vm.startPrank(user);
-
-        //firstly the user needs to deposit
-        uint256 user1Deposit = 1000;
-        asset.approve(address(regPool1), user1Deposit);
-        regPool1.deposit(user1Deposit);
-        vm.stopPrank();
-
-        //only the pool admin can call distributeYields()
-        vm.startPrank(OWNER_ADDRESS);
-
-        mintAsset(OWNER_ADDRESS, 1000);
-        asset.approve(address(regPool1), 1000);
-
-        regPool1.repay(1000);
-        regPool1.distributeYields(1000);
-        vm.stopPrank();
-
-        //now the user wishes to reinvest
-        vm.startPrank(user);
-        uint256 userYields = regPool1.yields(user);
-        assertEq(userYields, 10);
-
-        asset.approve(address(regPool1), userYields);
-
-        vm.expectRevert(bytes("P:INVALID_VALUE"));
-        regPool1.reinvestYield(0);
-
-        vm.expectRevert(bytes("P:INSUFFICIENT_BALANCE"));
-        regPool1.reinvestYield(userYields + 100);
-
-        regPool1.reinvestYield(userYields);
-
-        uint256 userBalanceNow = regPool1.balanceOf(user);
-        uint256 expected = user1Deposit + userYields;
-        assertEq(userBalanceNow, expected);
-
-        userYields = regPool1.yields(user);
-        assertEq(userYields, 0);
-
-        vm.stopPrank();
-    }
-
     function test_maxPoolSize(address user, uint256 _maxPoolSize) external {
         createInvestorAndMintAsset(user, 1000);
 

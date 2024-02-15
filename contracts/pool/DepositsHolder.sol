@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
-// TODO: Tigran. I hate doing that, need something better
 contract DepositsHolder {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     address private immutable pool;
-    address[] private holders;
+
+    EnumerableSet.AddressSet private holders;
+
     mapping(address => PoolLibrary.DepositInstance[]) private userDeposits;
 
     constructor(address _pool) {
@@ -16,14 +21,32 @@ contract DepositsHolder {
         pool = _pool;
     }
 
+    /*
+    * Holders helpers
+    */
+
+    // Get the count of holders
+    function getHoldersCount() external view returns (uint256) {
+        return holders.length();
+    }
+
+    // Get the holder address by index
+    function getHolderByIndex(uint256 index) external view returns (address) {
+        require(index < holders.length(), "DH:INVALID_INDEX");
+        return holders.at(index);
+    }
+
+    function getHolders() external view returns (address[] memory) {
+        return holders.values();
+    }
+
+    /*
+    * Deposit helpers
+    */
+
     // Add a deposit for a holder
     function addDeposit(address holder, uint256 amount, uint256 unlockTime) external onlyPool {
-        bool holderExists = isHolderExists(holder);
-
-        // If the holder doesn't exist, add them to the list
-        if (!holderExists) {
-            holders.push(holder);
-        }
+        holders.add(holder);
 
         // Add the deposit to the userDeposits mapping
         userDeposits[holder].push(PoolLibrary.DepositInstance({
@@ -41,38 +64,15 @@ contract DepositsHolder {
         userDeposits[holder].pop();
     }
 
-    // Get the count of holders
-    function getHoldersCount() external view returns (uint256) {
-        return holders.length;
-    }
-
-    // Get the holder address by index
-    function getHolderByIndex(uint256 index) external view returns (address) {
-        require(index < holders.length, "DH:INVALID_INDEX");
-        return holders[index];
-    }
-
-    function getHolders() external view returns (address[] memory) {
-        return holders;
-    }
-
     // Get deposits for a specific holder
     function getDepositsByHolder(address holder) external view returns (PoolLibrary.DepositInstance[] memory) {
-        require(isHolderExists(holder), "DH:INVALID_HOLDER");
+        require(holders.contains(holder), "DH:INVALID_HOLDER");
         return userDeposits[holder];
     }
 
-    // Check if the holder already exists in the list
-    function isHolderExists(address holder) internal view returns (bool) {
-        bool holderExists = false;
-        for (uint256 i = 0; i < holders.length; i++) {
-            if (holders[i] == holder) {
-                holderExists = true;
-                break;
-            }
-        }
-        return holderExists;
-    }
+    /*
+    Modifiers
+    */
 
     modifier onlyPool() {
         require(msg.sender == pool, "DH:NOT_POOL");

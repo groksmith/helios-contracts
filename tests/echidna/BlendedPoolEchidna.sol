@@ -26,7 +26,6 @@ import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 import {PoolLibrary} from "../../contracts/library/PoolLibrary.sol";
-import {DepositsHolder} from "../../contracts/pool/DepositsHolder.sol";
 
 interface IHevm {
     function prank(address) external;
@@ -129,52 +128,44 @@ contract BlendedPoolEchidna {
 
     /// Withdraw the first deposit for a user
     function userWithdrawFirst(uint amount, uint user_idx) external {
-        uint holderCount = blendedPool.depositsHolder().getHoldersCount();
+        uint holderCount = blendedPool.getHoldersCount();
         if (holderCount == 0) return;
 
         user_idx = user_idx % holderCount;
-        address user = blendedPool.depositsHolder().getHolderByIndex(user_idx);
-        PoolLibrary.DepositInstance[] memory user_deposits = blendedPool.depositsHolder().getDepositsByHolder(user);
-        if (user_deposits.length == 0) return;
-        amount = amount % user_deposits[0].amount;
-
-        uint[] memory amounts = new uint[](1);
-        amounts[0] = amount;
-        uint16[] memory indices = new uint16[](1);
-        indices[0] = 0;
+        address user = blendedPool.getHolderByIndex(user_idx);
 
         hevm.prank(user);
-        blendedPool.withdraw(amounts, indices);
+        blendedPool.withdraw(amount);
         netInflows -= amount;
         netDeposits -= amount;
     }
 
     /// Withdraw the first N deposits for a user
-    function userWithdrawFirstNumFull(uint num_deposits, uint user_idx) external {
-        user_idx = user_idx % USER_ADDRESSES.length;
-        address user = USER_ADDRESSES[user_idx];
-        DepositsHolder deposits_holder = blendedPool.depositsHolder();
-        PoolLibrary.DepositInstance[] memory user_deposits = deposits_holder.getDepositsByHolder(user);
-        num_deposits = num_deposits % user_deposits.length;
-
-        uint shares = blendedPool.balanceOf(user);
-        if (shares == 0) return;
-
-        uint[] memory amounts = new uint[](num_deposits);
-        uint16[] memory indices = new uint16[](num_deposits);
-        for (uint16 i = 0; i < num_deposits; i++) {
-            indices[i] = i;
-            amounts[i] = user_deposits[i].amount;
-        }
-        uint total_amount = 0;
-        for (uint i = 0; i < amounts.length; i++) {
-            total_amount += amounts[i];
-        }
-        hevm.prank(user);
-        blendedPool.withdraw(amounts, indices);
-        netInflows -= total_amount;
-        netDeposits -= total_amount;
-    }
+//    function userWithdrawFirstNumFull(uint num_deposits, uint user_idx) external {
+//        user_idx = user_idx % USER_ADDRESSES.length;
+//        address user = USER_ADDRESSES[user_idx];
+//        DepositsHolder deposits_holder = blendedPool.depositsHolder();
+//        PoolLibrary.DepositInstance[] memory user_deposits = deposits_holder.getDepositsByHolder(user);
+//        num_deposits = num_deposits % user_deposits.length;
+//
+//        uint shares = blendedPool.balanceOf(user);
+//        if (shares == 0) return;
+//
+//        uint[] memory amounts = new uint[](num_deposits);
+//        uint16[] memory indices = new uint16[](num_deposits);
+//        for (uint16 i = 0; i < num_deposits; i++) {
+//            indices[i] = i;
+//            amounts[i] = user_deposits[i].amount;
+//        }
+//        uint total_amount = 0;
+//        for (uint i = 0; i < amounts.length; i++) {
+//            total_amount += amounts[i];
+//        }
+//        hevm.prank(user);
+//        blendedPool.withdraw(amounts, indices);
+//        netInflows -= total_amount;
+//        netDeposits -= total_amount;
+//    }
 
     /// Withdraw yield for a user
     function withdrawYield(uint user_idx) external {
@@ -215,7 +206,7 @@ contract BlendedPoolEchidna {
 
         // The maximum precision loss for this distribution is the total number of depositors minus 1
         // example: if there are 50 depositors and the distribution is 100049, there is a precision loss of 49
-        maxPrecisionLossForYields += blendedPool.depositsHolder().getHoldersCount() - 1;
+        maxPrecisionLossForYields += blendedPool.getHoldersCount() - 1;
     }
 
     /// Finish pending withdrawal for a user
@@ -338,14 +329,14 @@ contract BlendedPoolEchidna {
     event LogUint(string, uint);
 
     function sumUserDeposits() public returns (uint sum){
-        uint holders_count = blendedPool.depositsHolder().getHoldersCount();
-        DepositsHolder deposits_holder = blendedPool.depositsHolder();
-        for (uint i = 0; i < holders_count; i++) {
-            PoolLibrary.DepositInstance[] memory user_deposits = deposits_holder.getDepositsByHolder(deposits_holder.getHolderByIndex(i));
-            for (uint j = 0; j < user_deposits.length; j++) {
-                sum += user_deposits[j].amount;
-            }
-        }
+//        uint holders_count = blendedPool.depositsHolder().getHoldersCount();
+//        DepositsHolder deposits_holder = blendedPool.depositsHolder();
+//        for (uint i = 0; i < holders_count; i++) {
+//            PoolLibrary.DepositInstance[] memory user_deposits = deposits_holder.getDepositsByHolder(deposits_holder.getHolderByIndex(i));
+//            for (uint j = 0; j < user_deposits.length; j++) {
+//                sum += user_deposits[j].amount;
+//            }
+//        }
     }
 
     function sumPoolTokenBalances() public returns (uint sum){

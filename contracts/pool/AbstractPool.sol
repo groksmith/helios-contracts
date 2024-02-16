@@ -8,11 +8,11 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
-import {DepositsHolder} from "./DepositsHolder.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
 
 abstract contract AbstractPool is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using PoolLibrary for PoolLibrary.DepositsStorage;
 
     string public constant NAME = "Helios Pool TKN";
     string public constant SYMBOL = "HLS-P";
@@ -20,14 +20,15 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
 
+    PoolLibrary.DepositsStorage private depositsStorage;
+    PoolLibrary.PoolInfo public poolInfo;
+
     uint256 public totalDeposited;
     uint256 public principalOut;
 
     mapping(address => uint256) public yields;
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingYields;
-
-    DepositsHolder public depositsHolder;
 
     uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
     uint256 public withdrawPeriod; // Timeframe for the withdrawal limit
@@ -42,8 +43,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     event WithdrawalOverThreshold(address indexed caller, uint256 amount);
     event BalanceUpdated(address indexed pool, address indexed token, uint256 balance);
 
-    PoolLibrary.PoolInfo public poolInfo;
-
     constructor(
         address _asset,
         string memory _tokenName,
@@ -52,8 +51,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         uint256 _withdrawPeriod
     ) ERC20(_tokenName, _tokenSymbol) {
         poolFactory = IPoolFactory(msg.sender);
-
-        depositsHolder = new DepositsHolder(address(this));
 
         require(_asset != address(0), "P:ZERO_LIQ_ASSET");
         require(poolFactory.globals().isValidAsset(_asset), "P:INVALID_LIQ_ASSET");
@@ -72,51 +69,24 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     function deposit(uint256 _amount) external virtual;
 
     /// @notice withdraws the caller's liquidity assets
-    /// @param  _amounts the amount of Liquidity Asset to be withdrawn
-    /// @param  _indices the indices of the DepositsHolder's DepositInstance
-    function withdraw(uint256[] calldata _amounts, uint16[] calldata _indices) public whenProtocolNotPaused {
-        require(_amounts.length == _indices.length, "P:ARRAYS_INCONSISTENT");
+    /// @param  _amount to be withdrawn
+    function withdraw(uint256 _amount) public whenProtocolNotPaused {
+        uint256 unlockedAmount = depositsStorage.allowedToWithdraw(msg.sender);
+        require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
+        require(unlockedAmount >= _amount, "P:TOKENS_LOCKED");
 
-        PoolLibrary.DepositInstance[] memory deposits = depositsHolder.getDepositsByHolder(msg.sender);
+        _burn(msg.sender, _amount);
 
-        for (uint256 i = 0; i < _indices.length; i++) {
-            uint256 _index = _indices[i];
-            uint256 _amount = _amounts[i];
+        depositsStorage.updateDeposits(msg.sender, _amount);
 
-            require(block.timestamp >= deposits[_index].unlockTime, "P:TOKENS_LOCKED");
-            require(deposits[_index].amount >= _amount && balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
-
-            _burn(msg.sender, _amount);
-
-            //unhappy path - the withdrawal is then added in the 'pending' to be processed by the admin
-            if (totalBalance() < _amount) {
-                pendingWithdrawals[msg.sender] += _amount;
-                emit PendingWithdrawal(msg.sender, _amount);
-                continue;
-            }
-
-            deposits[_index].amount -= _amount;
-
-            if (deposits[_index].amount == 0) {
-                depositsHolder.deleteDeposit(msg.sender, _index);
-            }
-
-            _transferFunds(msg.sender, _amount);
-            _emitBalanceUpdatedEvent();
-            emit Withdrawal(msg.sender, _amount);
-        }
+        _transferFunds(msg.sender, _amount);
+        _emitBalanceUpdatedEvent();
+        emit Withdrawal(msg.sender, _amount);
     }
 
     /// @notice check how much funds already unlocked
-    function unlockedToWithdraw(address _user, uint256 _index) external view returns (uint256) {
-        require(depositsHolder.getDepositsByHolder(_user).length >= _index, "P:INVALID_INDEX");
-
-        PoolLibrary.DepositInstance memory depositInstance = depositsHolder.getDepositsByHolder(_user)[_index];
-        if (block.timestamp >= depositInstance.unlockTime) {
-            return depositInstance.amount;
-        } else {
-            return 0;
-        }
+    function unlockedToWithdraw(address _user) external view returns (uint256) {
+        return depositsStorage.allowedToWithdraw(msg.sender);
     }
 
     /// @notice Used to transfer the investor's yields to him
@@ -144,8 +114,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param  _amount the amount to be divided among investors
     function distributeYields(uint256 _amount) external virtual onlyAdmin nonReentrant {
         require(_amount > 0, "P:INVALID_VALUE");
-        for (uint256 i = 0; i < depositsHolder.getHoldersCount(); i++) {
-            address holder = depositsHolder.getHolderByIndex(i);
+        for (uint256 i = 0; i < depositsStorage.getHoldersCount(); i++) {
+            address holder = depositsStorage.getHolderByIndex(i);
             yields[holder] += _calculateYield(holder, _amount);
         }
     }
@@ -196,7 +166,17 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Get Deposits Holders instance
     function getHolders() external view returns (address[] memory) {
-        return depositsHolder.getHolders();
+        return depositsStorage.getHolders();
+    }
+
+    /// @notice Get Deposits Holders instance
+    function getHolderByIndex(uint256 index) external view returns (address) {
+        return depositsStorage.getHolderByIndex(index);
+    }
+
+    /// @notice Get Deposits Holders Count
+    function getHoldersCount() external view returns (uint256) {
+        return depositsStorage.getHoldersCount();
     }
 
     /// @notice Get the amount of Liquidity Assets in the Pool
@@ -221,7 +201,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     function _depositLogic(uint256 _amount) internal {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
-        depositsHolder.addDeposit(msg.sender, _amount, block.timestamp + withdrawPeriod);
+        depositsStorage.addDeposit(msg.sender, _amount, block.timestamp + withdrawPeriod);
 
         asset.safeTransferFrom(msg.sender, address(this), _amount);
 

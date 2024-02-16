@@ -92,18 +92,10 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //attempt to withdraw too early fails
         vm.expectRevert("P:TOKENS_LOCKED");
-        uint16[] memory indices = new uint16[](1);
-        indices[0] = 0;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = depositAmount;
-        blendedPool.withdraw(amounts, indices);
+        blendedPool.withdraw(depositAmount);
 
         vm.warp(currentTime + 1000);
-        blendedPool.withdraw(amounts, indices);
-
-        // but he cannot withdraw more
-        // vm.expectRevert("P:INSUFFICIENT_BALANCE");
-        // blendedPool.withdraw(1, indices);
+        blendedPool.withdraw(depositAmount);
 
         vm.stopPrank();
     }

@@ -103,30 +103,16 @@ contract RegPoolTest is FixtureContract {
         //the user can withdraw the sum he has deposited earlier
         regPool1.deposit(depositAmount);
 
-        //attempt to withdraw too early fails
-        uint16[] memory indices = new uint16[](1);
-        indices[0] = 0;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = depositAmount - 1;
-
         vm.expectRevert("P:TOKENS_LOCKED");
-        regPool1.withdraw(amounts, indices);
+        regPool1.withdraw(depositAmount - 1);
 
         vm.warp(currentTime + 1000);
 
-        //attempt to withdraw too early fails
-        uint16[] memory indicesWrong = new uint16[](2);
-        indicesWrong[0] = 0;
-        indicesWrong[1] = 1;
-
-        vm.expectRevert("P:ARRAYS_INCONSISTENT");
-        regPool1.withdraw(amounts, indicesWrong);
-
-        regPool1.withdraw(amounts, indices);
+        regPool1.withdraw(1);
 
         // but he cannot withdraw more
         vm.expectRevert("P:INSUFFICIENT_FUNDS");
-        regPool1.withdraw(amounts, indices);
+        regPool1.withdraw(1);
 
         vm.stopPrank();
     }
@@ -143,7 +129,7 @@ contract RegPoolTest is FixtureContract {
         //the user can withdraw the sum he has deposited earlier
         regPool1.deposit(depositAmount);
 
-        uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 0);
+        uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
         assertEq(unlockedFundsAmount, 0);
 
         vm.warp(currentTime + 1000);
@@ -152,14 +138,8 @@ contract RegPoolTest is FixtureContract {
         //the user can withdraw the sum he has deposited earlier
         regPool1.deposit(depositAmount);
 
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 0);
-        assertEq(unlockedFundsAmount, depositAmount);
-
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 1);
-        assertEq(unlockedFundsAmount, 0);
-
-        vm.expectRevert("P:INVALID_INDEX");
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 4);
+        unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
+        assertEq(unlockedFundsAmount, 2 * depositAmount);
 
         vm.stopPrank();
     }

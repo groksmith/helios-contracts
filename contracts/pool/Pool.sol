@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-// @author Tigran Arakelyan
 pragma solidity 0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {BlendedPool} from "./BlendedPool.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
 
-// Pool maintains all accounting and functionality related to Pools
+/// @title Regional Pool implementation
+/// @author Tigran Arakelyan
 contract Pool is AbstractPool {
     enum State {Initialized, Finalized, Deactivated}
     State public poolState;
@@ -44,18 +44,19 @@ contract Pool is AbstractPool {
     Admin flow
     */
 
-    // Finalize pool, disable new deposits
+    /// @notice Finalize pool, disable new deposits
     function finalize() external onlyAdmin inState(State.Initialized) {
         poolState = State.Finalized;
         emit PoolStateChanged(poolState);
     }
 
-    // Triggers deactivation, permanently shutting down the Pool. Only Admin can call this function
+    /// @notice Triggers deactivation, permanently shutting down the pool
     function deactivate() external onlyAdmin inState(State.Finalized) {
         poolState = State.Deactivated;
         emit PoolStateChanged(poolState);
     }
 
+    /// @notice Check if pool in given state
     modifier inState(State _state) {
         require(poolState == _state, "P:BAD_STATE");
         _;

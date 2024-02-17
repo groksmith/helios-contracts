@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// @author Tigran Arakelyan
 pragma solidity ^0.8.20;
 
 import "forge-std/console.sol";
@@ -7,9 +6,13 @@ import "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+/// @title PoolLibrary
+/// @author Tigran Arakelyan
+/// @notice Types and storage for holders and deposit information.
 library PoolLibrary {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    /// @notice General Pool information
     struct PoolInfo {
         uint256 lockupPeriod;
         uint256 duration;
@@ -18,32 +21,31 @@ library PoolLibrary {
         uint256 withdrawThreshold;
     }
 
+    /// @notice Single deposit info
     struct DepositInstance {
         uint256 amount;
         uint256 unlockTime;
     }
 
+    /// @notice Holders and deposits
+    /// @dev Trying to keep holders and lockedDeposits encapsulated and act as single unit
     struct DepositsStorage {
         EnumerableSet.AddressSet holders;
 
         mapping(address => DepositInstance[]) lockedDeposits;
     }
 
-    /*
-    * Holders helpers
-    */
-
-    // Get the count of holders
+    /// @notice Get the count of holders
     function getHoldersCount(DepositsStorage storage self) external view returns (uint256) {
         return self.holders.length();
     }
 
-    // Get the count of holders
+    /// @notice Return true if holder exists
     function holderExists(DepositsStorage storage self, address holder) external view returns (bool) {
         return self.holders.contains(holder);
     }
 
-    // Get the holder address by index
+    /// @notice Get the holder address by index
     function getHolderByIndex(DepositsStorage storage self, uint256 index) external view returns (address) {
         require(index < self.holders.length(), "PL:INVALID_INDEX");
         return self.holders.at(index);
@@ -53,7 +55,8 @@ library PoolLibrary {
      * Deposit helpers
      */
 
-    // Add a deposit for a holder
+    /// @notice Add a deposit for a holder
+    /// @dev Add the holder to holders AddressSet, then push deposit to lockedDeposits array
     function addDeposit(DepositsStorage storage self, address holder, uint256 amount, uint256 unlockTime) external {
         require(holder != address(0), "PL:INVALID_HOLDER");
         require(amount > 0, "PL:ZERO_AMOUNT");
@@ -68,7 +71,8 @@ library PoolLibrary {
         }));
     }
 
-    // Cleanup unused info
+    /// @notice Cleanup expired deposit info
+    /// @dev Should be extended to cleanup also holders
     function cleanupDepositsStorage(DepositsStorage storage self, address holder) public {
         DepositInstance[] storage depositInstances = self.lockedDeposits[holder];
 
@@ -82,7 +86,7 @@ library PoolLibrary {
         }
     }
 
-    // Get locked deposit amount for a specific holder
+    /// @notice Get locked deposit amount for a specific holder
     function lockedDepositsAmount(DepositsStorage storage self, address holder) public view returns (uint256) {
         require(self.holders.contains(holder), "PL:INVALID_HOLDER");
 

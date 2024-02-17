@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// @author Tigran Arakelyan
 pragma solidity 0.8.20;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -9,7 +8,8 @@ import {BlendedPool} from "./BlendedPool.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
-// PoolFactory instantiates Pools
+/// @title Factory for Pool creation
+/// @author Tigran Arakelyan
 contract PoolFactory is IPoolFactory, ReentrancyGuard {
     IHeliosGlobals public override globals; // A HeliosGlobals instance
 
@@ -24,13 +24,13 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         globals = IHeliosGlobals(_globals);
     }
 
-    // Sets HeliosGlobals instance. Only the Admin can call this function
+    /// @notice Sets HeliosGlobals instance. Only the Admin can call this function
     function setGlobals(address _newGlobals) external onlyAdmin {
         require(_newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
         globals = IHeliosGlobals(_newGlobals);
     }
 
-    // Instantiates a Pool
+    /// @notice Instantiates a Pool
     function createPool(
         string memory poolId,
         address asset,
@@ -60,7 +60,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         emit PoolCreated(poolId, asset, poolAddress, msg.sender);
     }
 
-    // Instantiates a Pool
+    /// @notice Instantiates a Blended Pool
     function createBlendedPool(
         address asset,
         uint256 lockupPeriod,
@@ -87,15 +87,18 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         emit BlendedPoolCreated(asset, blendedPoolAddress, msg.sender);
     }
 
-    // Checks that the mapping key is valid (unique)
+    /// @notice Checks that the mapping key is valid (unique)
+    /// @dev Only for external systems compatibility
     function _isMappingKeyValid(string memory _key) internal view {
         require(pools[_key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 
+    /// @notice Whitelist pools created here
     function isValidPool(address _pool) external override view returns (bool) {
         return isPool[_pool];
     }
 
+    /// @notice Return blended pool address
     function getBlendedPool() external override view returns (address) {
         return blendedPool;
     }
@@ -104,13 +107,13 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     Modifiers
     */
 
-    // Checks that `msg.sender` is the Admin
+    /// @notice Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {
         require(globals.isAdmin(msg.sender), "PF:NOT_ADMIN");
         _;
     }
 
-    // Checks that the protocol is not in a paused state
+    /// @notice Checks that the protocol is not in a paused state
     modifier whenProtocolNotPaused() {
         require(!globals.protocolPaused(), "P:PROTO_PAUSED");
         _;

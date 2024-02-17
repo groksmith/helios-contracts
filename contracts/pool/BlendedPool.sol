@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-// @author Tigran Arakelyan
 pragma solidity 0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
 import {Pool} from "./Pool.sol";
 
-/// @title Blended Pool
+/// @title Blended Pool implementation
+/// @author Tigran Arakelyan
 contract BlendedPool is AbstractPool {
     event RegPoolDeposit(address indexed regPool, uint256 amount);
 
@@ -45,6 +45,7 @@ contract BlendedPool is AbstractPool {
     Modifiers
     */
 
+    /// @notice Only pool can call
     modifier onlyPool() {
         require(poolFactory.isValidPool(msg.sender), "P:NOT_POOL");
         _;

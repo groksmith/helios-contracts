@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-// @author Tigran Arakelyan
 pragma solidity 0.8.20;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 
-// HeliosGlobals maintains a central source of parameters and allowLists for the Helios protocol.
+/// @title HeliosGlobals contract
+/// @author Tigran Arakelyan
+/// @notice Maintains a central source of parameters and allowLists for the Helios protocol.
 contract HeliosGlobals is AccessControl, IHeliosGlobals {
     bytes32 public constant USER_ROLE = keccak256("USER");
 

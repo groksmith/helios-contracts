@@ -71,13 +71,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice withdraws the caller's liquidity assets
     /// @param  _amount to be withdrawn
     function withdraw(uint256 _amount) public whenProtocolNotPaused {
-        uint256 unlockedAmount = depositsStorage.allowedToWithdraw(msg.sender);
         require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
-        require(unlockedAmount >= _amount, "P:TOKENS_LOCKED");
+        require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
 
         _burn(msg.sender, _amount);
-
-        depositsStorage.updateDeposits(msg.sender, _amount);
 
         _transferFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();
@@ -85,8 +82,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     }
 
     /// @notice check how much funds already unlocked
-    function unlockedToWithdraw(address _user) external view returns (uint256) {
-        return depositsStorage.allowedToWithdraw(msg.sender);
+    function unlockedToWithdraw(address _user) public view returns (uint256) {
+        return balanceOf(msg.sender) - depositsStorage.lockedDepositsAmount(_user);
     }
 
     /// @notice Used to transfer the investor's yields to him
@@ -163,11 +160,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /*
     Helpers
     */
-
-    /// @notice Get Deposits Holders instance
-    function getHolders() external view returns (address[] memory) {
-        return depositsStorage.getHolders();
-    }
 
     /// @notice Get Deposits Holders instance
     function getHolderByIndex(uint256 index) external view returns (address) {

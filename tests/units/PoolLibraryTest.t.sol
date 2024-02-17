@@ -15,96 +15,140 @@ contract PoolLibraryTest is Test, FixtureContract {
         fixture();
     }
 
-    function testFuzz_get_holders_count(address user) public {
-        vm.assume(user != address(0));
-
-//        // Initial state
-//        assertEq(depositsStorage.holders.length(), depositsStorage);
-
-    }
-
-    function testFuzz_add_deposit(address user, address anotherUser, uint256 amount) public {
-        vm.assume(user != address(0));
-        vm.assume(anotherUser != address(0));
-        vm.assume(anotherUser != user);
+    function testFuzz_get_holders_count(address[100] calldata holders, uint256 amount) public {
+        uint256 amountBounded = bound(amount, 1, type(uint256).max);
 
         // Initial state
-        assertEq(depositsStorage.holders.length(), 0);
-        assertEq(depositsStorage.userDeposits[user].length, 0);
+        assertEq(depositsStorage.getHoldersCount(), 0);
 
-        // Add deposit for user
-        depositsStorage.addDeposit(user, amount, block.timestamp);
-        assertEq(depositsStorage.holders.length(), 1);
-        assertEq(depositsStorage.userDeposits[user].length, 1);
+        uint256 index;
+        for (uint256 i = 0; i < holders.length; i++) {
+            // Skip repetitions and empty addresses
+            vm.assume(holders[i] != address(0));
+            vm.assume(depositsStorage.holderExists(holders[i]) == false);
+            index++;
 
-        // Add another deposit for user
-        depositsStorage.addDeposit(user, amount, block.timestamp);
-        assertEq(depositsStorage.holders.length(), 1);
-        assertEq(depositsStorage.userDeposits[user].length, 2);
+            // Add deposits
+            depositsStorage.addDeposit(holders[i], amountBounded, block.timestamp + 1000);
+            assertEq(depositsStorage.holderExists(holders[i]), true);
 
-        // Add deposit for anotherUser
-        assertEq(depositsStorage.userDeposits[anotherUser].length, 0);
-        depositsStorage.addDeposit(anotherUser, amount, block.timestamp);
-        assertEq(depositsStorage.holders.length(), 2);
-        assertEq(depositsStorage.userDeposits[anotherUser].length, 1);
-
-        vm.stopPrank();
+            assertEq(depositsStorage.getHoldersCount(), index);
+        }
     }
 
-//    function testFuzz_delete_deposit(address pool, address notPool, address holder, uint256 amount) public {
-//        vm.assume(pool != address(0));
-//        vm.assume(notPool != address(0));
-//        vm.assume(pool != notPool);
-//        vm.assume(holder != address(0));
-//
-//        vm.startPrank(pool, pool);
-//        DepositsHolder depositsHolder = new DepositsHolder(pool);
-//        depositsHolder.addDeposit(holder, amount, block.timestamp);
-//        depositsHolder.addDeposit(holder, amount, block.timestamp);
-//
-//        depositsHolder.deleteDeposit(holder, 0);
-//        depositsHolder.deleteDeposit(holder, 0);
-//
-//        vm.expectRevert(bytes("DH:INVALID_INDEX"));
-//        depositsHolder.deleteDeposit(holder, 0);
-//
-//        assertEq(depositsHolder.getHoldersCount(), 1);
-//        PoolLibrary.DepositInstance[] memory depositsAfter = depositsHolder.getDepositsByHolder(holder);
-//        assertEq(depositsAfter.length, 0);
-//
-//        depositsHolder.addDeposit(holder, amount, block.timestamp);
-//        vm.stopPrank();
-//
-//        vm.startPrank(notPool, notPool);
-//        vm.expectRevert(bytes("DH:NOT_POOL"));
-//        depositsHolder.deleteDeposit(holder, 0);
-//        vm.stopPrank();
-//    }
+    function test_get_holders_by_index(address holder1, address holder2) public {
+        vm.assume(holder1 != address(0));
+        vm.assume(holder2 != address(0));
+        vm.assume(holder1 != holder2);
 
-    function testFuzz_get_holder(address pool, address holder, address nonHolder, uint256 amount) public {
-        vm.assume(pool != address(0));
+        vm.expectRevert(bytes("PL:INVALID_INDEX"));
+        depositsStorage.getHolderByIndex(0);
+
+        uint256 lockTime = block.timestamp + 1000;
+
+        // Add deposits
+        depositsStorage.addDeposit(holder1, 100, lockTime);
+        assertEq(depositsStorage.getHolderByIndex(0), holder1);
+
+        depositsStorage.addDeposit(holder1, 100, lockTime);
+        assertEq(depositsStorage.getHolderByIndex(0), holder1);
+
+        depositsStorage.addDeposit(holder2, 200, lockTime);
+        assertEq(depositsStorage.getHolderByIndex(1), holder2);
+
+        vm.expectRevert(bytes("PL:INVALID_INDEX"));
+        depositsStorage.getHolderByIndex(2);
+    }
+
+    function testFuzz_add_deposit(address holder, address anotherHolder, uint256 amount) public {
         vm.assume(holder != address(0));
-        vm.assume(holder != nonHolder);
+        vm.assume(anotherHolder != address(0));
+        vm.assume(anotherHolder != holder);
 
-//        vm.startPrank(pool, pool);
-//        // Initial state
-//        assertEq(depositsHolder.getHoldersCount(), 0);
-//
-//        vm.expectRevert(bytes("DH:INVALID_INDEX"));
-//        depositsHolder.getHolderByIndex(0);
-//
-//        // Add deposit for holder
-//        depositsHolder.addDeposit(holder, amount, block.timestamp);
-//        assertEq(depositsHolder.getHoldersCount(), 1);
-//        PoolLibrary.DepositInstance[] memory holdersDeposits = depositsHolder.getDepositsByHolder(holder);
-//        assertEq(holdersDeposits.length, 1);
-//
-//        vm.expectRevert(bytes("DH:INVALID_HOLDER"));
-//        depositsHolder.getDepositsByHolder(nonHolder);
-//
-//        vm.expectRevert(bytes("DH:INVALID_INDEX"));
-//        depositsHolder.getHolderByIndex(5);
+        uint256 amountBounded = bound(amount, 1, type(uint256).max / 4);
+        uint256 lockTime = block.timestamp + 1000;
 
-        vm.stopPrank();
+        // Initial state
+        assertEq(depositsStorage.getHoldersCount(), 0);
+        assertEq(depositsStorage.lockedDeposits[holder].length, 0);
+
+        // check for overflow
+        expectOverflow(holder, amountBounded);
+
+        // Add deposit for user
+        depositsStorage.addDeposit(holder, amountBounded, lockTime);
+
+        assertEq(depositsStorage.getHoldersCount(), 1);
+        assertEq(depositsStorage.lockedDeposits[holder].length, 1);
+
+        // check for overflow
+        expectOverflow(holder, amountBounded);
+
+        // Add another deposit for user
+        depositsStorage.addDeposit(holder, amountBounded, lockTime);
+        assertEq(depositsStorage.getHoldersCount(), 1);
+        assertEq(depositsStorage.lockedDeposits[holder].length, 2);
+
+        // Add deposit for anotherUser
+        assertEq(depositsStorage.lockedDeposits[anotherHolder].length, 0);
+
+        // check for overflow
+        expectOverflow(anotherHolder, amountBounded);
+        depositsStorage.addDeposit(anotherHolder, amountBounded, lockTime);
+        assertEq(depositsStorage.getHoldersCount(), 2);
+        assertEq(depositsStorage.lockedDeposits[anotherHolder].length, 1);
+
+        // Try add 0 holder
+        vm.expectRevert(bytes("PL:INVALID_HOLDER"));
+        depositsStorage.addDeposit(address(0), amountBounded, lockTime);
+
+        // Try add 0 deposit
+        vm.expectRevert(bytes("PL:ZERO_AMOUNT"));
+        depositsStorage.addDeposit(holder, 0, lockTime);
+
+        // Try add wrong lockTime
+        vm.expectRevert(bytes("PL:WRONG_UNLOCK_TIME"));
+        depositsStorage.addDeposit(holder, amountBounded, block.timestamp - 1);
+    }
+
+    function testFuzz_locked_deposits_amount(address holder, address anotherHolder, uint256 amount1, uint256 amount2) public {
+        vm.assume(holder != address(0));
+        vm.assume(anotherHolder != address(0));
+        vm.assume(anotherHolder != holder);
+
+        uint256 amountBounded1 = bound(amount1, 1, type(uint256).max / 4);
+        uint256 amountBounded2 = bound(amount2, 1, type(uint256).max / 4);
+
+        uint256 lockTime1 = block.timestamp + 1000;
+        uint256 lockTime2 = lockTime1 + 6000;
+
+        // check for overflow
+        expectOverflow(holder, amountBounded1);
+
+        depositsStorage.addDeposit(holder, amountBounded1, lockTime1);
+        assertEq(depositsStorage.lockedDepositsAmount(holder), amountBounded1);
+
+        depositsStorage.addDeposit(holder, amountBounded2, lockTime2);
+        assertEq(depositsStorage.lockedDepositsAmount(holder), amountBounded1 + amountBounded2);
+
+        vm.warp(lockTime1 + 5);
+        assertEq(depositsStorage.lockedDepositsAmount(holder), amountBounded2);
+
+        vm.warp(lockTime2 + 5);
+        assertEq(depositsStorage.lockedDepositsAmount(holder), 0);
+
+        // Try add wrong lockTime
+        vm.expectRevert(bytes("PL:INVALID_HOLDER"));
+        depositsStorage.lockedDepositsAmount(address(0));
+    }
+
+    function expectOverflow(address holder, uint256 amount) public {
+        if (depositsStorage.holderExists(holder))
+        {
+            if (type(uint256).max - depositsStorage.lockedDepositsAmount(holder) < amount)
+            {
+                vm.expectRevert(stdError.arithmeticError);
+            }
+        }
     }
 }

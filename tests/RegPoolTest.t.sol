@@ -31,9 +31,7 @@ contract RegPoolTest is FixtureContract {
         //testing initial condition i.e. zeroes
         assertEq(regPool1.balanceOf(user1), 0);
         assertEq(regPool1.totalDeposited(), 0);
-
-        address[] memory holders = regPool1.getHolders();
-        assertEq(holders.length, 0, "wrong holder number");
+        assertEq(regPool1.getHoldersCount(), 0, "wrong holder number");
 
         uint256 user1Deposit = 100;
         asset.approve(address(regPool1), user1Deposit);
@@ -48,7 +46,7 @@ contract RegPoolTest is FixtureContract {
 
         //now let's test for user2
         vm.startPrank(user2);
-        assertEq(regPool1.balanceOf(user2), 0, "user2 shouldn't have >0 atm");
+        assertEq(regPool1.balanceOf(user2), 0, "user2 shouldn't have > 0 atm");
         uint256 user2Deposit = 101;
 
         asset.approve(address(regPool1), user2Deposit);
@@ -58,9 +56,7 @@ contract RegPoolTest is FixtureContract {
 
         //pool's total minted should also be user1Deposit
         assertEq(regPool1.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
-
-        holders = regPool1.getHolders();
-        assertEq(holders.length, 2, "wrong holder number");
+        assertEq(regPool1.getHoldersCount(), 2, "wrong holder number");
 
         vm.stopPrank();
     }
@@ -100,14 +96,16 @@ contract RegPoolTest is FixtureContract {
         uint256 currentTime = block.timestamp;
 
         asset.approve(address(regPool1), depositAmount);
-        //the user can withdraw the sum he has deposited earlier
+
         regPool1.deposit(depositAmount);
 
         vm.expectRevert("P:TOKENS_LOCKED");
-        regPool1.withdraw(depositAmount - 1);
+        regPool1.withdraw(depositAmount);
 
         vm.warp(currentTime + 1000);
 
+        // the user can withdraw the sum he has deposited earlier
+        regPool1.withdraw(depositAmount - 1);
         regPool1.withdraw(1);
 
         // but he cannot withdraw more
@@ -123,25 +121,24 @@ contract RegPoolTest is FixtureContract {
 
         vm.startPrank(user);
         uint256 depositAmount = 150;
-        uint256 currentTime = block.timestamp;
 
         asset.approve(address(regPool1), depositAmount);
-        //the user can withdraw the sum he has deposited earlier
         regPool1.deposit(depositAmount);
 
         uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
         assertEq(unlockedFundsAmount, 0);
 
-        vm.warp(currentTime + 1000);
+        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 10);
 
         asset.approve(address(regPool1), depositAmount);
-        //the user can withdraw the sum he has deposited earlier
         regPool1.deposit(depositAmount);
 
         unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
-        assertEq(unlockedFundsAmount, 2 * depositAmount);
+        assertEq(unlockedFundsAmount, depositAmount);
 
-        vm.stopPrank();
+        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 10);
+        unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
+        assertEq(unlockedFundsAmount, 2 * depositAmount);
     }
 
     /// @notice Test repay

@@ -51,11 +51,6 @@ remap: && _timer
 	forge remappings > remappings.txt
 
 # Builds
-build: && _timer
-	forge clean
-	forge remappings > remappings.txt
-	forge build --names --sizes
-
 generate-abi: && _timer
     forge clean
     forge build --names --skip .t.sol .s.sol --extra-output-files abi --out output/abi
@@ -83,8 +78,16 @@ initialize-all: && _timer
 format: && _timer
 	forge fmt
 
+build: && _timer
+	forge clean
+	forge remappings > remappings.txt
+	forge build --names --sizes
+
 test-all: && _timer
-	forge test -vvvvv --match-contract PoolLibraryTest
+	forge test -vvvvv
+
+test-one: && _timer
+	forge test -vvv --match-contract PoolLibrary
 
 test-echidna: && _timer
     echidna ./tests/echidna/*.sol --contract BlendedPoolEchidna --config echidna.yaml

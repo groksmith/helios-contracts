@@ -88,29 +88,47 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function testFuzz_withdraw(address user) external {
-        user = createInvestorAndMintAsset(user, 1000);
+    function testFuzz_withdraw(address user, uint256 amount) external {
+        uint256 amountBounded = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
+        user = createInvestorAndMintAsset(user, amountBounded);
 
         vm.startPrank(user);
-        uint256 depositAmount = 150;
         uint256 currentTime = block.timestamp;
 
-        asset.approve(address(regPool1), depositAmount);
+        asset.approve(address(regPool1), amountBounded);
 
-        regPool1.deposit(depositAmount);
-
-        vm.expectRevert("P:TOKENS_LOCKED");
-        regPool1.withdraw(depositAmount);
+        regPool1.deposit(amountBounded);
 
         vm.warp(currentTime + 1000);
 
         // the user can withdraw the sum he has deposited earlier
-        regPool1.withdraw(depositAmount - 1);
+        regPool1.withdraw(amountBounded - 1);
         regPool1.withdraw(1);
 
-        // but he cannot withdraw more
+        vm.stopPrank();
+    }
+
+    /// @notice Test attempt to withdraw; both happy and unhappy paths
+    function testFuzz_withdraw_failed(address user, uint256 amount) external {
+        uint256 amountBounded = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
+        user = createInvestorAndMintAsset(user, amountBounded);
+
+        vm.startPrank(user);
+        uint256 currentTime = block.timestamp;
+
+        asset.approve(address(regPool1), amountBounded);
+
+        regPool1.deposit(amountBounded);
+
+        vm.expectRevert("P:TOKENS_LOCKED");
+        regPool1.withdraw(amountBounded);
+
+        vm.warp(currentTime + 1000);
+
+        regPool1.withdraw(amountBounded);
+
         vm.expectRevert("P:INSUFFICIENT_FUNDS");
-        regPool1.withdraw(1);
+        regPool1.withdraw(amountBounded);
 
         vm.stopPrank();
     }
@@ -213,7 +231,7 @@ contract RegPoolTest is FixtureContract {
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
-        _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
+        _maxPoolSize = bound(_maxPoolSize, 1, type(uint256).max - 1);
         address poolAddress = poolFactory.createPool(
             "1",
             address(asset),
@@ -297,5 +315,31 @@ contract RegPoolTest is FixtureContract {
             900,
             "user2 balance not upd after withdrawYield()"
         );
+    }
+
+    function testFuzz_getHolderByIndex(address user1, address user2) external {
+        user1 = createInvestorAndMintAsset(user1, 1000);
+        user2 = createInvestorAndMintAsset(user2, 1000);
+        vm.assume(user1 != user2);
+
+        //firstly the users need to deposit before withdrawing
+        uint256 user1Deposit = 100;
+        vm.startPrank(user1);
+        asset.approve(address(regPool1), user1Deposit);
+        regPool1.deposit(user1Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.getHolderByIndex(0), user1);
+
+        uint256 user2Deposit = 900;
+        vm.startPrank(user2);
+        asset.approve(address(regPool1), user2Deposit);
+        regPool1.deposit(user2Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.getHolderByIndex(1), user2);
+
+        vm.expectRevert("PL:INVALID_INDEX");
+        regPool1.getHolderByIndex(3);
     }
 }

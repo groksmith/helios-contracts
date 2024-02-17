@@ -17,7 +17,12 @@ contract BlendedPool is AbstractPool {
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_asset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _duration, type(uint256).max, _minInvestmentAmount, _withdrawThreshold);
+        poolInfo = PoolLibrary.PoolInfo(
+            _lockupPeriod,
+            _duration,
+            type(uint256).max,
+            _minInvestmentAmount,
+            _withdrawThreshold);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address

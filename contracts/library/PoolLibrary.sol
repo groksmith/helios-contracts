@@ -9,12 +9,6 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 library PoolLibrary {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    enum State {
-        Initialized,
-        Finalized,
-        Deactivated
-    }
-
     struct PoolInfo {
         uint256 lockupPeriod;
         uint256 duration;
@@ -71,6 +65,20 @@ library PoolLibrary {
             amount: amount,
             unlockTime: unlockTime
         }));
+    }
+
+    // Cleanup unused info
+    function cleanupDepositsStorage(DepositsStorage storage self, address holder) public {
+        DepositInstance[] storage depositInstances = self.lockedDeposits[holder];
+
+        // Iterate in reverse to safely remove elements while modifying the array
+        for (int256 j = int256(depositInstances.length) - 1; j >= 0; j--) {
+            if (depositInstances[uint256(j)].unlockTime < block.timestamp) {
+                // Remove the expired DepositInstance
+                depositInstances[uint256(j)] = depositInstances[depositInstances.length - 1];
+                depositInstances.pop();
+            }
+        }
     }
 
     // Get locked deposit amount for a specific holder

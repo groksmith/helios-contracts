@@ -87,7 +87,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-one: && _timer
-	forge test -vvv --match-contract PoolLibrary
+	forge test -vvvvv --match-contract PoolLibrary
 
 test-echidna: && _timer
     echidna ./tests/echidna/*.sol --contract BlendedPoolEchidna --config echidna.yaml

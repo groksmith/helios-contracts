@@ -19,6 +19,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
+    uint256 public immutable withdrawLimit; // Maximum amount that can be withdrawn in a period
+    uint256 public immutable withdrawPeriod; // Timeframe for the withdrawal limit
 
     PoolLibrary.DepositsStorage private depositsStorage;
     PoolLibrary.PoolInfo public poolInfo;
@@ -29,9 +31,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     mapping(address => uint256) public yields;
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingYields;
-
-    uint256 public immutable withdrawLimit; // Maximum amount that can be withdrawn in a period
-    uint256 public immutable withdrawPeriod; // Timeframe for the withdrawal limit
 
     event Deposit(address indexed investor, uint256 amount);
     event Withdrawal(address indexed investor, uint256 amount);

@@ -7,6 +7,11 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 
 // Pool maintains all accounting and functionality related to Pools
 contract Pool is AbstractPool {
+    enum State {Initialized, Finalized, Deactivated}
+    State public poolState;
+
+    event PoolStateChanged(State state);
+
     constructor(
         address _asset,
         uint256 _lockupPeriod,
@@ -16,54 +21,42 @@ contract Pool is AbstractPool {
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_asset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
+        poolInfo = PoolLibrary.PoolInfo(
+            _lockupPeriod,
+            _duration,
+            _investmentPoolSize,
+            _minInvestmentAmount,
+            _withdrawThreshold);
+
+        poolState = State.Initialized;
+        emit PoolStateChanged(poolState);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
-    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
+    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant inState(State.Initialized) {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
         _depositLogic(_amount);
     }
 
-    function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
-        uint256 holderBalance = balanceOf(_holder);
-        uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;
-        return holderShare * _amount / 1e18;
+    /*
+    Admin flow
+    */
+
+    // Finalize pool, disable new deposits
+    function finalize() external onlyAdmin inState(State.Initialized) {
+        poolState = State.Finalized;
+        emit PoolStateChanged(poolState);
     }
 
-    /// TODO: Tigran. I guess we don't need request funds compensation from Blended Pool here. Should be revisited!
-    /// @notice Used to transfer the investor's yield to him
-//    function withdrawYield() external override whenProtocolNotPaused returns (bool) {
-//        uint256 callerYields = yields[msg.sender];
-//        require(callerYields >= 0, "P:NOT_HOLDER");
-//        uint256 totalBalance = totalBalance();
-//
-//        BlendedPool blendedPool = getBlendedPool();
-//
-//        yields[msg.sender] = 0;
-//
-//        if (totalBalance < callerYields) {
-//            uint256 amountMissing = callerYields - totalBalance;
-//
-//            if (blendedPool.totalBalance() < amountMissing) {
-//                pendingYields[msg.sender] += callerYields;
-//                emit PendingYield(msg.sender, callerYields);
-//                return false;
-//            }
-//
-//            blendedPool.requestAssets(amountMissing);
-//            _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
-//
-//            require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
-//
-//            emit YieldWithdrawn(msg.sender, callerYields);
-//            return true;
-//        }
-//
-//        require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
-//
-//        emit YieldWithdrawn(msg.sender, callerYields);
-//        return true;
-//    }
+    // Triggers deactivation, permanently shutting down the Pool. Only Admin can call this function
+    function deactivate() external onlyAdmin inState(State.Finalized) {
+        poolState = State.Deactivated;
+        emit PoolStateChanged(poolState);
+    }
+
+    modifier inState(State _state) {
+        require(poolState == _state, "P:BAD_STATE");
+        _;
+    }
 }

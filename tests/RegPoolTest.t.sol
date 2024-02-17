@@ -248,13 +248,13 @@ contract RegPoolTest is FixtureContract {
         regPool1.deposit(user1Deposit);
         vm.stopPrank();
 
-        uint256 user2Deposit = 1000;
+        uint256 user2Deposit = 900;
         vm.startPrank(user2);
         asset.approve(address(regPool1), user2Deposit);
         regPool1.deposit(user2Deposit);
         vm.stopPrank();
 
-        uint256 yieldGenerated = 10000;
+        uint256 yieldGenerated = 1000;
 
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
@@ -277,15 +277,15 @@ contract RegPoolTest is FixtureContract {
         uint256 user1Yields = regPool1.yields(user1);
         uint256 user2Yields = regPool1.yields(user2);
 
-        assertEq(user1Yields, 10, "wrong yield user1");
-        assertEq(user2Yields, 100, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
+        assertEq(user1Yields, 100, "wrong yield user1");
+        assertEq(user2Yields, 900, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
 
         uint256 user1BalanceBefore = asset.balanceOf(user1);
         vm.prank(user1);
         regPool1.withdrawYield();
         assertEq(
             asset.balanceOf(user1) - user1BalanceBefore,
-            10,
+            100,
             "user1 balance not upd after withdrawYield()"
         );
 
@@ -294,7 +294,7 @@ contract RegPoolTest is FixtureContract {
         regPool1.withdrawYield();
         assertEq(
             asset.balanceOf(user2) - user2BalanceBefore,
-            100,
+            900,
             "user2 balance not upd after withdrawYield()"
         );
     }

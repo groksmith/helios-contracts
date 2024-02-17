@@ -34,11 +34,6 @@ contract BlendedPool is AbstractPool {
         emit RegPoolDeposit(msg.sender, _amountMissing);
     }
 
-    function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
-        uint256 holderBalance = balanceOf(_holder);
-        return (_amount * holderBalance) / totalSupply();
-    }
-
     /*
     Modifiers
     */

@@ -30,8 +30,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingYields;
 
-    uint256 public withdrawLimit; // Maximum amount that can be withdrawn in a period
-    uint256 public withdrawPeriod; // Timeframe for the withdrawal limit
+    uint256 public immutable withdrawLimit; // Maximum amount that can be withdrawn in a period
+    uint256 public immutable withdrawPeriod; // Timeframe for the withdrawal limit
 
     event Deposit(address indexed investor, uint256 amount);
     event Withdrawal(address indexed investor, uint256 amount);
@@ -102,10 +102,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         emit YieldWithdrawn(msg.sender, callerYields);
         return true;
     }
-
-    /*
-    Admin flow
-    */
 
     /// @notice Used to distribute yields among investors (LP token holders)
     /// @param  _amount the amount to be divided among investors
@@ -188,7 +184,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     Internals
     */
 
-    function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256);
+    function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256) {
+        uint256 holderBalance = balanceOf(_holder);
+        return (_amount * holderBalance) / totalSupply();
+    }
 
     function _depositLogic(uint256 _amount) internal {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
@@ -203,7 +202,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         emit Deposit(msg.sender, _amount);
     }
 
-    /// @notice  Mint Pool assets to given `to` address
+    /// @notice  Mint Pool assets to given `_account` address
     function _mintAndUpdateTotalDeposited(address _account, uint256 _amount) internal {
         _mint(_account, _amount);
         totalDeposited += _amount;

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// @author Tigran Arakelyan
 pragma solidity 0.8.20;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -87,6 +88,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield() external virtual returns (bool) {
+        if (yields[msg.sender] == 0)
+            return false;
+
         uint256 callerYields = yields[msg.sender];
         yields[msg.sender] = 0;
 
@@ -96,7 +100,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             return false;
         }
 
-        require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
+        _transferFunds(msg.sender, callerYields);
 
         emit YieldWithdrawn(msg.sender, callerYields);
         return true;
@@ -116,7 +120,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _recipient address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingWithdrawals[_recipient];
-        require(_transferFunds(_recipient, amount), "P:CONCLUDE_WITHDRAWAL_FAILED");
+        _transferFunds(_recipient, amount);
 
         //remove from pendingWithdrawals mapping:
         delete pendingWithdrawals[_recipient];
@@ -127,7 +131,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _recipient address of the recipient who didn't get the yield
     function concludePendingYield(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingYields[_recipient];
-        require(_transferFunds(_recipient, amount), "P:CONCLUDE_YIELD_FAILED");
+        _transferFunds(_recipient, amount);
 
         //remove from pendingWithdrawals mapping:
         delete pendingYields[_recipient];
@@ -193,9 +197,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         depositsStorage.addDeposit(msg.sender, _amount, block.timestamp + withdrawPeriod);
 
-        asset.safeTransferFrom(msg.sender, address(this), _amount);
-
         _mintAndUpdateTotalDeposited(msg.sender, _amount);
+
+        asset.safeTransferFrom(msg.sender, address(this), _amount);
 
         _emitBalanceUpdatedEvent();
         emit Deposit(msg.sender, _amount);
@@ -208,8 +212,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     }
 
     /// @notice  Transfers Pool assets to given `to` address
-    function _transferFunds(address _to, uint256 _value) internal returns (bool) {
-        return asset.transfer(_to, _value);
+    function _transferFunds(address _to, uint256 _value) internal {
+        asset.transfer(_to, _value);
     }
 
     // Emits a `BalanceUpdated` event for Pool

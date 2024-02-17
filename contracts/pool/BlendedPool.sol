@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// @author Tigran Arakelyan
 pragma solidity 0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
@@ -34,7 +35,8 @@ contract BlendedPool is AbstractPool {
     function requestAssets(uint256 _amountMissing) external onlyPool {
         require(_amountMissing > 0, "BP:INVALID_INPUT");
         require(totalBalance() >= _amountMissing, "BP:NOT_ENOUGH_LA_BP");
-        require(_transferFunds(msg.sender, _amountMissing), "BP:REQUEST_FROM_BP_FAIL");
+
+        _transferFunds(msg.sender, _amountMissing);
 
         emit RegPoolDeposit(msg.sender, _amountMissing);
     }

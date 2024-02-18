@@ -40,7 +40,6 @@ abstract contract FixtureContract is Test {
         address poolAddress = poolFactory.createPool(
             "reg pool",
             address(asset),
-            2000,
             1000,
             100000,
             100,
@@ -54,7 +53,6 @@ abstract contract FixtureContract is Test {
 
         address blendedPoolAddress = poolFactory.createBlendedPool(
             address(asset),
-            1000,
             300,
             100,
             500,

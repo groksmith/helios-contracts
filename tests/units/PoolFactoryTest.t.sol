@@ -18,7 +18,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            2000,
             1000,
             100000,
             100,
@@ -35,7 +34,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "2",
             address(asset),
-            2000,
             1000,
             100000,
             100,
@@ -46,7 +44,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.expectRevert(bytes("P:PROTO_PAUSED"));
         poolFactory.createBlendedPool(
             address(asset),
-            1000,
             100000,
             100,
             500,
@@ -62,7 +59,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            2000,
             1000,
             100000,
             100,
@@ -74,7 +70,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            2000,
             1000,
             100000,
             100,
@@ -92,7 +87,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
         poolFactory.createBlendedPool(
             address(asset),
-            1000,
             100000,
             100,
             500,
@@ -105,7 +99,6 @@ contract PoolFactoryTest is Test, FixtureContract {
     function testFuzz_pool_create(
         string calldata poolId,
         uint256 lockupPeriod,
-        uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
@@ -118,7 +111,6 @@ contract PoolFactoryTest is Test, FixtureContract {
             poolId,
             address(asset),
             lockupPeriod,
-            duration,
             investmentPoolSize,
             minInvestmentAmount,
             withdrawThreshold,

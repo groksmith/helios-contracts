@@ -11,7 +11,6 @@ library PoolFactoryLibrary {
         string calldata poolId,
         address asset,
         uint256 lockupPeriod,
-        uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
@@ -20,7 +19,6 @@ library PoolFactoryLibrary {
         Pool pool = new Pool(
             asset,
             lockupPeriod,
-            duration,
             investmentPoolSize,
             minInvestmentAmount,
             withdrawThreshold,

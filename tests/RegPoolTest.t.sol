@@ -211,7 +211,6 @@ contract RegPoolTest is FixtureContract {
         address poolAddress = poolFactory.createPool(
             "1",
             address(asset),
-            2000,
             1000,
             _maxPoolSize,
             0,

@@ -212,7 +212,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
         address poolAddress = poolFactory.createPool(
-            "1", address(asset), 2000, 1000, 1000, 100, 500, 1000
+            "1", address(asset), 1000, 1000, 100, 500, 1000
         );
 
         Pool pool = Pool(poolAddress);

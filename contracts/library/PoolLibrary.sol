@@ -15,7 +15,6 @@ library PoolLibrary {
     /// @notice General Pool information
     struct PoolInfo {
         uint256 lockupPeriod;
-        uint256 duration;
         uint256 investmentPoolSize;
         uint256 minInvestmentAmount;
         uint256 withdrawThreshold;

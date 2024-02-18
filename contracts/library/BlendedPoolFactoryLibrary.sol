@@ -10,7 +10,6 @@ library BlendedPoolFactoryLibrary {
     function createBlendedPool(
         address asset,
         uint256 lockupPeriod,
-        uint256 duration,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
@@ -18,7 +17,6 @@ library BlendedPoolFactoryLibrary {
         BlendedPool blendedPool = new BlendedPool(
             asset,
             lockupPeriod,
-            duration,
             minInvestmentAmount,
             withdrawThreshold,
             withdrawPeriod

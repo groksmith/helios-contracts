@@ -30,7 +30,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         string calldata poolId,
         address asset,
         uint256 lockupPeriod,
-        uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
@@ -42,7 +41,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
             poolId,
             asset,
             lockupPeriod,
-            duration,
             investmentPoolSize,
             minInvestmentAmount,
             withdrawThreshold,
@@ -58,7 +56,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     function createBlendedPool(
         address asset,
         uint256 lockupPeriod,
-        uint256 duration,
         uint256 minInvestmentAmount,
         uint256 withdrawThreshold,
         uint256 withdrawPeriod
@@ -69,7 +66,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         blendedPoolAddress = BlendedPoolFactoryLibrary.createBlendedPool(
             asset,
             lockupPeriod,
-            duration,
             minInvestmentAmount,
             withdrawThreshold,
             withdrawPeriod

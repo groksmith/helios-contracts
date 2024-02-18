@@ -13,14 +13,12 @@ contract BlendedPool is AbstractPool {
     constructor(
         address _asset,
         uint256 _lockupPeriod,
-        uint256 _duration,
         uint256 _minInvestmentAmount,
         uint256 _withdrawThreshold,
         uint256 _withdrawPeriod
     ) AbstractPool(_asset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
         poolInfo = PoolLibrary.PoolInfo(
             _lockupPeriod,
-            _duration,
             type(uint256).max,
             _minInvestmentAmount,
             _withdrawThreshold);

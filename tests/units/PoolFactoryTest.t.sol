@@ -18,10 +18,8 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            1000,
             100000,
             100,
-            500,
             1000
         );
 
@@ -34,21 +32,13 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "2",
             address(asset),
-            1000,
             100000,
             100,
-            500,
             1000
         );
 
         vm.expectRevert(bytes("P:PROTO_PAUSED"));
-        poolFactory.createBlendedPool(
-            address(asset),
-            100000,
-            100,
-            500,
-            1000
-        );
+        poolFactory.createBlendedPool(address(asset), 100000, 100);
 
         vm.stopPrank();
     }
@@ -59,10 +49,8 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            1000,
             100000,
             100,
-            500,
             1000
         );
 
@@ -70,10 +58,8 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            1000,
             100000,
             100,
-            500,
             1000
         );
 
@@ -85,13 +71,7 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         // Already created in parent FixtureContract
         vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
-        poolFactory.createBlendedPool(
-            address(asset),
-            100000,
-            100,
-            500,
-            1000
-        );
+        poolFactory.createBlendedPool(address(asset), 100000, 100);
 
         vm.stopPrank();
     }
@@ -101,8 +81,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         uint256 lockupPeriod,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
-        uint256 withdrawThreshold,
-        uint256 withdrawPeriod,
         address randomAddress
     ) public {
         vm.startPrank(OWNER_ADDRESS);
@@ -111,10 +89,8 @@ contract PoolFactoryTest is Test, FixtureContract {
             poolId,
             address(asset),
             lockupPeriod,
-            investmentPoolSize,
             minInvestmentAmount,
-            withdrawThreshold,
-            withdrawPeriod
+            investmentPoolSize
         );
 
         vm.assume(randomAddress != poolAddress);

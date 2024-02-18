@@ -8,22 +8,12 @@ import {Pool} from "../pool/Pool.sol";
 library PoolFactoryLibrary {
     /// @notice Create Pool Instance
     function createPool(
-        string calldata poolId,
         address asset,
         uint256 lockupPeriod,
-        uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
-        uint256 withdrawThreshold,
-        uint256 withdrawPeriod
+        uint256 investmentPoolSize
     ) external returns (address) {
-        Pool pool = new Pool(
-            asset,
-            lockupPeriod,
-            investmentPoolSize,
-            minInvestmentAmount,
-            withdrawThreshold,
-            withdrawPeriod
-        );
+        Pool pool = new Pool(asset, lockupPeriod, minInvestmentAmount, investmentPoolSize);
         return address(pool);
     }
 }

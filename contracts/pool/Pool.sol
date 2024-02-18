@@ -13,19 +13,9 @@ contract Pool is AbstractPool {
 
     event PoolStateChanged(State state);
 
-    constructor(
-        address _asset,
-        uint256 _lockupPeriod,
-        uint256 _investmentPoolSize,
-        uint256 _minInvestmentAmount,
-        uint256 _withdrawThreshold,
-        uint256 _withdrawPeriod
-    ) AbstractPool(_asset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo = PoolLibrary.PoolInfo(
-            _lockupPeriod,
-            _investmentPoolSize,
-            _minInvestmentAmount,
-            _withdrawThreshold);
+    constructor(address _asset, uint256 _lockupPeriod, uint256 _minInvestmentAmount, uint256 _investmentPoolSize)
+    AbstractPool(_asset, NAME, SYMBOL) {
+        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _minInvestmentAmount, _investmentPoolSize);
 
         poolState = State.Initialized;
         emit PoolStateChanged(poolState);

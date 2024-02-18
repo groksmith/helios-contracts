@@ -30,21 +30,16 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         string calldata poolId,
         address asset,
         uint256 lockupPeriod,
-        uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
-        uint256 withdrawThreshold,
-        uint256 withdrawPeriod
+        uint256 investmentPoolSize
     ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address poolAddress) {
         _isMappingKeyValid(poolId);
 
         poolAddress = PoolFactoryLibrary.createPool(
-            poolId,
             asset,
             lockupPeriod,
-            investmentPoolSize,
             minInvestmentAmount,
-            withdrawThreshold,
-            withdrawPeriod);
+            investmentPoolSize);
 
         pools[poolId] = poolAddress;
         isPool[poolAddress] = true;
@@ -56,9 +51,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     function createBlendedPool(
         address asset,
         uint256 lockupPeriod,
-        uint256 minInvestmentAmount,
-        uint256 withdrawThreshold,
-        uint256 withdrawPeriod
+        uint256 minInvestmentAmount
     ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address blendedPoolAddress) {
 
         require(blendedPool == address(0), "PF:BLENDED_POOL_ALREADY_CREATED");
@@ -66,9 +59,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         blendedPoolAddress = BlendedPoolFactoryLibrary.createBlendedPool(
             asset,
             lockupPeriod,
-            minInvestmentAmount,
-            withdrawThreshold,
-            withdrawPeriod
+            minInvestmentAmount
         );
 
         blendedPool = blendedPoolAddress;

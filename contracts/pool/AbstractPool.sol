@@ -22,8 +22,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
-    uint256 public immutable withdrawLimit; // Maximum amount that can be withdrawn in a period
-    uint256 public immutable withdrawPeriod; // Timeframe for the withdrawal limit
 
     PoolLibrary.DepositsStorage private depositsStorage;
     PoolLibrary.PoolInfo public poolInfo;
@@ -45,22 +43,14 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     event WithdrawalOverThreshold(address indexed caller, uint256 amount);
     event BalanceUpdated(address indexed pool, address indexed token, uint256 balance);
 
-    constructor(
-        address _asset,
-        string memory _tokenName,
-        string memory _tokenSymbol,
-        uint256 _withdrawLimit,
-        uint256 _withdrawPeriod
-    ) ERC20(_tokenName, _tokenSymbol) {
+    constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
+    ERC20(_tokenName, _tokenSymbol) {
         poolFactory = IPoolFactory(msg.sender);
 
         require(_asset != address(0), "P:ZERO_LIQ_ASSET");
         require(poolFactory.globals().isValidAsset(_asset), "P:INVALID_LIQ_ASSET");
 
         asset = IERC20(_asset);
-
-        withdrawLimit = _withdrawLimit;
-        withdrawPeriod = _withdrawPeriod;
     }
 
     /*
@@ -204,7 +194,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     function _depositLogic(uint256 _amount) internal {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
-        depositsStorage.addDeposit(msg.sender, _amount, block.timestamp + withdrawPeriod);
+        depositsStorage.addDeposit(msg.sender, _amount, block.timestamp + poolInfo.lockupPeriod);
 
         _mintAndUpdateTotalDeposited(msg.sender, _amount);
 

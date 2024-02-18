@@ -6,21 +6,11 @@ import {BlendedPool} from "../pool/BlendedPool.sol";
 /// @title BlendedPoolFactoryLibrary
 /// @author Tigran Arakelyan
 library BlendedPoolFactoryLibrary {
+
     /// @notice Create BlendedPool Instance
-    function createBlendedPool(
-        address asset,
-        uint256 lockupPeriod,
-        uint256 minInvestmentAmount,
-        uint256 withdrawThreshold,
-        uint256 withdrawPeriod
-    ) external returns (address) {
-        BlendedPool blendedPool = new BlendedPool(
-            asset,
-            lockupPeriod,
-            minInvestmentAmount,
-            withdrawThreshold,
-            withdrawPeriod
-        );
+    function createBlendedPool(address asset, uint256 lockupPeriod, uint256 minInvestmentAmount)
+    external returns (address) {
+        BlendedPool blendedPool = new BlendedPool(asset, lockupPeriod, minInvestmentAmount);
         return address(blendedPool);
     }
 }

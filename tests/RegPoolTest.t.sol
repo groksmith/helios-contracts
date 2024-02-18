@@ -212,10 +212,8 @@ contract RegPoolTest is FixtureContract {
             "1",
             address(asset),
             1000,
-            _maxPoolSize,
             0,
-            500,
-            1000
+            _maxPoolSize
         );
 
         Pool pool = Pool(poolAddress);
@@ -323,7 +321,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to deposit below minimum
-    function testFuzz_pool_finalize(address user1, address user2) external {
+    function testFuzz_pool_finalize(address user1) external {
         uint256 depositAmount = 100000;
 
         vm.startPrank(user1);

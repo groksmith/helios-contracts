@@ -12,13 +12,6 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 library PoolLibrary {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    /// @notice General Pool information
-    struct PoolInfo {
-        uint256 lockupPeriod;
-        uint256 minInvestmentAmount;
-        uint256 investmentPoolSize;
-    }
-
     /// @notice Single deposit info
     struct DepositInstance {
         uint256 amount;

@@ -12,7 +12,7 @@ contract BlendedPool is AbstractPool {
 
     constructor(address _asset, uint256 _lockupPeriod, uint256 _minInvestmentAmount)
     AbstractPool(_asset, NAME, SYMBOL) {
-        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _minInvestmentAmount, type(uint256).max);
+        poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, type(uint256).max);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address

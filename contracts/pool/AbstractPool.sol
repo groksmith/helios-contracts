@@ -24,7 +24,15 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
 
     PoolLibrary.DepositsStorage private depositsStorage;
-    PoolLibrary.PoolInfo public poolInfo;
+
+
+    struct PoolInfo {
+        uint256 lockupPeriod;
+        uint256 minInvestmentAmount;
+        uint256 investmentPoolSize;
+    }
+
+    PoolInfo public poolInfo;
 
     uint256 public totalDeposited;
     uint256 public principalOut;
@@ -176,7 +184,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     }
 
     /// @notice Get pool general info
-    function getPoolInfo() public view returns (PoolLibrary.PoolInfo memory) {
+    function getPoolInfo() public view returns (PoolInfo memory) {
         return poolInfo;
     }
 

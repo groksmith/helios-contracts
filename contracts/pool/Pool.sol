@@ -15,7 +15,7 @@ contract Pool is AbstractPool {
 
     constructor(address _asset, uint256 _lockupPeriod, uint256 _minInvestmentAmount, uint256 _investmentPoolSize)
     AbstractPool(_asset, NAME, SYMBOL) {
-        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _minInvestmentAmount, _investmentPoolSize);
+        poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, _investmentPoolSize);
 
         poolState = State.Initialized;
         emit PoolStateChanged(poolState);

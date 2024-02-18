@@ -11,8 +11,6 @@ import {PoolLibrary} from "../contracts/library/PoolLibrary.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract RegPoolTest is FixtureContract {
-    using PoolLibrary for PoolLibrary.PoolInfo;
-
     event PendingYield(address indexed recipient, uint256 amount);
     event WithdrawalOverThreshold(address indexed caller, uint256 amount);
 
@@ -162,9 +160,8 @@ contract RegPoolTest is FixtureContract {
     /// @notice Test repay
     function testFuzz_repay(address investor, uint256 depositAmount, uint256 yieldAmount) external {
         vm.startPrank(investor);
-        PoolLibrary.PoolInfo memory poolInfo = regPool1.getPoolInfo();
 
-        depositAmount = uint64(bound(depositAmount, poolInfo.minInvestmentAmount, poolInfo.investmentPoolSize));
+        depositAmount = uint64(bound(depositAmount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize));
         yieldAmount = uint64(bound(yieldAmount, 0, asset.totalSupply()));
 
         createInvestorAndMintAsset(investor, depositAmount);

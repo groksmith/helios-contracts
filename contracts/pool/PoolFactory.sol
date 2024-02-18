@@ -3,8 +3,9 @@ pragma solidity 0.8.20;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import {Pool} from "./Pool.sol";
-import {BlendedPool} from "./BlendedPool.sol";
+import {PoolFactoryLibrary} from "../library/PoolFactoryLibrary.sol";
+import {BlendedPoolFactoryLibrary} from "../library/BlendedPoolFactoryLibrary.sol";
+
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
@@ -37,17 +38,16 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address poolAddress) {
         _isMappingKeyValid(poolId);
 
-        Pool pool = new Pool(
+        poolAddress = PoolFactoryLibrary.createPool(
+            poolId,
             asset,
             lockupPeriod,
             duration,
             investmentPoolSize,
             minInvestmentAmount,
             withdrawThreshold,
-            withdrawPeriod
-        );
+            withdrawPeriod);
 
-        poolAddress = address(pool);
         pools[poolId] = poolAddress;
         isPool[poolAddress] = true;
 
@@ -66,7 +66,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
 
         require(blendedPool == address(0), "PF:BLENDED_POOL_ALREADY_CREATED");
 
-        BlendedPool pool = new BlendedPool(
+        blendedPoolAddress = BlendedPoolFactoryLibrary.createBlendedPool(
             asset,
             lockupPeriod,
             duration,
@@ -75,7 +75,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
             withdrawPeriod
         );
 
-        blendedPoolAddress = address(pool);
         blendedPool = blendedPoolAddress;
 
         emit BlendedPoolCreated(asset, blendedPoolAddress, msg.sender);

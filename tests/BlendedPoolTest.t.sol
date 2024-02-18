@@ -26,7 +26,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
-    function test_depositSuccess(address user1, address user2) external {
+    function test_deposit_success(address user1, address user2) external {
         createInvestorAndMintAsset(user1, 1000);
         createInvestorAndMintAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -71,7 +71,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test attempt to deposit below minimum
-    function test_depositFailure(address user) external {
+    function test_deposit_failure(address user) external {
         vm.startPrank(user);
         uint256 depositAmountBelowMin = 1;
         vm.expectRevert("P:DEP_AMT_BELOW_MIN");
@@ -101,7 +101,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function test_distributeYieldsAndWithdraw(address user1, address user2) external {
+    function test_distribute_yields_and_withdraw(address user1, address user2) external {
         createInvestorAndMintAsset(user1, 1000);
         createInvestorAndMintAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -154,7 +154,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test scenario when there are not enough funds on the pool
-    function test_insufficientFundsWithdrawYield(address user) external {
+    function test_insufficient_funds_withdraw_yield(address user) external {
         createInvestorAndMintAsset(user, 1000);
 
         //firstly the users need to deposit before withdrawing
@@ -207,7 +207,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(user1BalanceAfter, user1BalanceBefore + 1000, "invalid user1 LA balance after concluding");
     }
 
-    function test_subsidingRegPoolWithBlendedPool(address user) external {
+    function test_subsiding_reg_pool_with_blended_pool(address user) external {
         createInvestorAndMintAsset(user, 1000);
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);

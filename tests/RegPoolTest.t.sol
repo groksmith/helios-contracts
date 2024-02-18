@@ -21,7 +21,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
-    function testFuzz_depositSuccess(address user1, address user2) external {
+    function testFuzz_deposit_success(address user1, address user2) external {
         user1 = createInvestorAndMintAsset(user1, 1000);
         user2 = createInvestorAndMintAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -62,7 +62,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to deposit below minimum
-    function testFuzz_depositFailure(address user1, address user2) external {
+    function testFuzz_deposit_failure(address user1, address user2) external {
         uint256 depositAmountMax = 100000;
 
         vm.startPrank(user1);
@@ -134,7 +134,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test locked/unlocked deposits amounts
-    function testFuzz_unlockedToWithdraw(address user) external {
+    function testFuzz_unlocked_to_wWithdraw(address user) external {
         user = createInvestorAndMintAsset(user, 1000);
 
         vm.startPrank(user);
@@ -204,7 +204,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test deposit above maxPoolSize
-    function testFuzz_maxPoolSize(uint256 _maxPoolSize) external {
+    function testFuzz_max_pool_size(uint256 _maxPoolSize) external {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
         _maxPoolSize = bound(_maxPoolSize, 1, type(uint256).max - 1);
@@ -228,7 +228,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function testFuzz_distributeYieldsAndWithdraw(address user1, address user2) external {
+    function testFuzz_distribute_yields_and_withdraw(address user1, address user2) external {
         user1 = createInvestorAndMintAsset(user1, 1000);
         user2 = createInvestorAndMintAsset(user2, 1000);
         vm.assume(user1 != user2);
@@ -297,7 +297,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test getHolders
-    function testFuzz_getHolderByIndex(address user1, address user2) external {
+    function testFuzz_get_holder_by_index(address user1, address user2) external {
         user1 = createInvestorAndMintAsset(user1, 1000);
         user2 = createInvestorAndMintAsset(user2, 1000);
         vm.assume(user1 != user2);

@@ -6,8 +6,8 @@ import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
 contract HeliosGlobalsTest is Test, FixtureContract {
     event ProtocolPaused(bool pause);
     event GlobalAdminSet(address indexed newGlobalAdmin);
+    event PoolFactorySet(address indexed poolFactory);
     event AssetSet(address asset, uint256 decimals, string symbol, bool valid);
-    event ValidPoolFactorySet(address indexed poolFactory, bool valid);
 
     function setUp() public {
         fixture();
@@ -59,10 +59,10 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         address poolFactoryAddress = address(poolFactory);
 
         vm.expectEmit();
-        emit ValidPoolFactorySet(poolFactoryAddress, true);
+        emit PoolFactorySet(poolFactoryAddress);
 
-        heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
-        assertEq(heliosGlobals.isValidPoolFactory(poolFactoryAddress), true);
+        heliosGlobals.setPoolFactory(poolFactoryAddress);
+        assertEq(heliosGlobals.poolFactory(), poolFactoryAddress);
 
         vm.stopPrank();
     }
@@ -73,7 +73,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
 
         address poolFactoryAddress = address(poolFactory);
         vm.expectRevert(bytes("HG:NOT_ADMIN"));
-        heliosGlobals.setValidPoolFactory(poolFactoryAddress, true);
+        heliosGlobals.setPoolFactory(poolFactoryAddress);
 
         vm.stopPrank();
     }

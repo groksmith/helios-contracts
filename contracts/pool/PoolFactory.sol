@@ -24,15 +24,9 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         globals = IHeliosGlobals(_globals);
     }
 
-    /// @notice Sets HeliosGlobals instance. Only the Admin can call this function
-    function setGlobals(address _newGlobals) external onlyAdmin {
-        require(_newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
-        globals = IHeliosGlobals(_newGlobals);
-    }
-
     /// @notice Instantiates a Pool
     function createPool(
-        string memory poolId,
+        string calldata poolId,
         address asset,
         uint256 lockupPeriod,
         uint256 duration,

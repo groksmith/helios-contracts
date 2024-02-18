@@ -35,7 +35,7 @@ abstract contract FixtureContract is Test {
         heliosGlobals.setAsset(address(asset), true);
 
         poolFactory = new PoolFactory(address(heliosGlobals));
-        heliosGlobals.setValidPoolFactory(address(poolFactory), true);
+        heliosGlobals.setPoolFactory(address(poolFactory));
 
         address poolAddress = poolFactory.createPool(
             "reg pool",

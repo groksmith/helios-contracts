@@ -81,7 +81,7 @@ contract BlendedPoolEchidna {
         heliosGlobals.setAsset(address(asset), true);
         poolFactory = new PoolFactory(address(heliosGlobals));
         hevm.prank(OWNER_ADDRESS);
-        heliosGlobals.setValidPoolFactory(address(poolFactory), true);
+        heliosGlobals.setPoolFactory(address(poolFactory));
         hevm.prank(OWNER_ADDRESS);
         address blendedPoolAddress = poolFactory.createBlendedPool(
             address(asset),

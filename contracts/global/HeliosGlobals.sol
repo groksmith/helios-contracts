@@ -12,13 +12,13 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
     bytes32 public constant USER_ROLE = keccak256("USER");
 
     bool public override protocolPaused; // Switch to pause the functionality of the entire protocol.
-    mapping(address => bool) public override isValidPoolFactory; // Mapping of valid Pool Factories
+    address public override poolFactory; // Mapping of valid Pool Factories
     mapping(address => bool) public override isValidAsset; // Mapping of valid Assets
 
     event ProtocolPaused(bool pause);
     event Initialized();
+    event PoolFactorySet(address indexed poolFactory);
     event AssetSet(address asset, uint256 decimals, string symbol, bool valid);
-    event ValidPoolFactorySet(address indexed poolFactory, bool valid);
 
     constructor(address _admin) {
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -37,9 +37,9 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
     }
 
     // Sets the validity of a PoolFactory. Only the Admin can call this function
-    function setValidPoolFactory(address _poolFactory, bool _valid) external onlyAdmin {
-        isValidPoolFactory[_poolFactory] = _valid;
-        emit ValidPoolFactorySet(_poolFactory, _valid);
+    function setPoolFactory(address _poolFactory) external onlyAdmin {
+        poolFactory = _poolFactory;
+        emit PoolFactorySet(_poolFactory);
     }
 
     // Sets the validity of an asset for Pools. Only the Admin can call this function

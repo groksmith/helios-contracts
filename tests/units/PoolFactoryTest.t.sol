@@ -56,37 +56,6 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_admin_setGlobals() public {
-        vm.startPrank(OWNER_ADDRESS);
-
-        HeliosGlobals newGlobals = new HeliosGlobals(OWNER_ADDRESS);
-        address newGlobalsAddress = address(newGlobals);
-
-        assertNotEq(address(poolFactory.globals()), newGlobalsAddress);
-
-        poolFactory.setGlobals(newGlobalsAddress);
-
-        assertEq(address(poolFactory.globals()), newGlobalsAddress);
-
-        vm.expectRevert(bytes("PF:ZERO_NEW_GLOBALS"));
-        poolFactory.setGlobals(address(0));
-
-        vm.stopPrank();
-    }
-
-    function testFuzz_not_admin_setGlobals(address user) public {
-        vm.assume(user != OWNER_ADDRESS);
-        vm.startPrank(user);
-
-        HeliosGlobals newGlobals = new HeliosGlobals(OWNER_ADDRESS);
-        address newGlobalsAddress = address(newGlobals);
-
-        assertNotEq(address(poolFactory.globals()), newGlobalsAddress);
-
-        vm.expectRevert(bytes("PF:NOT_ADMIN"));
-        poolFactory.setGlobals(newGlobalsAddress);
-    }
-
     function test_pool_already_exists() public {
         vm.startPrank(OWNER_ADDRESS);
 
@@ -157,6 +126,7 @@ contract PoolFactoryTest is Test, FixtureContract {
         );
 
         vm.assume(randomAddress != poolAddress);
+        vm.assume(randomAddress != address(regPool1));
         
         assertEq(poolFactory.isValidPool(poolAddress), true);
         assertEq(poolFactory.isValidPool(randomAddress), false);

@@ -53,9 +53,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
     ERC20(_tokenName, _tokenSymbol) {
-        poolFactory = IPoolFactory(msg.sender);
-
         require(_asset != address(0), "P:ZERO_LIQ_ASSET");
+
+        poolFactory = IPoolFactory(msg.sender);
         require(poolFactory.globals().isValidAsset(_asset), "P:INVALID_LIQ_ASSET");
 
         asset = IERC20(_asset);
@@ -76,8 +76,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
 
         _burn(msg.sender, _amount);
-
         _transferFunds(msg.sender, _amount);
+
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
     }
@@ -110,6 +110,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param  _amount the amount to be divided among investors
     function distributeYields(uint256 _amount) external virtual onlyAdmin nonReentrant {
         require(_amount > 0, "P:INVALID_VALUE");
+
         for (uint256 i = 0; i < depositsStorage.getHoldersCount(); i++) {
             address holder = depositsStorage.getHolderByIndex(i);
             yields[holder] += _calculateYield(holder, _amount);
@@ -122,11 +123,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         uint256 amount = pendingWithdrawals[_recipient];
 
         _burn(_recipient, amount);
+        //remove from pendingWithdrawals mapping
+        delete pendingWithdrawals[_recipient];
 
         asset.safeTransferFrom(msg.sender, _recipient, amount);
 
-        //remove from pendingWithdrawals mapping:
-        delete pendingWithdrawals[_recipient];
         emit PendingWithdrawalConcluded(_recipient, amount);
     }
 
@@ -135,10 +136,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     function concludePendingYield(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingYields[_recipient];
 
-        _transferFunds(_recipient, amount);
-
         //remove from pendingWithdrawals mapping:
         delete pendingYields[_recipient];
+
+        _transferFunds(_recipient, amount);
+
         emit PendingYieldConcluded(_recipient, amount);
     }
 

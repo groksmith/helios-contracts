@@ -31,7 +31,8 @@ contract Pool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount the amount of assets to deposit
-    function blendedPoolDeposit(uint256 _amount) external onlyBlendedPool whenProtocolNotPaused nonReentrant inState(State.Initialized) {
+    function blendedPoolDeposit(uint256 _amount) external
+    onlyBlendedPool whenProtocolNotPaused nonReentrant inState(State.Initialized) {
         _depositLogic(_amount, msg.sender);
     }
 
@@ -97,5 +98,4 @@ contract Pool is AbstractPool {
         require(poolFactory.getBlendedPool() == msg.sender, "P:NOT_BP");
         _;
     }
-
 }

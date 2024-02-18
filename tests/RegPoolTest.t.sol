@@ -107,12 +107,13 @@ contract RegPoolTest is FixtureContract {
     }
 
     function testFuzz_withdraw_with_request_from_blended_pool(address regularPoolInvestor, address blendedPoolInvestor, uint256 amount) external {
+        vm.assume(regularPoolInvestor != blendedPoolInvestor);
+
         uint256 regularPoolInvestment = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
         uint256 blendedPoolInvestment = regularPoolInvestment + 1000;
 
         regularPoolInvestor = createInvestorAndMintAsset(regularPoolInvestor, regularPoolInvestment);
         blendedPoolInvestor = createInvestorAndMintAsset(blendedPoolInvestor, blendedPoolInvestment);
-        vm.assume(regularPoolInvestor != blendedPoolInvestor);
 
         assertEq(regPool1.balanceOf(address(blendedPool)), 0, "Expect no tokens from BP");
 
@@ -150,9 +151,8 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    function testFuzz_withdraw_with_pending(address regularPoolInvestor, address blendedPoolInvestor, uint256 amount) external {
+    function testFuzz_withdraw_with_pending(address regularPoolInvestor, uint256 amount) external {
         uint256 regularPoolInvestment = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
-        uint256 blendedPoolInvestment = regularPoolInvestment + 1000;
         uint256 currentTime = block.timestamp;
 
         regularPoolInvestor = createInvestorAndMintAsset(regularPoolInvestor, regularPoolInvestment);
@@ -185,6 +185,13 @@ contract RegPoolTest is FixtureContract {
 
         uint256 pendingAmount = regPool1.pendingWithdrawals(address(regularPoolInvestor));
         assertEq(pendingAmount, regularPoolInvestment, "Wrong pendingWithdrawals amount");
+
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        mintAsset(OWNER_ADDRESS, regularPoolInvestment);
+        asset.approve(address(regPool1), regularPoolInvestment);
+        regPool1.concludePendingWithdrawal(regularPoolInvestor);
         vm.stopPrank();
     }
 
@@ -214,7 +221,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test locked/unlocked deposits amounts
-    function testFuzz_unlocked_to_wWithdraw(address user) external {
+    function testFuzz_unlocked_to_withdraw(address user) external {
         user = createInvestorAndMintAsset(user, 1000);
 
         vm.startPrank(user);
@@ -305,9 +312,10 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
     function testFuzz_distribute_yields_and_withdraw(address user1, address user2) external {
+        vm.assume(user1 != user2);
+
         user1 = createInvestorAndMintAsset(user1, 1000);
         user2 = createInvestorAndMintAsset(user2, 1000);
-        vm.assume(user1 != user2);
 
         //firstly the users need to deposit before withdrawing
         uint256 user1Deposit = 100;
@@ -326,12 +334,16 @@ contract RegPoolTest is FixtureContract {
 
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
+
+        // No yield yet
+        vm.expectRevert("P:ZERO_YIELD");
+        regPool1.withdrawYield();
+
         vm.expectRevert("PF:NOT_ADMIN");
         regPool1.distributeYields(yieldGenerated);
 
         //only the pool admin can call distributeYields()
         vm.startPrank(OWNER_ADDRESS);
-
         vm.expectRevert("P:INVALID_VALUE");
         regPool1.distributeYields(0);
 
@@ -350,7 +362,6 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
 
         vm.startPrank(user1);
-
         uint256 user1BalanceBefore = asset.balanceOf(user1);
         regPool1.withdrawYield();
 
@@ -374,9 +385,10 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test getHolders
     function testFuzz_get_holder_by_index(address user1, address user2) external {
+        vm.assume(user1 != user2);
+
         user1 = createInvestorAndMintAsset(user1, 1000);
         user2 = createInvestorAndMintAsset(user2, 1000);
-        vm.assume(user1 != user2);
 
         //firstly the users need to deposit before withdrawing
         uint256 user1Deposit = 100;

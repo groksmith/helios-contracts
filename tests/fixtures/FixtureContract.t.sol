@@ -65,6 +65,8 @@ abstract contract FixtureContract is Test {
     function createInvestorAndMintAsset(address investor, uint256 amount) public returns (address) {
         vm.assume(investor != address(0));
         vm.assume(investor != OWNER_ADDRESS);
+        vm.assume(investor != address(regPool1));
+        vm.assume(investor != address(blendedPool));
         vm.assume(investor != address(asset));
         vm.assume(amount < assetElevated.totalSupply());
 

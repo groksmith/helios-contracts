@@ -89,8 +89,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield() external virtual nonReentrant whenProtocolNotPaused returns (bool) {
-        if (yields[msg.sender] == 0)
-            return false;
+        require(yields[msg.sender] > 0, "P:ZERO_YIELD");
 
         uint256 callerYields = yields[msg.sender];
         yields[msg.sender] = 0;
@@ -121,7 +120,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _recipient address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingWithdrawals[_recipient];
-        _transferFunds(_recipient, amount);
+
+        _burn(_recipient, amount);
+
+        asset.safeTransferFrom(msg.sender, _recipient, amount);
 
         //remove from pendingWithdrawals mapping:
         delete pendingWithdrawals[_recipient];
@@ -132,6 +134,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _recipient address of the recipient who didn't get the yield
     function concludePendingYield(address _recipient) external nonReentrant onlyAdmin {
         uint256 amount = pendingYields[_recipient];
+
         _transferFunds(_recipient, amount);
 
         //remove from pendingWithdrawals mapping:

@@ -8,7 +8,7 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 /// @title Regional Pool implementation
 /// @author Tigran Arakelyan
 contract Pool is AbstractPool {
-    enum State {Initialized, Finalized, Deactivated}
+    enum State {Initialized, Finalized/*, Deactivated*/}
     State public poolState;
 
     event PoolStateChanged(State state);
@@ -35,12 +35,6 @@ contract Pool is AbstractPool {
     /// @notice Finalize pool, disable new deposits
     function finalize() external onlyAdmin inState(State.Initialized) {
         poolState = State.Finalized;
-        emit PoolStateChanged(poolState);
-    }
-
-    /// @notice Triggers deactivation, permanently shutting down the pool
-    function deactivate() external onlyAdmin inState(State.Finalized) {
-        poolState = State.Deactivated;
         emit PoolStateChanged(poolState);
     }
 

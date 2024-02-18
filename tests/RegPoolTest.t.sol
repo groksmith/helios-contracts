@@ -329,10 +329,6 @@ contract RegPoolTest is FixtureContract {
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
-        // Cannot deactivate, should be finalized first
-        vm.expectRevert("P:BAD_STATE");
-        regPool1.deactivate();
-
         // Finalized. Deny any additional deposits
         regPool1.finalize();
         vm.stopPrank();
@@ -349,9 +345,5 @@ contract RegPoolTest is FixtureContract {
         // Cannot finalize again
         vm.expectRevert("P:BAD_STATE");
         regPool1.finalize();
-
-        // Now can deactivate
-        regPool1.deactivate();
-        vm.stopPrank();
     }
 }

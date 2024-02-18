@@ -9,8 +9,6 @@ import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 /// @author Tigran Arakelyan
 /// @notice Maintains a central source of parameters and allowLists for the Helios protocol.
 contract HeliosGlobals is AccessControl, IHeliosGlobals {
-    bytes32 public constant USER_ROLE = keccak256("USER");
-
     bool public override protocolPaused; // Switch to pause the functionality of the entire protocol.
     address public override poolFactory; // Mapping of valid Pool Factories
     mapping(address => bool) public override isValidAsset; // Mapping of valid Assets
@@ -22,7 +20,6 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
 
     constructor(address _admin) {
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        _setRoleAdmin(USER_ROLE, DEFAULT_ADMIN_ROLE);
         emit Initialized();
     }
 

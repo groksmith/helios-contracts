@@ -100,6 +100,33 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
+    /// @notice Test attempt to withdraw; both happy and unhappy paths
+    function test_request_assets(address user) external {
+        createInvestorAndMintAsset(user, 1000);
+
+        vm.expectRevert(bytes("P:NOT_POOL"));
+        blendedPool.requestAssets(10);
+
+        vm.startPrank(address(regPool1));
+        vm.expectRevert(bytes("BP:INVALID_AMOUNT"));
+        blendedPool.requestAssets(0);
+
+        vm.expectRevert(bytes("BP:NOT_ENOUGH_ASSETS"));
+        blendedPool.requestAssets(100);
+
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        mintAsset(OWNER_ADDRESS, 100);
+        asset.approve(address(blendedPool), 100);
+        blendedPool.repay(100);
+        vm.stopPrank();
+
+        vm.startPrank(address(regPool1));
+        blendedPool.requestAssets(100);
+        vm.stopPrank();
+    }
+
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
     function test_distribute_yields_and_withdraw(address user1, address user2) external {
         createInvestorAndMintAsset(user1, 1000);
@@ -230,7 +257,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         pool.borrow(OWNER_ADDRESS, 100);
         vm.stopPrank();
 
-        //now let's repay LA to the blended pool
+        //now let's repay assets to the blended pool
         vm.startPrank(OWNER_ADDRESS);
         mintAsset(OWNER_ADDRESS, 100);
         asset.approve(address(blendedPool), 100);

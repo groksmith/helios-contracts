@@ -87,7 +87,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-one: && _timer
-	forge test -vvvvv --match-test testFuzz_withdraw_with_request_from_blended_pool
+	forge test -vvvvv --match-test testFuzz_withdraw_with_pending
 
 test-echidna: && _timer
     echidna ./tests/echidna/*.sol --contract BlendedPoolEchidna --config echidna.yaml

@@ -12,7 +12,7 @@ import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract RegPoolTest is FixtureContract {
     event PendingYield(address indexed recipient, uint256 amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
+    event PendingWithdrawal(address indexed investor, uint256 amount);
 
     function setUp() public {
         fixture();
@@ -145,9 +145,47 @@ contract RegPoolTest is FixtureContract {
         // the user can withdraw the sum he has deposited earlier
         regPool1.withdraw(regularPoolInvestment);
         assertEq(regPool1.totalBalance(), 0, "Wrong RP balance");
+        assertEq(regPool1.balanceOf(address(blendedPool)), regularPoolInvestment, "Wrong token amount from RP");
+
+        vm.stopPrank();
+    }
+
+    function testFuzz_withdraw_with_pending(address regularPoolInvestor, address blendedPoolInvestor, uint256 amount) external {
+        uint256 regularPoolInvestment = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
+        uint256 blendedPoolInvestment = regularPoolInvestment + 1000;
+        uint256 currentTime = block.timestamp;
+
+        regularPoolInvestor = createInvestorAndMintAsset(regularPoolInvestor, regularPoolInvestment);
+
+        assertEq(regPool1.balanceOf(address(blendedPool)), 0, "Expect no tokens from BP");
+        assertEq(blendedPool.totalBalance(), 0, "BP is not empty");
+
+        vm.startPrank(regularPoolInvestor);
+        assertEq(regPool1.totalBalance(), 0, "RP is not empty");
+        asset.approve(address(regPool1), regularPoolInvestment);
+        regPool1.deposit(regularPoolInvestment);
+        assertEq(regPool1.totalBalance(), regularPoolInvestment, "Wrong RP totalBalance");
         vm.stopPrank();
 
-        assertEq(regPool1.balanceOf(address(blendedPool)), regularPoolInvestment, "Wrong token amount from RP");
+        vm.startPrank(OWNER_ADDRESS);
+        uint256 borrowAmount = regPool1.totalBalance() - regPool1.principalOut();
+        regPool1.borrow(OWNER_ADDRESS, borrowAmount);
+        assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
+        vm.stopPrank();
+
+        vm.warp(currentTime + 1000);
+
+        vm.startPrank(regularPoolInvestor);
+        assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
+
+        vm.expectEmit(true, true, false, false);
+        // The expected event signature
+        emit PendingWithdrawal(regularPoolInvestor, regularPoolInvestment);
+        regPool1.withdraw(regularPoolInvestment);
+
+        uint256 pendingAmount = regPool1.pendingWithdrawals(address(regularPoolInvestor));
+        assertEq(pendingAmount, regularPoolInvestment, "Wrong pendingWithdrawals amount");
+        vm.stopPrank();
     }
 
     /// @notice Test attempt to withdraw, unhappy paths

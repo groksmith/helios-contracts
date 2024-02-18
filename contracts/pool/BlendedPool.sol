@@ -22,7 +22,7 @@ contract BlendedPool is AbstractPool {
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets
     function requestAssets(uint256 _amountMissing) external onlyPool {
-        require(_amountMissing > 0, "BP:INVALID_INPUT");
+        require(_amountMissing > 0, "BP:INVALID_AMOUNT");
         require(totalBalance() >= _amountMissing, "BP:NOT_ENOUGH_ASSETS");
 
         Pool pool = Pool(msg.sender);

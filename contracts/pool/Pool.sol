@@ -22,10 +22,58 @@ contract Pool is AbstractPool {
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
+    /// @param _amount the amount of assets to deposit
     function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant inState(State.Initialized) {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        _depositLogic(_amount);
+        _depositLogic(_amount, msg.sender);
+    }
+
+    /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
+    /// @param _amount the amount of assets to deposit
+    function blendedPoolDeposit(uint256 _amount) external blendedPool whenProtocolNotPaused nonReentrant inState(State.Initialized) {
+        _depositLogic(_amount, msg.sender);
+    }
+
+    /// @notice withdraws the caller's assets
+    /// @param _amount the amount of assets to be withdrawn
+    function withdraw(uint256 _amount) public override whenProtocolNotPaused {
+        require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
+        require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
+
+        if (totalBalance() < _amount) {
+            uint256 insufficientAmount = _amount - totalBalance();
+
+            BlendedPool blendedPool = BlendedPool(poolFactory.getBlendedPool());
+
+            // are we toking about same token?
+            bool sameToken = (asset == blendedPool.asset());
+
+            // Make sure there is enough funds in Blended Pool to invest
+            bool blendedPoolCapableToCoverInsufficientAmount = (insufficientAmount < blendedPool.totalBalance());
+
+            // skip requesting "BP Compensation" for Blended Pool. It doesn't make sense.
+            bool actorIsNotBlendedPool = (msg.sender != address(blendedPool));
+
+            // Validate that we want to do automatic "BP Compensation"
+            if (sameToken && blendedPoolCapableToCoverInsufficientAmount && actorIsNotBlendedPool)
+            {
+                // Borrow liquidity from Blended Pool to Regional Pool
+                // Return back to Blended Pool equal amount of Regional Pool's tokens (so now Blended Pool act as investor for Regional Pool)
+                blendedPool.requestAssets(insufficientAmount);
+            } else {
+                // Ok, going to manual flow
+                pendingWithdrawals[msg.sender] += _amount;
+                emit PendingWithdrawal(msg.sender, _amount);
+                return;
+            }
+        }
+
+        _burn(msg.sender, _amount);
+
+        _transferFunds(msg.sender, _amount);
+        _emitBalanceUpdatedEvent();
+        emit Withdrawal(msg.sender, _amount);
     }
 
     /*
@@ -43,4 +91,11 @@ contract Pool is AbstractPool {
         require(poolState == _state, "P:BAD_STATE");
         _;
     }
+
+    /// @notice Check if blended pool calling
+    modifier blendedPool() {
+        require(poolFactory.getBlendedPool() == msg.sender, "P:NOT_BP");
+        _;
+    }
+
 }

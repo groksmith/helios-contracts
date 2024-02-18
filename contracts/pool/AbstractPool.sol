@@ -71,7 +71,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice withdraws the caller's liquidity assets
     /// @param _amount to be withdrawn
-    function withdraw(uint256 _amount) public nonReentrant whenProtocolNotPaused {
+    function withdraw(uint256 _amount) public virtual nonReentrant whenProtocolNotPaused {
         require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
         require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
 
@@ -199,17 +199,17 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     }
 
     /// @notice Shared deposit logic
-    function _depositLogic(uint256 _amount) internal {
+    function _depositLogic(uint256 _amount, address holder) internal {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
-        depositsStorage.addDeposit(msg.sender, _amount, block.timestamp + poolInfo.lockupPeriod);
+        depositsStorage.addDeposit(holder, _amount, block.timestamp + poolInfo.lockupPeriod);
 
-        _mintAndUpdateTotalDeposited(msg.sender, _amount);
+        _mintAndUpdateTotalDeposited(holder, _amount);
 
-        asset.safeTransferFrom(msg.sender, address(this), _amount);
+        asset.safeTransferFrom(holder, address(this), _amount);
 
         _emitBalanceUpdatedEvent();
-        emit Deposit(msg.sender, _amount);
+        emit Deposit(holder, _amount);
     }
 
     /// @notice Mint Pool assets to given `_account` address and update totalDeposited

@@ -106,6 +106,50 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
+    function testFuzz_withdraw_with_request_from_blended_pool(address regularPoolInvestor, address blendedPoolInvestor, uint256 amount) external {
+        uint256 regularPoolInvestment = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
+        uint256 blendedPoolInvestment = regularPoolInvestment + 1000;
+
+        regularPoolInvestor = createInvestorAndMintAsset(regularPoolInvestor, regularPoolInvestment);
+        blendedPoolInvestor = createInvestorAndMintAsset(blendedPoolInvestor, blendedPoolInvestment);
+        vm.assume(regularPoolInvestor != blendedPoolInvestor);
+
+        assertEq(regPool1.balanceOf(address(blendedPool)), 0, "Expect no tokens from BP");
+
+        vm.startPrank(blendedPoolInvestor);
+        assertEq(blendedPool.totalBalance(), 0, "BP is not empty");
+        asset.approve(address(blendedPool), blendedPoolInvestment);
+        blendedPool.deposit(blendedPoolInvestment);
+        assertEq(blendedPool.totalSupply(), blendedPoolInvestment, "Expecting increasing BP by blendedPoolInvestment");
+        assertEq(blendedPool.totalBalance(), blendedPoolInvestment, "Wrong BP totalBalance");
+        vm.stopPrank();
+
+        vm.startPrank(regularPoolInvestor);
+        uint256 currentTime = block.timestamp;
+        assertEq(regPool1.totalBalance(), 0, "RP is not empty");
+        asset.approve(address(regPool1), regularPoolInvestment);
+        regPool1.deposit(regularPoolInvestment);
+        assertEq(regPool1.totalBalance(), regularPoolInvestment, "Wrong RP totalBalance");
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        uint256 borrowAmount = regPool1.totalBalance() - regPool1.principalOut();
+        regPool1.borrow(OWNER_ADDRESS, borrowAmount);
+        assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
+        vm.stopPrank();
+
+        vm.warp(currentTime + 1000);
+
+        vm.startPrank(regularPoolInvestor);
+        assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
+        // the user can withdraw the sum he has deposited earlier
+        regPool1.withdraw(regularPoolInvestment);
+        assertEq(regPool1.totalBalance(), 0, "Wrong RP balance");
+        vm.stopPrank();
+
+        assertEq(regPool1.balanceOf(address(blendedPool)), regularPoolInvestment, "Wrong token amount from RP");
+    }
+
     /// @notice Test attempt to withdraw, unhappy paths
     function testFuzz_withdraw_failed(address user, uint256 amount) external {
         uint256 amountBounded = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);

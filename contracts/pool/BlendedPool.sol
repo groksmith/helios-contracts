@@ -8,7 +8,7 @@ import {Pool} from "./Pool.sol";
 /// @title Blended Pool implementation
 /// @author Tigran Arakelyan
 contract BlendedPool is AbstractPool {
-    event RegPoolDeposit(address indexed regPool, uint256 amount);
+    event RegPoolRequested(address indexed regPool, uint256 amount);
 
     constructor(address _asset, uint256 _lockupPeriod, uint256 _minInvestmentAmount)
     AbstractPool(_asset, NAME, SYMBOL) {
@@ -17,17 +17,19 @@ contract BlendedPool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
-        _depositLogic(_amount);
+        _depositLogic(_amount, msg.sender);
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets
     function requestAssets(uint256 _amountMissing) external onlyPool {
         require(_amountMissing > 0, "BP:INVALID_INPUT");
-        require(totalBalance() >= _amountMissing, "BP:NOT_ENOUGH_LA_BP");
+        require(totalBalance() >= _amountMissing, "BP:NOT_ENOUGH_ASSETS");
 
-        _transferFunds(msg.sender, _amountMissing);
+        Pool pool = Pool(msg.sender);
+        asset.approve(address(pool), _amountMissing);
+        pool.blendedPoolDeposit(_amountMissing);
 
-        emit RegPoolDeposit(msg.sender, _amountMissing);
+        emit RegPoolRequested(msg.sender, _amountMissing);
     }
 
     /*

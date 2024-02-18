@@ -83,8 +83,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     }
 
     /// @notice check how much funds already unlocked
-    function unlockedToWithdraw(address _user) public view returns (uint256) {
-        return balanceOf(msg.sender) - depositsStorage.lockedDepositsAmount(_user);
+    /// @param _holder to be checked
+    function unlockedToWithdraw(address _holder) public view returns (uint256) {
+        return balanceOf(_holder) - depositsStorage.lockedDepositsAmount(_holder);
     }
 
     /// @notice Used to transfer the investor's yields to him
@@ -118,33 +119,35 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     }
 
     /// @notice Admin function used for unhappy path after withdrawal failure
-    /// @param _recipient address of the recipient who didn't get the liquidity
-    function concludePendingWithdrawal(address _recipient) external nonReentrant onlyAdmin {
-        uint256 amount = pendingWithdrawals[_recipient];
+    /// @param _holder address of the recipient who didn't get the liquidity
+    function concludePendingWithdrawal(address _holder) external nonReentrant onlyAdmin {
+        uint256 amount = pendingWithdrawals[_holder];
 
-        _burn(_recipient, amount);
+        _burn(_holder, amount);
+
         //remove from pendingWithdrawals mapping
-        delete pendingWithdrawals[_recipient];
+        delete pendingWithdrawals[_holder];
 
-        asset.safeTransferFrom(msg.sender, _recipient, amount);
+        asset.safeTransferFrom(msg.sender, _holder, amount);
 
-        emit PendingWithdrawalConcluded(_recipient, amount);
+        emit PendingWithdrawalConcluded(_holder, amount);
     }
 
     /// @notice Admin function used for unhappy path after yield withdraw failure
-    /// @param _recipient address of the recipient who didn't get the yield
-    function concludePendingYield(address _recipient) external nonReentrant onlyAdmin {
-        uint256 amount = pendingYields[_recipient];
+    /// @param _holder address of the recipient who didn't get the yield
+    function concludePendingYield(address _holder) external nonReentrant onlyAdmin {
+        uint256 amount = pendingYields[_holder];
 
         //remove from pendingWithdrawals mapping:
-        delete pendingYields[_recipient];
+        delete pendingYields[_holder];
 
-        _transferFunds(_recipient, amount);
+        _transferFunds(_holder, amount);
 
-        emit PendingYieldConcluded(_recipient, amount);
+        emit PendingYieldConcluded(_holder, amount);
     }
 
     /// @notice Borrow the pool's money for investment
+    /// @param _to address for borrow funds
     /// @param _amount amount to be borrowed
     function borrow(address _to, uint256 _amount) external nonReentrant onlyAdmin {
         principalOut += _amount;
@@ -169,16 +172,17 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     */
 
     /// @notice Get Deposit Holder's address
-    function getHolderByIndex(uint256 index) external view returns (address) {
-        return depositsStorage.getHolderByIndex(index);
+    /// @param _index index for holder
+    function getHolderByIndex(uint256 _index) external view returns (address) {
+        return depositsStorage.getHolderByIndex(_index);
     }
 
-    /// @notice Get Deposit Holder's Count
+    /// @notice Get holders Count
     function getHoldersCount() external view returns (uint256) {
         return depositsStorage.getHoldersCount();
     }
 
-    /// @notice Get the amount of assets in the Pool
+    /// @notice Get the amount of assets in the pool
     function totalBalance() public view returns (uint256) {
         return asset.balanceOf(address(this));
     }
@@ -197,38 +201,46 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     Internals
     */
 
-    /// @notice Get pool general info
+    /// @notice Calculate yield for specific holder
+    /// @param _holder address of holder
+    /// @param _amount to be shared proportionally
     function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256) {
         uint256 holderBalance = balanceOf(_holder);
         return (_amount * holderBalance) / totalSupply();
     }
 
     /// @notice Shared deposit logic
-    function _depositLogic(uint256 _amount, address holder) internal {
+    /// @param _amount to be deposited
+    /// @param _holder holders address
+    function _depositLogic(uint256 _amount, address _holder) internal {
         require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
 
-        depositsStorage.addDeposit(holder, _amount, block.timestamp + poolInfo.lockupPeriod);
+        depositsStorage.addDeposit(_holder, _amount, block.timestamp + poolInfo.lockupPeriod);
 
-        _mintAndUpdateTotalDeposited(holder, _amount);
+        _mintAndUpdateTotalDeposited(_holder, _amount);
 
-        asset.safeTransferFrom(holder, address(this), _amount);
+        asset.safeTransferFrom(_holder, address(this), _amount);
 
         _emitBalanceUpdatedEvent();
-        emit Deposit(holder, _amount);
+        emit Deposit(_holder, _amount);
     }
 
     /// @notice Mint Pool assets to given `_account` address and update totalDeposited
+    /// @param _account holder's address
+    /// @param _amount to be minted
     function _mintAndUpdateTotalDeposited(address _account, uint256 _amount) internal {
         _mint(_account, _amount);
         totalDeposited += _amount;
     }
 
     /// @notice Transfers Pool assets to given `_to` address
+    /// @param _to receiver's address
+    /// @param _value amount to be transferred
     function _transferFunds(address _to, uint256 _value) internal {
         asset.transfer(_to, _value);
     }
 
-    // Emits a `BalanceUpdated` event for Pool
+    /// @notice Emits a `BalanceUpdated` event for Pool
     function _emitBalanceUpdatedEvent() internal {
         emit BalanceUpdated(address(this), address(this), totalBalance());
     }
@@ -237,13 +249,13 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     Modifiers
     */
 
-    // Checks that the protocol is not in a paused state
+    /// @notice Checks that the protocol is not in a paused state
     modifier whenProtocolNotPaused() {
         require(!poolFactory.globals().protocolPaused(), "P:PROTO_PAUSED");
         _;
     }
 
-    // Checks that the admin call
+    /// @notice Checks that the admin call
     modifier onlyAdmin() {
         require(poolFactory.globals().isAdmin(msg.sender), "PF:NOT_ADMIN");
         _;

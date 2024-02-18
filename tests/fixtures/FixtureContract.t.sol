@@ -62,6 +62,7 @@ abstract contract FixtureContract is Test {
         vm.stopPrank();
     }
 
+    /// @notice Mint and some checks
     function createInvestorAndMintAsset(address investor, uint256 amount) public returns (address) {
         vm.assume(investor != address(0));
         vm.assume(investor != OWNER_ADDRESS);
@@ -74,10 +75,12 @@ abstract contract FixtureContract is Test {
         return investor;
     }
 
+    /// @notice Mint assets
     function mintAsset(address user, uint256 amount) public {
         assetElevated.mint(user, amount);
     }
 
+    /// @notice Burn assets
     function burnAsset(address user, uint256 amount) public {
         assetElevated.burn(user, amount);
     }

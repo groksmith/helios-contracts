@@ -26,45 +26,53 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     }
 
     /// @notice Instantiates a Pool
+    /// @param _poolId string for pool identification (for external systems)
+    /// @param _asset address of asset of pool
+    /// @param _lockupPeriod locking time for deposit's withdrawal
+    /// @param _minInvestmentAmount minimal amount of asset needed to deposit
+    /// @param _investmentPoolSize pool max capacity for deposits
     function createPool(
-        string calldata poolId,
-        address asset,
-        uint256 lockupPeriod,
-        uint256 minInvestmentAmount,
-        uint256 investmentPoolSize
+        string calldata _poolId,
+        address _asset,
+        uint256 _lockupPeriod,
+        uint256 _minInvestmentAmount,
+        uint256 _investmentPoolSize
     ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address poolAddress) {
-        _isMappingKeyValid(poolId);
+        _isMappingKeyValid(_poolId);
 
         poolAddress = PoolFactoryLibrary.createPool(
-            asset,
-            lockupPeriod,
-            minInvestmentAmount,
-            investmentPoolSize);
+            _asset,
+            _lockupPeriod,
+            _minInvestmentAmount,
+            _investmentPoolSize);
 
-        pools[poolId] = poolAddress;
+        pools[_poolId] = poolAddress;
         isPool[poolAddress] = true;
 
-        emit PoolCreated(poolId, asset, poolAddress, msg.sender);
+        emit PoolCreated(_poolId, _asset, poolAddress, msg.sender);
     }
 
     /// @notice Instantiates a Blended Pool
+    /// @param _asset address of asset of pool
+    /// @param _lockupPeriod locking time for deposit's withdrawal
+    /// @param _minInvestmentAmount minimal amount of asset needed to deposit
     function createBlendedPool(
-        address asset,
-        uint256 lockupPeriod,
-        uint256 minInvestmentAmount
+        address _asset,
+        uint256 _lockupPeriod,
+        uint256 _minInvestmentAmount
     ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address blendedPoolAddress) {
 
         require(blendedPool == address(0), "PF:BLENDED_POOL_ALREADY_CREATED");
 
         blendedPoolAddress = BlendedPoolFactoryLibrary.createBlendedPool(
-            asset,
-            lockupPeriod,
-            minInvestmentAmount
+            _asset,
+            _lockupPeriod,
+            _minInvestmentAmount
         );
 
         blendedPool = blendedPoolAddress;
 
-        emit BlendedPoolCreated(asset, blendedPoolAddress, msg.sender);
+        emit BlendedPoolCreated(_asset, blendedPoolAddress, msg.sender);
     }
 
     /// @notice Checks that the mapping key is valid (unique)
@@ -74,6 +82,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     }
 
     /// @notice Whitelist pools created here
+    /// @param _pool address of pool to check
     function isValidPool(address _pool) external override view returns (bool) {
         return isPool[_pool];
     }
@@ -82,10 +91,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     function getBlendedPool() external override view returns (address) {
         return blendedPool;
     }
-
-    /*
-    Modifiers
-    */
 
     /// @notice Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {

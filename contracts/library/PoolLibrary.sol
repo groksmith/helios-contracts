@@ -32,14 +32,14 @@ library PoolLibrary {
     }
 
     /// @notice Return true if holder exists
-    function holderExists(DepositsStorage storage self, address holder) external view returns (bool) {
-        return self.holders.contains(holder);
+    function holderExists(DepositsStorage storage self, address _holder) external view returns (bool) {
+        return self.holders.contains(_holder);
     }
 
     /// @notice Get the holder address by index
-    function getHolderByIndex(DepositsStorage storage self, uint256 index) external view returns (address) {
-        require(index < self.holders.length(), "PL:INVALID_INDEX");
-        return self.holders.at(index);
+    function getHolderByIndex(DepositsStorage storage self, uint256 _index) external view returns (address) {
+        require(_index < self.holders.length(), "PL:INVALID_INDEX");
+        return self.holders.at(_index);
     }
 
     /*
@@ -48,24 +48,24 @@ library PoolLibrary {
 
     /// @notice Add a deposit for a holder
     /// @dev Add the holder to holders AddressSet, then push deposit to lockedDeposits array
-    function addDeposit(DepositsStorage storage self, address holder, uint256 amount, uint256 unlockTime) external {
-        require(holder != address(0), "PL:INVALID_HOLDER");
-        require(amount > 0, "PL:ZERO_AMOUNT");
-        require(unlockTime > block.timestamp, "PL:WRONG_UNLOCK_TIME");
+    function addDeposit(DepositsStorage storage self, address _holder, uint256 _amount, uint256 _unlockTime) external {
+        require(_holder != address(0), "PL:INVALID_HOLDER");
+        require(_amount > 0, "PL:ZERO_AMOUNT");
+        require(_unlockTime > block.timestamp, "PL:WRONG_UNLOCK_TIME");
 
-        self.holders.add(holder);
+        self.holders.add(_holder);
 
         // Add the deposit to the lockedDeposits mapping
-        self.lockedDeposits[holder].push(DepositInstance({
-            amount: amount,
-            unlockTime: unlockTime
+        self.lockedDeposits[_holder].push(DepositInstance({
+            amount: _amount,
+            unlockTime: _unlockTime
         }));
     }
 
     /// @notice Cleanup expired deposit info
     /// @dev Should be extended to cleanup also holders
-    function cleanupDepositsStorage(DepositsStorage storage self, address holder) public {
-        DepositInstance[] storage depositInstances = self.lockedDeposits[holder];
+    function cleanupDepositsStorage(DepositsStorage storage self, address _holder) public {
+        DepositInstance[] storage depositInstances = self.lockedDeposits[_holder];
 
         // Iterate in reverse to safely remove elements while modifying the array
         for (int256 j = int256(depositInstances.length) - 1; j >= 0; j--) {
@@ -78,14 +78,14 @@ library PoolLibrary {
     }
 
     /// @notice Get locked deposit amount for a specific holder
-    function lockedDepositsAmount(DepositsStorage storage self, address holder) public view returns (uint256) {
-        require(self.holders.contains(holder), "PL:INVALID_HOLDER");
+    function lockedDepositsAmount(DepositsStorage storage self, address _holder) public view returns (uint256) {
+        require(self.holders.contains(_holder), "PL:INVALID_HOLDER");
 
         uint256 lockedAmount;
 
-        for (uint256 i = 0; i < self.lockedDeposits[holder].length; i++) {
-            if (self.lockedDeposits[holder][i].unlockTime > block.timestamp) {
-                lockedAmount += self.lockedDeposits[holder][i].amount;
+        for (uint256 i = 0; i < self.lockedDeposits[_holder].length; i++) {
+            if (self.lockedDeposits[_holder][i].unlockTime > block.timestamp) {
+                lockedAmount += self.lockedDeposits[_holder][i].amount;
             }
         }
 

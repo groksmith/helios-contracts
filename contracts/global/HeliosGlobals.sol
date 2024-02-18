@@ -23,32 +23,30 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
         emit Initialized();
     }
 
+    /// @notice Check if account is admin of Helios protocol
     function isAdmin(address _account) public view returns (bool) {
         return hasRole(DEFAULT_ADMIN_ROLE, _account);
     }
 
-    // Sets the paused/unpaused state of the protocol. Only the Admin can call this function
+    /// @notice Sets the paused/unpaused state of the protocol. Only the Admin can call this function
     function setProtocolPause(bool _pause) external onlyAdmin {
         protocolPaused = _pause;
         emit ProtocolPaused(_pause);
     }
 
-    // Sets the validity of a PoolFactory. Only the Admin can call this function
+    /// @notice Sets the valid PoolFactory instance. Only the Admin can call this function
     function setPoolFactory(address _poolFactory) external onlyAdmin {
         poolFactory = _poolFactory;
         emit PoolFactorySet(_poolFactory);
     }
 
-    // Sets the validity of an asset for Pools. Only the Admin can call this function
+    /// @notice Sets the validity of an asset for Pools. Only the Admin can call this function
     function setAsset(address _asset, bool _valid) external onlyAdmin {
         isValidAsset[_asset] = _valid;
         emit AssetSet(_asset, IERC20Metadata(_asset).decimals(), IERC20Metadata(_asset).symbol(), _valid);
     }
 
-    /*
-    Modifiers
-    */
-    /// @dev Restricted to members of the admin role.
+    /// @notice Restricted to members of the admin role.
     modifier onlyAdmin() {
         require(isAdmin(msg.sender), "HG:NOT_ADMIN");
         _;

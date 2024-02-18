@@ -29,7 +29,7 @@ contract Pool is AbstractPool {
         _depositLogic(_amount, msg.sender);
     }
 
-    /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
+    /// @notice Called only from Blended Pool. Part of BP compensation mechanism
     /// @param _amount the amount of assets to deposit
     function blendedPoolDeposit(uint256 _amount) external
     onlyBlendedPool whenProtocolNotPaused nonReentrant inState(State.Initialized) {
@@ -81,7 +81,7 @@ contract Pool is AbstractPool {
     Admin flow
     */
 
-    /// @notice Finalize pool, disable new deposits
+    /// @notice Finalize pool, disable any new deposits
     function finalize() external onlyAdmin inState(State.Initialized) {
         poolState = State.Finalized;
         emit PoolStateChanged(poolState);

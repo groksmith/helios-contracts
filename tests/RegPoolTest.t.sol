@@ -106,6 +106,7 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
+    /// @notice Test attempt to withdraw with BP compensation
     function testFuzz_withdraw_with_request_from_blended_pool(address regularPoolInvestor, address blendedPoolInvestor, uint256 amount) external {
         vm.assume(regularPoolInvestor != blendedPoolInvestor);
 
@@ -151,6 +152,7 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
+    /// @notice Test attempt to withdraw with admin approval
     function testFuzz_withdraw_with_pending(address regularPoolInvestor, uint256 amount) external {
         uint256 regularPoolInvestment = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
         uint256 currentTime = block.timestamp;

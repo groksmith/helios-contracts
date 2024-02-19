@@ -53,7 +53,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_when_owner_setValidPoolFactory() public {
+    function test_when_owner_set_pool_factory() public {
         vm.startPrank(OWNER_ADDRESS);
 
         address poolFactoryAddress = address(poolFactory);
@@ -67,28 +67,37 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function testFuzz_when_not_owner_setValidPoolFactory(address user) public {
-        vm.assume(user != OWNER_ADDRESS);
-        vm.startPrank(user);
-
-        address poolFactoryAddress = address(poolFactory);
-        vm.expectRevert(bytes("HG:NOT_ADMIN"));
-        heliosGlobals.setPoolFactory(poolFactoryAddress);
-
+    function test_when_set_pool_factory_zero(address user) public {
+        vm.startPrank(OWNER_ADDRESS);
+        vm.expectRevert(bytes("HG:ZERO_POOL_FACTORY"));
+        heliosGlobals.setPoolFactory(address(0));
         vm.stopPrank();
     }
 
-    function test_when_owner_setAsset() public {
-        vm.startPrank(OWNER_ADDRESS);
+    function testFuzz_when_not_owner_set_pool_factory(address user) public {
+        vm.assume(user != OWNER_ADDRESS);
+        vm.startPrank(user);
+        address poolFactoryAddress = address(poolFactory);
+        vm.expectRevert(bytes("HG:NOT_ADMIN"));
+        heliosGlobals.setPoolFactory(poolFactoryAddress);
+        vm.stopPrank();
+    }
 
+    function test_when_owner_set_asset() public {
+        vm.startPrank(OWNER_ADDRESS);
         address assetAddress = address(asset);
 
         vm.expectEmit();
         emit AssetSet(assetAddress, asset.decimals(), asset.symbol(), true);
-
         heliosGlobals.setAsset(assetAddress, true);
         assertEq(heliosGlobals.isValidAsset(assetAddress), true);
+        vm.stopPrank();
+    }
 
+    function test_when_set_asset_zero() public {
+        vm.startPrank(OWNER_ADDRESS);
+        vm.expectRevert(bytes("HG:ZERO_ASSET"));
+        heliosGlobals.setAsset(address(0), true);
         vm.stopPrank();
     }
 

@@ -237,7 +237,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _to receiver's address
     /// @param _value amount to be transferred
     function _transferFunds(address _to, uint256 _value) internal {
-        asset.transfer(_to, _value);
+        require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
     }
 
     /// @notice Emits a `BalanceUpdated` event for Pool

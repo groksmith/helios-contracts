@@ -36,12 +36,15 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
 
     /// @notice Sets the valid PoolFactory instance. Only the Admin can call this function
     function setPoolFactory(address _poolFactory) external onlyAdmin {
+        require(_poolFactory != address(0), "HG:ZERO_POOL_FACTORY");
+
         poolFactory = _poolFactory;
         emit PoolFactorySet(_poolFactory);
     }
 
     /// @notice Sets the validity of an asset for Pools. Only the Admin can call this function
     function setAsset(address _asset, bool _valid) external onlyAdmin {
+        require(_asset != address(0), "HG:ZERO_ASSET");
         isValidAsset[_asset] = _valid;
         emit AssetSet(_asset, IERC20Metadata(_asset).decimals(), IERC20Metadata(_asset).symbol(), _valid);
     }

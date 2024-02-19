@@ -12,7 +12,7 @@ import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 /// @title Factory for Pool creation
 /// @author Tigran Arakelyan
 contract PoolFactory is IPoolFactory, ReentrancyGuard {
-    IHeliosGlobals public override globals; // A HeliosGlobals instance
+    IHeliosGlobals public immutable override globals; // A HeliosGlobals instance
 
     address public blendedPool; // Address of Blended Pool
     mapping(string => address) public pools; // Map to reference Pools corresponding to their respective indices.
@@ -70,6 +70,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
             _minInvestmentAmount
         );
 
+        require(blendedPoolAddress != address(0), "PF:INVALID_BLENDED_POOL");
         blendedPool = blendedPoolAddress;
 
         emit BlendedPoolCreated(_asset, blendedPoolAddress, msg.sender);

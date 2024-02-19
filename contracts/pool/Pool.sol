@@ -32,13 +32,13 @@ contract Pool is AbstractPool {
     /// @notice Called only from Blended Pool. Part of BP compensation mechanism
     /// @param _amount the amount of assets to deposit
     function blendedPoolDeposit(uint256 _amount) external
-    onlyBlendedPool whenProtocolNotPaused nonReentrant inState(State.Initialized) {
+    onlyBlendedPool whenProtocolNotPaused inState(State.Initialized) {
         _depositLogic(_amount, msg.sender);
     }
 
     /// @notice withdraws the caller's assets
     /// @param _amount the amount of assets to be withdrawn
-    function withdraw(uint256 _amount) public override whenProtocolNotPaused {
+    function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
         require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
         require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
 

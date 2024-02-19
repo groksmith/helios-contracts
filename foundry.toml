@@ -1,7 +1,7 @@
 [profile.default]
 solc-version = "0.8.20"
 src = 'contracts'
-out = 'output/out'
+out = 'out'
 libs = ['lib']
 test = 'tests'
 cache_path  = 'output/cache_forge'

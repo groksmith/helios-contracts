@@ -98,3 +98,6 @@ test-gas: && _timer
 coverage-all: && _timer
 	forge coverage --report lcov
 	genhtml -o tests-results/coverage_report --branch-coverage lcov.info --ignore-errors category
+
+analyze: && _timer
+    slither .

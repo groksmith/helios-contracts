@@ -23,15 +23,18 @@ contract BlendedPool is AbstractPool {
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets
     /// @param _amountRequested the amount requested for compensation
-    function requestAssets(uint256 _amountRequested) external onlyPool {
+    function requestAssets(uint256 _amountRequested) external nonReentrant onlyPool {
         require(_amountRequested > 0, "BP:INVALID_AMOUNT");
         require(totalBalance() >= _amountRequested, "BP:NOT_ENOUGH_ASSETS");
 
         Pool pool = Pool(msg.sender);
-        asset.approve(address(pool), _amountRequested);
-        pool.blendedPoolDeposit(_amountRequested);
+        bool success = asset.approve(address(pool), _amountRequested);
 
-        emit RegPoolRequested(msg.sender, _amountRequested);
+        if(success)
+        {
+            pool.blendedPoolDeposit(_amountRequested);
+            emit RegPoolRequested(msg.sender, _amountRequested);
+        }
     }
 
     /// @notice Only pool can call

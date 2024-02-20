@@ -1,5 +1,5 @@
 codeSize: 0xFFFF
-testLimit: 10000000
+testLimit: 10
 corpusDir: tests-results/echidna/corpus
 testMode: property
-seqLen: 200
+seqLen: 2

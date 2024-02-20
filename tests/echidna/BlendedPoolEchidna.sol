@@ -1,7 +1,7 @@
 /*
 Test contract to use with echidna: https://github.com/crytic/echidna
 
-This contract tests a BlendedPool based on BlendedPoolTest.t.sol.
+This contract tests a BlendedPool based on BlendedPoolTestHandler.t.sol.
 
 Run with: echidna ./tests/echidna/BlendedPoolEchidna.sol --contract BlendedPoolEchidna --config echidna.yaml
 
@@ -22,10 +22,10 @@ pragma solidity 0.8.20;
 import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 import {Pool} from "../../contracts/pool/Pool.sol";
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
-import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 import {PoolLibrary} from "../../contracts/library/PoolLibrary.sol";
+import {PoolFactoryNoLibrary} from"./PoolFactoryNoLibrary.sol";
 
 interface IHevm {
     function prank(address) external;
@@ -33,22 +33,24 @@ interface IHevm {
 
 /// Echidna BlendedPool test
 contract BlendedPoolEchidna {
-    address constant HEVM_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
-    IHevm hevm = IHevm(HEVM_ADDRESS);
+    address private constant HEVM_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
+    IHevm private hevm = IHevm(HEVM_ADDRESS);
+
     // Based on FixtureContract
     address public constant OWNER_ADDRESS = 0x8A867fcC5a4d1FBbf7c1A9D6e5306b78511fDDDe;
+
     address[] public USER_ADDRESSES = [
-        address(uint160(uint256(keccak256("user1")))),
-        address(uint160(uint256(keccak256("user2")))),
-        address(uint160(uint256(keccak256("user3")))),
-        address(uint160(uint256(keccak256("user4")))),
-        address(uint160(uint256(keccak256("user5"))))
+    address(uint160(uint256(keccak256("user1")))),
+    address(uint160(uint256(keccak256("user2")))),
+    address(uint160(uint256(keccak256("user3")))),
+    address(uint160(uint256(keccak256("user4")))),
+    address(uint160(uint256(keccak256("user5"))))
     ];
 
-    HeliosGlobals public heliosGlobals;
     ERC20 public asset;
     MockTokenERC20 private assetElevated;
-    PoolFactory public poolFactory;
+    HeliosGlobals public heliosGlobals;
+    PoolFactoryNoLibrary public poolFactory;
     BlendedPool public blendedPool;
 
     // Property variables
@@ -73,13 +75,16 @@ contract BlendedPoolEchidna {
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
         assetElevated = new MockTokenERC20("USDT", "USDT");
         asset = ERC20(assetElevated);
+
         assetElevated.mint(OWNER_ADDRESS, 1000000);
         for (uint i = 0; i < USER_ADDRESSES.length; i++) {
             assetElevated.mint(USER_ADDRESSES[i], 1000);
         }
+
         hevm.prank(OWNER_ADDRESS);
         heliosGlobals.setAsset(address(asset), true);
-        poolFactory = new PoolFactory(address(heliosGlobals));
+
+        poolFactory = new PoolFactoryNoLibrary(address(heliosGlobals));
         hevm.prank(OWNER_ADDRESS);
         heliosGlobals.setPoolFactory(address(poolFactory));
         hevm.prank(OWNER_ADDRESS);
@@ -327,28 +332,27 @@ contract BlendedPoolEchidna {
     event LogUint(string, uint);
 
     function sumUserDeposits() public returns (uint sum){
-//        uint holders_count = blendedPool.depositsHolder().getHoldersCount();
-//        DepositsHolder deposits_holder = blendedPool.depositsHolder();
-//        for (uint i = 0; i < holders_count; i++) {
-//            PoolLibrary.DepositInstance[] memory user_deposits = deposits_holder.getDepositsByHolder(deposits_holder.getHolderByIndex(i));
-//            for (uint j = 0; j < user_deposits.length; j++) {
-//                sum += user_deposits[j].amount;
-//            }
-//        }
+        sum = 0;
+        uint holders_count = blendedPool.getHoldersCount();
+        for (uint i = 0; i < holders_count; i++) {
+            address holder = blendedPool.getHolderByIndex(i);
+            sum += blendedPool.totalDepositsAmount(holder);
+        }
     }
 
     function sumPoolTokenBalances() public returns (uint sum){
+        sum = 0;
         for (uint i = 0; i < USER_ADDRESSES.length; i++) {
             sum += blendedPool.balanceOf(USER_ADDRESSES[i]);
         }
     }
 
     function sumUserYields() public returns (uint sum){
+        sum = 0;
         for (uint i = 0; i < USER_ADDRESSES.length; i++) {
             sum += blendedPool.yields(USER_ADDRESSES[i]);
         }
     }
-
 
     function assertEqualWithinPrecision(uint x, uint y, uint precision) internal returns (bool){
         return absDiff(x, y) <= precision;

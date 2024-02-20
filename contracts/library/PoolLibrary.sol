@@ -92,4 +92,18 @@ library PoolLibrary {
 
         return lockedAmount;
     }
+
+    /// @notice Get locked deposit amount for a specific holder
+    function totalDepositsAmount(DepositsStorage storage self, address _holder) internal view returns (uint256) {
+        require(self.holders.contains(_holder), "PL:INVALID_HOLDER");
+
+        uint256 amount = 0;
+
+        for (uint256 i = 0; i < self.lockedDeposits[_holder].length; i++) {
+            amount += self.lockedDeposits[_holder][i].amount;
+        }
+
+        return amount;
+    }
+
 }

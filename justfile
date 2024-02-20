@@ -11,9 +11,13 @@ set export
 RPC_URL := env_var_or_default("RPC_URL", "")
 VERIFIER_URL := env_var_or_default("VERIFIER_URL", "")
 HELIOS_OWNER := env_var_or_default("HELIOS_OWNER", "")
-HELIOS_GLOBALS_ADDRESS := env_var_or_default("HELIOS_GLOBALS_ADDRESS", "")
-POOL_FACTORY_ADDRESS := env_var_or_default("POOL_FACTORY_ADDRESS", "")
-USDT_ADDRESS := env_var_or_default("USDT_ADDRESS", "")
+HELIOS_GLOBALS := env_var_or_default("HELIOS_GLOBALS", "")
+POOL_FACTORY := env_var_or_default("POOL_FACTORY", "")
+BLENDED_POOL_FACTORY_LIBRARY := env_var_or_default("BLENDED_POOL_FACTORY_LIBRARY", "")
+POOL_FACTORY_LIBRARY := env_var_or_default("POOL_FACTORY_LIBRARY", "")
+POOL := env_var_or_default("POOL", "")
+BLENDED_POOL := env_var_or_default("BLENDED_POOL", "")
+USDT := env_var_or_default("USDT", "")
 
 _default:
   just --list
@@ -59,17 +63,27 @@ deploy-all: && _timer
 	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url {{ RPC_URL }} --broadcast -vvvv
 
 verify-all: && _timer
-	forge verify-contract {{ HELIOS_GLOBALS_ADDRESS }} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
+	forge verify-contract {{ HELIOS_GLOBALS }} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
 		--constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_OWNER }}` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
-	forge verify-contract {{ POOL_FACTORY_ADDRESS }} ./contracts/pool/PoolFactory.sol:PoolFactory \
-		--constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_GLOBALS_ADDRESS }}` \
-		--verifier-url {{ VERIFIER_URL }} --watch
+	forge verify-contract {{ POOL_FACTORY }} ./contracts/pool/PoolFactory.sol:PoolFactory \
+		--constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_GLOBALS }}` \
+		--verifier-url {{ VERIFIER_URL }} --watch \
+		--libraries ./contracts/library/PoolFactoryLibrary.sol:PoolFactoryLibrary:{{ POOL_FACTORY_LIBRARY }} \
+		--libraries ./contracts/library/BlendedPoolFactoryLibrary.sol:BlendedPoolFactoryLibrary:{{ BLENDED_POOL_FACTORY_LIBRARY }}
 
 	#SKIP IN PROD
-	forge verify-contract {{ USDT_ADDRESS }} ./tests/mocks/MockTokenERC20.sol:MockTokenERC20 \
+	forge verify-contract {{ USDT }} ./tests/mocks/MockTokenERC20.sol:MockTokenERC20 \
 		--constructor-args `cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC` \
+		--verifier-url {{ VERIFIER_URL }} --watch
+
+	forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDT }} 1 1 1` \
+		--verifier-url {{ VERIFIER_URL }} --watch
+
+	forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDT }} 1 1` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 initialize-all: && _timer
@@ -87,7 +101,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-one: && _timer
-	forge test -vvvvv --match-test testFuzz_withdraw_with_pending
+	forge test -vvvvv --match-contract BlendedPoolInvariantTest
 
 test-echidna: && _timer
     echidna ./tests/echidna/*.sol --contract BlendedPoolEchidna --config echidna.yaml

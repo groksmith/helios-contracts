@@ -10,9 +10,9 @@ contract InitializeScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        address heliosGlobalsAddress = vm.envAddress("HELIOS_GLOBALS_ADDRESS");
-        address poolFactoryAddress = vm.envAddress("POOL_FACTORY_ADDRESS");
-        address usdtAddress = vm.envAddress("USDT_ADDRESS");
+        address heliosGlobalsAddress = vm.envAddress("HELIOS_GLOBALS");
+        address poolFactoryAddress = vm.envAddress("POOL_FACTORY");
+        address usdtAddress = vm.envAddress("USDT");
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -20,6 +20,10 @@ contract InitializeScript is Script {
         heliosGlobals.setPoolFactory(poolFactoryAddress);
         heliosGlobals.setAsset(usdtAddress, true);
 
+        PoolFactory poolFactory = PoolFactory(poolFactoryAddress);
+        address blendedPoolAddress = poolFactory.createBlendedPool(usdtAddress, 86400, 1e18);
+
+        console.log("BlendedPool address: %s", blendedPoolAddress);
         vm.stopBroadcast();
     }
 }

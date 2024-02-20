@@ -78,13 +78,13 @@ verify-all: && _timer
 		--constructor-args `cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
-	forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDT }} 1 1 1` \
+	forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDT }} 86400 1000000000000000000` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
-	forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDT }} 1 1` \
-		--verifier-url {{ VERIFIER_URL }} --watch
+#	forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
+#		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDT }} 1 1 1` \
+#		--verifier-url {{ VERIFIER_URL }} --watch
 
 initialize-all: && _timer
 	forge script ./script/InitializeScript.s.sol:InitializeScript --rpc-url {{ RPC_URL }} --broadcast -vvvv

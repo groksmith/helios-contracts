@@ -25,7 +25,7 @@ import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 import {PoolLibrary} from "../../contracts/library/PoolLibrary.sol";
-import {PoolFactoryNoLibrary} from"./PoolFactoryNoLibrary.sol";
+import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 
 interface IHevm {
     function prank(address) external;
@@ -50,7 +50,7 @@ contract BlendedPoolEchidna {
     ERC20 public asset;
     MockTokenERC20 private assetElevated;
     HeliosGlobals public heliosGlobals;
-    PoolFactoryNoLibrary public poolFactory;
+    PoolFactory public poolFactory;
     BlendedPool public blendedPool;
 
     // Property variables
@@ -84,7 +84,7 @@ contract BlendedPoolEchidna {
         hevm.prank(OWNER_ADDRESS);
         heliosGlobals.setAsset(address(asset), true);
 
-        poolFactory = new PoolFactoryNoLibrary(address(heliosGlobals));
+        poolFactory = new PoolFactory(address(heliosGlobals));
         hevm.prank(OWNER_ADDRESS);
         heliosGlobals.setPoolFactory(address(poolFactory));
         hevm.prank(OWNER_ADDRESS);

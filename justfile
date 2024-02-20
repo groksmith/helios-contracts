@@ -103,9 +103,6 @@ test-all: && _timer
 test-one: && _timer
 	forge test -vvvvv --match-contract BlendedPoolInvariantTest
 
-test-echidna: && _timer
-    echidna ./tests/echidna/*.sol --contract BlendedPoolEchidna --config echidna.yaml
-
 test-gas: && _timer
     forge test --gas-report
 

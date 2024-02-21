@@ -5,7 +5,6 @@ import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 
@@ -15,11 +14,6 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     BlendedPool public blendedPool;
     MockTokenERC20 public assetElevated;
     ERC20 public asset;
-
-    uint256 public netInflows;
-    uint256 public netYieldAccrued;
-    uint256 public netBorrowed;
-    uint256 public netDeposits;
 
     address[] public USER_ADDRESSES = [
     address(uint160(uint256(keccak256("user1")))),
@@ -35,11 +29,14 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         asset = ERC20(assetElevated);
     }
 
+    uint256 public netInflows;
+    uint256 public netDeposits;
+
     /// Make a deposit for a user
-    function userDeposit(uint256 amount, uint256 user_idx) public virtual {
-        user_idx = user_idx % USER_ADDRESSES.length;
-        address user = USER_ADDRESSES[user_idx];
-        amount = amount % type(uint80).max;
+    function deposit(uint256 amount, uint256 user_idx) public virtual {
+        address user = pickUpUser(user_idx);
+
+        amount = bound(amount, 1, type(uint80).max);
 
         if (asset.balanceOf(user) < amount) {
             assetElevated.mint(user, amount);
@@ -47,7 +44,6 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
         vm.prank(user);
         asset.approve(address(blendedPool), amount);
-
         vm.prank(user);
         blendedPool.deposit(amount);
 
@@ -55,25 +51,34 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         netDeposits += amount;
     }
 
-    /// Withdraw the first deposit for a user
-    function userWithdrawFirst(uint256 amount, uint256 user_idx) external {
-        uint256 holderCount = blendedPool.getHoldersCount();
-        if (holderCount == 0) return;
-
-        user_idx = user_idx % holderCount;
-        address user = blendedPool.getHolderByIndex(user_idx);
+    /// Withdraw deposit for a user
+    function withdraw(uint256 amount, uint256 user_idx) external {
+        address user = pickUpUserFromBlendedPool(user_idx);
+        if (user == address(0)) return;
 
         vm.prank(user);
-        blendedPool.withdraw(amount);
+        uint256 unlocked = blendedPool.unlockedToWithdraw(user);
+        if (unlocked == 0) return;
+
+        unlocked = bound(amount, 1, unlocked);
+
+        vm.prank(user);
+        blendedPool.withdraw(unlocked);
+
         netInflows -= amount;
         netDeposits -= amount;
     }
 
+    uint256 public netYieldAccrued;
+
+    /// Withdraw yield for a user
     function withdrawYield(uint256 user_idx) external {
-        user_idx = user_idx % USER_ADDRESSES.length;
-        address user = USER_ADDRESSES[user_idx];
+        address user = pickUpUser(user_idx);
+
         if (netYieldAccrued == 0) return;
+
         uint256 user_current_yield = blendedPool.yields(user);
+
         vm.prank(user);
         if (blendedPool.withdrawYield()) {
             // withdrawn
@@ -83,51 +88,24 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         }
     }
 
-    /// Withdraw the first N deposits for a user
-//    function userWithdrawFirstNumFull(uint256 num_deposits, uint256 user_idx) external {
-//        user_idx = user_idx % USER_ADDRESSES.length;
-//        address user = USER_ADDRESSES[user_idx];
-//        DepositsHolder deposits_holder = blendedPool.depositsHolder();
-//        PoolLibrary.DepositInstance[] memory user_deposits = deposits_holder.getDepositsByHolder(user);
-//        num_deposits = num_deposits % user_deposits.length;
-//
-//        uint256 shares = blendedPool.balanceOf(user);
-//        if (shares == 0) return;
-//
-//        uint[] memory amounts = new uint[](num_deposits);
-//        uint16[] memory indices = new uint16[](num_deposits);
-//        for (uint16 i = 0; i < num_deposits; i++) {
-//            indices[i] = i;
-//            amounts[i] = user_deposits[i].amount;
-//        }
-//        uint256 total_amount = 0;
-//        for (uint256 i = 0; i < amounts.length; i++) {
-//            total_amount += amounts[i];
-//        }
-//        vm.prank(user);
-//        blendedPool.withdraw(amounts, indices);
-//        netInflows -= total_amount;
-//        netDeposits -= total_amount;
-//    }
-
     /*
     HANDLERS - Admin Workflow
     */
 
     uint256 public yieldPrecisionLoss;
-    uint256 public timesDistributeYieldCalled;
     uint256 public maxPrecisionLossForYields;
-
-    /// Distribute yields
+//
+//    /// Distribute yields
 //    function distributeYield() external {
 //        if (netInflows == 0) return;
-//        timesDistributeYieldCalled++;
+//
 //        uint256 startingSumYields = sumUserYields();
 //        uint256 newYieldToDistribute = 0.1e18;
 //        assetElevated.mint(address(blendedPool), newYieldToDistribute);
 //
 //        vm.prank(OWNER_ADDRESS);
 //        blendedPool.distributeYields(newYieldToDistribute);
+//
 //        netYieldAccrued += newYieldToDistribute;
 //        uint256 actualChangeInUserYields = sumUserYields() - startingSumYields;
 //        yieldPrecisionLoss += newYieldToDistribute - actualChangeInUserYields;
@@ -139,42 +117,49 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
     /// Finish pending withdrawal for a user
     function concludePendingWithdrawal(uint256 user_idx) external {
-        user_idx = user_idx % USER_ADDRESSES.length;
-        address user = USER_ADDRESSES[user_idx];
+        address user = pickUpUser(user_idx);
+
         uint256 pendingWithdrawalAmount = blendedPool.pendingWithdrawals(user);
+
         vm.prank(OWNER_ADDRESS);
         blendedPool.concludePendingWithdrawal(user);
+
         netInflows -= pendingWithdrawalAmount;
         netDeposits -= pendingWithdrawalAmount;
     }
 
     /// Finish pending yield withdrawal for a user
     function concludePendingYield(uint256 user_idx) external {
-        user_idx = user_idx % USER_ADDRESSES.length;
-        address user = USER_ADDRESSES[user_idx];
+        address user = pickUpUser(user_idx);
         uint256 pendingYieldAmount = blendedPool.pendingYields(user);
         vm.prank(OWNER_ADDRESS);
         blendedPool.concludePendingYield(user);
         netYieldAccrued -= pendingYieldAmount;
     }
 
+    uint256 public netBorrowed;
+
     /// Borrow money from the deposits
     function borrow(uint256 amount) external {
-        amount = amount % blendedPool.totalBalance();
+        amount = bound(amount, 0, blendedPool.totalBalance());
+
         vm.prank(OWNER_ADDRESS);
         blendedPool.borrow(OWNER_ADDRESS, amount);
         netInflows -= amount;
         netBorrowed += amount;
     }
 
-    /// Repay netBorrowed money to the pool
+    /// Repay money to the pool
     function repay(uint256 amount) external {
-        if (netInflows == 0) {
-            return;
-        }
+        if (asset.balanceOf(OWNER_ADDRESS) == 0) return;
+
         amount = amount % asset.balanceOf(OWNER_ADDRESS);
+
+        vm.prank(OWNER_ADDRESS);
+        asset.approve(address(blendedPool), amount);
         vm.prank(OWNER_ADDRESS);
         blendedPool.repay(amount);
+
         netInflows += amount;
         if (amount > netBorrowed) {
             netBorrowed = 0;
@@ -183,7 +168,34 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         }
     }
 
+    /// Time warp simulation
+    function warp(uint256 timestamp) external {
+        timestamp = bound(timestamp, 500, type(uint80).max);
+        vm.warp(block.timestamp + timestamp);
+    }
+
     function users() public view returns (address[] memory) {
         return USER_ADDRESSES;
+    }
+
+    function sumUserYields() public view returns (uint sum){
+        sum = 0;
+        for (uint i = 0; i < USER_ADDRESSES.length; i++) {
+            sum += blendedPool.yields(USER_ADDRESSES[i]);
+        }
+    }
+
+    function pickUpUser(uint256 user_idx) public view returns (address) {
+        user_idx = user_idx % USER_ADDRESSES.length;
+        return USER_ADDRESSES[user_idx];
+    }
+
+    function pickUpUserFromBlendedPool(uint256 user_idx) public view returns (address) {
+        uint256 holderCount = blendedPool.getHoldersCount();
+        if (holderCount == 0) return address(0);
+
+        user_idx = bound(user_idx, 0, holderCount - 1);
+
+        return blendedPool.getHolderByIndex(user_idx);
     }
 }

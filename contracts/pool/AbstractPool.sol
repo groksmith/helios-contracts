@@ -91,7 +91,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice total deposited
     /// @param _holder to be checked
     function totalDepositsAmount(address _holder) public view returns (uint256) {
-        return depositsStorage.totalDepositsAmount(_holder);
+        return balanceOf(_holder);
     }
 
     /// @notice Used to transfer the investor's yields to him

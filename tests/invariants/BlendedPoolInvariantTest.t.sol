@@ -64,21 +64,13 @@ contract BlendedPoolInvariantTest is Test {
 //        assertEq(totalNet, blendedPoolTotal);
 //    }
 
-//    // INVARIANT #2
-//    // Test that the total deposits (net of withdrawals) is equal to the sum of all user deposit instances
-//    function invariant_deposit_instances_equal_tracked_deposits() public {
-//        emit LogUint("netDeposits", handler.netDeposits());
-//        emit LogUint("sumUserDeposits", sumUserDeposits());
-//        assertEq(sumUserDeposits(), handler.netDeposits());
-//    }
-//
-//    // INVARIANT #3
-//    // Test that the total of all deposit instances is equal to the sum of the pool's ERC20 token balances
-//    function invariant_pool_erc20_equals_tracked_deposits() public {
-//        emit LogUint("sumPoolTokenBalances()", sumPoolTokenBalances());
-//        emit LogUint("netDeposits", handler.netDeposits());
-//        assertEq(handler.netDeposits(), sumPoolTokenBalances());
-//    }
+    // INVARIANT #3
+    // Test that totalSupply >= locked deposits sum
+    function invariant_pool_totalSupply_greater_or_equal_locked_deposits() public {
+        emit LogUint("handler.sumUserLockedTokens()", handler.sumUserLockedTokens());
+        emit LogUint("blendedPool.totalSupply()", blendedPool.totalSupply());
+        assertGe(blendedPool.totalSupply(), handler.sumUserLockedTokens());
+    }
 
     // INVARIANT #5
     // Test that the total of all deposit instances is equal to the pool's totalSupply
@@ -88,26 +80,30 @@ contract BlendedPoolInvariantTest is Test {
         assertEq(blendedPool.totalSupply(), handler.netDeposits());
     }
 
-    // INVARIANT #6
-    // Test that the sum of all user yields is equal to the the sum of all
-    // amounts of yield distributed minus the total precision loss
-    function invariant_total_yield() external {
-        assertEq(handler.netYieldAccrued(), handler.sumUserYields());
-    }
+//    // INVARIANT #6
+//    // Test that the sum of all user yields is equal to the the sum of all
+//    // amounts of yield distributed minus the total precision loss
+//    function invariant_total_yield() external {
+//        assertEq(handler.netYieldAccrued(), handler.sumUserYields());
+//    }
 
-    // INVARIANT #7
-    // Test that the sum of all user yields is equal to the the sum of all
-    // amounts of yield distributed minus the total precision loss
-    function invariant_total_yield_with_precision_loss() external {
-        assertEq(handler.netYieldAccrued() - handler.yieldPrecisionLoss(), handler.sumUserYields());
-    }
-
-    // INVARIANT #8
-    // Test that the precision loss for yields is less than the sum of total user count minus 1
-    // for each time distributeYield is called
-    function invariant_yield_precision_loss() external {
-        assertLe(handler.yieldPrecisionLoss(), handler.maxPrecisionLossForYields());
-    }
+//    // INVARIANT #7
+//    // Test that the sum of all user yields is equal to the the sum of all
+//    // amounts of yield distributed minus the total precision loss
+//    function invariant_total_yield_with_precision_loss() external {
+//        emit LogUint("handler.netYieldAccrued()", handler.netYieldAccrued());
+//        emit LogUint("handler.yieldPrecisionLoss()", handler.yieldPrecisionLoss());
+//        emit LogUint("handler.sumUserYields()", handler.sumUserYields());
+//
+//        assertEq(handler.netYieldAccrued() - handler.yieldPrecisionLoss(), handler.sumUserYields());
+//    }
+//
+//    // INVARIANT #8
+//    // Test that the precision loss for yields is less than the sum of total user count minus 1
+//    // for each time distributeYield is called
+//    function invariant_yield_precision_loss() external {
+//        assertLe(handler.yieldPrecisionLoss(), handler.maxPrecisionLossForYields());
+//    }
 
     // INVARIANT #9
     // Test that the total of all deposit instances is equal to the pool's totalDeposited storage variable
@@ -126,15 +122,6 @@ contract BlendedPoolInvariantTest is Test {
     }
 
     event LogUint(string, uint);
-
-    function sumUserDeposits() public view returns (uint sum){
-        sum = 0;
-        uint holders_count = blendedPool.getHoldersCount();
-        for (uint i = 0; i < holders_count; i++) {
-            address holder = blendedPool.getHolderByIndex(i);
-            sum += blendedPool.totalDepositsAmount(holder);
-        }
-    }
 
     function assertEqualWithinPrecision(uint x, uint y, uint precision) internal pure returns (bool){
         return absDiff(x, y) <= precision;

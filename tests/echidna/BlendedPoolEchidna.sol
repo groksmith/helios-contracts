@@ -143,7 +143,7 @@ contract BlendedPoolEchidna {
         netDeposits -= amount;
     }
 
-    /// Withdraw the first N deposits for a user
+//    / Withdraw the first N deposits for a user
 //    function userWithdrawFirstNumFull(uint num_deposits, uint user_idx) external {
 //        user_idx = user_idx % USER_ADDRESSES.length;
 //        address user = USER_ADDRESSES[user_idx];
@@ -336,7 +336,7 @@ contract BlendedPoolEchidna {
         uint holders_count = blendedPool.getHoldersCount();
         for (uint i = 0; i < holders_count; i++) {
             address holder = blendedPool.getHolderByIndex(i);
-            sum += blendedPool.totalDepositsAmount(holder);
+            sum += blendedPool.balanceOf(holder);
         }
     }
 

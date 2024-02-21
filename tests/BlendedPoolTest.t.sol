@@ -129,18 +129,18 @@ contract BlendedPoolTest is Test, FixtureContract {
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
     function test_distribute_yields_and_withdraw(address user1, address user2) external {
-        createInvestorAndMintAsset(user1, 1000);
-        createInvestorAndMintAsset(user2, 1000);
+        uint256 user1Deposit = 100;
+        uint256 user2Deposit = 1000;
+        createInvestorAndMintAsset(user1, user1Deposit);
+        createInvestorAndMintAsset(user2, user2Deposit);
         vm.assume(user1 != user2);
 
         //firstly the users need to deposit before withdrawing
-        uint256 user1Deposit = 100;
         vm.startPrank(user1);
         asset.approve(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
         vm.stopPrank();
 
-        uint256 user2Deposit = 1000;
         vm.startPrank(user2);
         asset.approve(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
@@ -159,20 +159,12 @@ contract BlendedPoolTest is Test, FixtureContract {
         uint256 user1BalanceBefore = asset.balanceOf(user1);
         vm.prank(user1);
         blendedPool.withdrawYield();
-        assertApproxEqAbs(
-            asset.balanceOf(user1) - user1BalanceBefore,
-            90,
-            1
-        );
+        assertEq(asset.balanceOf(user1) - user1BalanceBefore, 90);
 
         uint256 user2BalanceBefore = asset.balanceOf(user2);
         vm.prank(user2);
         blendedPool.withdrawYield();
-        assertApproxEqAbs(
-            asset.balanceOf(user2) - user2BalanceBefore,
-            910,
-            1
-        );
+        assertEq(asset.balanceOf(user2) - user2BalanceBefore, 909);
 
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);

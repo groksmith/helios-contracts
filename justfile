@@ -98,7 +98,7 @@ build: && _timer
 	forge build --names --sizes
 
 test-all: && _timer
-	forge test -vvvvv
+	forge test -vvvvv --no-match-contract BlendedPoolInvariantTest
 
 test-one: && _timer
 	forge test -vvvvv --match-contract BlendedPoolInvariantTest

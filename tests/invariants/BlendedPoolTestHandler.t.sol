@@ -79,6 +79,8 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
         uint256 user_current_yield = blendedPool.yields(user);
 
+        if (user_current_yield == 0) return;
+
         vm.prank(user);
         if (blendedPool.withdrawYield()) {
             // withdrawn
@@ -94,26 +96,24 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
     uint256 public yieldPrecisionLoss;
     uint256 public maxPrecisionLossForYields;
-//
-//    /// Distribute yields
-//    function distributeYield() external {
-//        if (netInflows == 0) return;
-//
-//        uint256 startingSumYields = sumUserYields();
-//        uint256 newYieldToDistribute = 0.1e18;
-//        assetElevated.mint(address(blendedPool), newYieldToDistribute);
-//
-//        vm.prank(OWNER_ADDRESS);
-//        blendedPool.distributeYields(newYieldToDistribute);
-//
-//        netYieldAccrued += newYieldToDistribute;
-//        uint256 actualChangeInUserYields = sumUserYields() - startingSumYields;
-//        yieldPrecisionLoss += newYieldToDistribute - actualChangeInUserYields;
-//
-//        // The maximum precision loss for this distribution is the total number of depositors minus 1
-//        // example: if there are 50 depositors and the distribution is 100049, there is a precision loss of 49
-//        maxPrecisionLossForYields += blendedPool.getHoldersCount() - 1;
-//    }
+
+    /// Distribute yields
+    function distributeYield() external {
+        uint256 startingSumYields = sumUserYields();
+        uint256 newYieldToDistribute = 0.1e18;
+
+        vm.prank(OWNER_ADDRESS);
+        blendedPool.distributeYields(newYieldToDistribute);
+
+        netYieldAccrued += newYieldToDistribute;
+        uint256 actualChangeInUserYields = sumUserYields() - startingSumYields;
+        yieldPrecisionLoss += newYieldToDistribute - actualChangeInUserYields;
+
+        // The maximum precision loss for this distribution is the total number of depositors minus 1
+        // example: if there are 50 depositors and the distribution is 100049, there is a precision loss of 49
+        if (blendedPool.getHoldersCount() > 0)
+            maxPrecisionLossForYields += blendedPool.getHoldersCount() - 1;
+    }
 
     /// Finish pending withdrawal for a user
     function concludePendingWithdrawal(uint256 user_idx) external {
@@ -151,12 +151,13 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
     /// Repay money to the pool
     function repay(uint256 amount) external {
-        if (asset.balanceOf(OWNER_ADDRESS) == 0) return;
+        amount = bound(amount, 1, type(uint80).max);
 
-        amount = amount % asset.balanceOf(OWNER_ADDRESS);
+        assetElevated.mint(OWNER_ADDRESS, amount);
 
         vm.prank(OWNER_ADDRESS);
         asset.approve(address(blendedPool), amount);
+
         vm.prank(OWNER_ADDRESS);
         blendedPool.repay(amount);
 
@@ -182,6 +183,14 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         sum = 0;
         for (uint i = 0; i < USER_ADDRESSES.length; i++) {
             sum += blendedPool.yields(USER_ADDRESSES[i]);
+        }
+    }
+
+    function sumUserLockedTokens() public view returns (uint sum){
+        sum = 0;
+        for (uint i = 0; i < blendedPool.getHoldersCount(); i++) {
+            address holder = blendedPool.getHolderByIndex(i);
+            sum += blendedPool.balanceOf(holder) - blendedPool.unlockedToWithdraw(holder);
         }
     }
 

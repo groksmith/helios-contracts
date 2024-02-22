@@ -31,8 +31,14 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         asset = ERC20(assetElevated);
     }
 
-    uint256 public netInflows;
-    uint256 public netDeposits;
+    uint256 public totalDeposited;
+    uint256 public totalWithdrawn;
+    uint256 public totalYieldAccrued;
+    uint256 public totalYieldWithdrawn;
+    uint256 public totalYieldPrecisionLoss;
+    uint256 public totalBorrowed;
+    uint256 public totalRepaid;
+    uint256 public maxPrecisionLossForYields;
 
     /// Make a deposit for a user
     function deposit(uint256 amount, uint256 user_idx) public virtual {
@@ -49,8 +55,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(user);
         blendedPool.deposit(amount);
 
-        netInflows += amount;
-        netDeposits += amount;
+        totalDeposited += amount;
     }
 
     /// Withdraw deposit for a user
@@ -67,17 +72,14 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(user);
         blendedPool.withdraw(unlocked);
 
-        netInflows -= amount;
-        netDeposits -= amount;
+        totalWithdrawn += amount;
     }
-
-    uint256 public netYieldAccrued;
 
     /// Withdraw yield for a user
     function withdrawYield(uint256 user_idx) external {
         address user = pickUpUser(user_idx);
 
-        if (netYieldAccrued == 0) return;
+        if (totalYieldAccrued == 0) return;
 
         uint256 user_current_yield = blendedPool.yields(user);
 
@@ -86,7 +88,8 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(user);
         if (blendedPool.withdrawYield()) {
             // withdrawn
-            netYieldAccrued -= user_current_yield;
+            totalYieldAccrued -= user_current_yield;
+            totalYieldWithdrawn += user_current_yield;
         } else {
             // added to pending yields
         }
@@ -96,39 +99,27 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     HANDLERS - Admin Workflow
     */
 
-    uint256 public yieldPrecisionLoss;
-    uint256 public maxPrecisionLossForYields;
-
     /// Distribute yields
     function distributeYield() external {
         if (blendedPool.getHoldersCount() == 0) return;
 
         uint256 startingSumYields = sumUserYields();
 
-        console.log("startingSumYields %s", startingSumYields);
-
         uint256 newYieldToDistribute = 0.1e18;
 
         vm.prank(OWNER_ADDRESS);
         blendedPool.distributeYields(newYieldToDistribute);
 
-        netYieldAccrued += newYieldToDistribute;
-
-        console.log("netYieldAccrued %s", netYieldAccrued);
+        totalYieldAccrued += newYieldToDistribute;
 
         uint256 actualChangeInUserYields = sumUserYields() - startingSumYields;
 
-        console.log("actualChangeInUserYields %s", actualChangeInUserYields);
-        yieldPrecisionLoss += newYieldToDistribute - actualChangeInUserYields;
-
-        console.log("yieldPrecisionLoss %s", yieldPrecisionLoss);
+        totalYieldPrecisionLoss += newYieldToDistribute - actualChangeInUserYields;
 
         // The maximum precision loss for this distribution is the total number of depositors minus 1
         // example: if there are 50 depositors and the distribution is 100049, there is a precision loss of 49
         if (blendedPool.getHoldersCount() > 0)
             maxPrecisionLossForYields += blendedPool.getHoldersCount() - 1;
-
-        console.log("maxPrecisionLossForYields %s", maxPrecisionLossForYields);
     }
 
     /// Finish pending withdrawal for a user
@@ -140,8 +131,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(OWNER_ADDRESS);
         blendedPool.concludePendingWithdrawal(user);
 
-        netInflows -= pendingWithdrawalAmount;
-        netDeposits -= pendingWithdrawalAmount;
+        totalWithdrawn += pendingWithdrawalAmount;
     }
 
     /// Finish pending yield withdrawal for a user
@@ -150,10 +140,10 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         uint256 pendingYieldAmount = blendedPool.pendingYields(user);
         vm.prank(OWNER_ADDRESS);
         blendedPool.concludePendingYield(user);
-        netYieldAccrued -= pendingYieldAmount;
-    }
 
-    uint256 public netBorrowed;
+        totalYieldAccrued -= pendingYieldAmount;
+        totalYieldWithdrawn += pendingYieldAmount;
+    }
 
     /// Borrow money from the deposits
     function borrow(uint256 amount) external {
@@ -161,8 +151,8 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
         vm.prank(OWNER_ADDRESS);
         blendedPool.borrow(OWNER_ADDRESS, amount);
-        netInflows -= amount;
-        netBorrowed += amount;
+
+        totalBorrowed += amount;
     }
 
     /// Repay money to the pool
@@ -177,12 +167,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(OWNER_ADDRESS);
         blendedPool.repay(amount);
 
-        netInflows += amount;
-        if (amount > netBorrowed) {
-            netBorrowed = 0;
-        } else {
-            netBorrowed -= amount;
-        }
+        totalRepaid += amount;
     }
 
     /// Time warp simulation
@@ -200,6 +185,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         for (uint i = 0; i < blendedPool.getHoldersCount(); i++) {
             address holder = blendedPool.getHolderByIndex(i);
             sum += blendedPool.yields(holder);
+            sum += blendedPool.pendingYields(holder);
         }
     }
 

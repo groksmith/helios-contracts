@@ -52,60 +52,47 @@ contract BlendedPoolInvariantTest is Test {
 
     // Test that the holders count equal depositors count
     function invariant_users_count_greater_or_equal_deposits_count() public {
-        emit LogUint("Test users count", handler.users().length);
-        emit LogUint("Holders count ", blendedPool.getHoldersCount());
         assertGe(handler.users().length, blendedPool.getHoldersCount());
     }
 
-//    // INVARIANT #1
-//    // Test that the pool's token balance is equal to:
-//    //  + total deposits (net of withdrawals)
-//    //  - the sum of withdrawals
-//    //  + total of all yield transferred in to the locker
-//    //  + total borrowed (net of repayments)
-//    function invariant_pool_balance_equals_tracked_deposits() external {
-//        uint256 totalNet = handler.netInflows() + handler.netYieldAccrued() - handler.netBorrowed();
-//        uint256 blendedPoolTotal = asset.balanceOf(address(blendedPool)) + blendedPool.principalOut();
-//
-//        emit LogUint("totalNet", totalNet);
-//        emit LogUint("blendedPoolTotal", blendedPoolTotal);
-//
-//        assertEq(totalNet, blendedPoolTotal);
-//    }
+    // INVARIANT #1
+    // Test that the pool's token balance is equal to:
+    //  + total deposits
+    //  - total withdrawals
+    //  + total repaid
+    //  - total borrowed
+    function invariant_pool_balance_equals_tracked_deposits() external {
+        uint256 inBalance = handler.totalDeposited() + handler.totalRepaid();
+        uint256 outBalance = handler.totalBorrowed() + handler.totalWithdrawn() + handler.totalYieldWithdrawn();
+        uint256 blendedPoolTotalAssets = asset.balanceOf(address(blendedPool));
+
+        assertEq(inBalance - outBalance, blendedPoolTotalAssets);
+    }
 
     // Test that totalSupply >= locked deposits sum
     function invariant_pool_totalSupply_greater_or_equal_locked_deposits() public {
-        emit LogUint("handler.sumUserLockedTokens()", handler.sumUserLockedTokens());
-        emit LogUint("blendedPool.totalSupply()", blendedPool.totalSupply());
         assertGe(blendedPool.totalSupply(), handler.sumUserLockedTokens());
     }
 
-    // Test that the total of all deposit instances is equal to the pool's totalSupply
+    // Test that the total of all deposits is equal to the pool's totalSupply
     function invariant_totalSupply_equals_tracked_deposits() public {
-        emit LogUint("blendedPool.totalSupply()", blendedPool.totalSupply());
-        emit LogUint("netDeposits", handler.netDeposits());
-        assertEq(blendedPool.totalSupply(), handler.netDeposits());
+        assertEq(blendedPool.totalSupply(), handler.totalDeposited() - handler.totalWithdrawn());
     }
 
-    // Test that the total of all deposit instances is equal to the pool's totalDeposited storage variable
-    function invariant_totalDeposited_greater_or_equals_tracked_deposits() public {
-        emit LogUint("blendedPool.totalDeposited()", blendedPool.totalDeposited());
-        emit LogUint("netDeposits", handler.netDeposits());
-        assertGe(blendedPool.totalDeposited(), handler.netDeposits());
+    // Test that the total of all deposits is equal to the pool's totalDeposited storage variable
+    function invariant_totalDeposited_equals_tracked_deposits() public {
+        assertGe(blendedPool.totalDeposited(), handler.totalDeposited());
     }
 
-//    // Test that the sum of all user yields is equal to the the sum of all
-//    // amounts of yield distributed minus the total precision loss
-//    function invariant_total_yield() external {
-//        assertEq(handler.netYieldAccrued() - handler.yieldPrecisionLoss(), handler.sumUserYields());
-//    }
+    // Test that the sum of all user yields is equal to the the sum of all
+    // amounts of yield distributed minus the total precision loss
+    function invariant_total_yield() external {
+        assertEq(handler.totalYieldAccrued() - handler.totalYieldPrecisionLoss(), handler.sumUserYields());
+    }
 
     // Test that yieldPrecisionLoss <= maxPrecisionLossForYields
     function invariant_yield_precision_loss_less_or_equal_max_precision_loss() external {
-        emit LogUint("handler.yieldPrecisionLoss()", handler.yieldPrecisionLoss());
-        emit LogUint("handler.maxPrecisionLossForYields()", handler.maxPrecisionLossForYields());
-
-        assertLe(handler.yieldPrecisionLoss(), handler.maxPrecisionLossForYields());
+        assertLe(handler.totalYieldPrecisionLoss(), handler.maxPrecisionLossForYields());
     }
 
     event LogUint(string, uint);

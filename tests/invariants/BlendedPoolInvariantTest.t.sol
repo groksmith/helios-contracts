@@ -1,6 +1,8 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
+
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 import {Pool} from "../../contracts/pool/Pool.sol";
@@ -48,6 +50,13 @@ contract BlendedPoolInvariantTest is Test {
         targetContract(address(handler));
     }
 
+    // Test that the holders count equal depositors count
+    function invariant_users_count_greater_or_equal_deposits_count() public {
+        emit LogUint("Test users count", handler.users().length);
+        emit LogUint("Holders count ", blendedPool.getHoldersCount());
+        assertGe(handler.users().length, blendedPool.getHoldersCount());
+    }
+
 //    // INVARIANT #1
 //    // Test that the pool's token balance is equal to:
 //    //  + total deposits (net of withdrawals)
@@ -55,7 +64,7 @@ contract BlendedPoolInvariantTest is Test {
 //    //  + total of all yield transferred in to the locker
 //    //  + total borrowed (net of repayments)
 //    function invariant_pool_balance_equals_tracked_deposits() external {
-//        uint256 totalNet = handler.netInflows() + handler.netYieldAccrued() + handler.netBorrowed();
+//        uint256 totalNet = handler.netInflows() + handler.netYieldAccrued() - handler.netBorrowed();
 //        uint256 blendedPoolTotal = asset.balanceOf(address(blendedPool)) + blendedPool.principalOut();
 //
 //        emit LogUint("totalNet", totalNet);
@@ -64,7 +73,6 @@ contract BlendedPoolInvariantTest is Test {
 //        assertEq(totalNet, blendedPoolTotal);
 //    }
 
-    // INVARIANT #3
     // Test that totalSupply >= locked deposits sum
     function invariant_pool_totalSupply_greater_or_equal_locked_deposits() public {
         emit LogUint("handler.sumUserLockedTokens()", handler.sumUserLockedTokens());
@@ -72,7 +80,6 @@ contract BlendedPoolInvariantTest is Test {
         assertGe(blendedPool.totalSupply(), handler.sumUserLockedTokens());
     }
 
-    // INVARIANT #5
     // Test that the total of all deposit instances is equal to the pool's totalSupply
     function invariant_totalSupply_equals_tracked_deposits() public {
         emit LogUint("blendedPool.totalSupply()", blendedPool.totalSupply());
@@ -80,32 +87,6 @@ contract BlendedPoolInvariantTest is Test {
         assertEq(blendedPool.totalSupply(), handler.netDeposits());
     }
 
-//    // INVARIANT #6
-//    // Test that the sum of all user yields is equal to the the sum of all
-//    // amounts of yield distributed minus the total precision loss
-//    function invariant_total_yield() external {
-//        assertEq(handler.netYieldAccrued(), handler.sumUserYields());
-//    }
-
-//    // INVARIANT #7
-//    // Test that the sum of all user yields is equal to the the sum of all
-//    // amounts of yield distributed minus the total precision loss
-//    function invariant_total_yield_with_precision_loss() external {
-//        emit LogUint("handler.netYieldAccrued()", handler.netYieldAccrued());
-//        emit LogUint("handler.yieldPrecisionLoss()", handler.yieldPrecisionLoss());
-//        emit LogUint("handler.sumUserYields()", handler.sumUserYields());
-//
-//        assertEq(handler.netYieldAccrued() - handler.yieldPrecisionLoss(), handler.sumUserYields());
-//    }
-//
-//    // INVARIANT #8
-//    // Test that the precision loss for yields is less than the sum of total user count minus 1
-//    // for each time distributeYield is called
-//    function invariant_yield_precision_loss() external {
-//        assertLe(handler.yieldPrecisionLoss(), handler.maxPrecisionLossForYields());
-//    }
-
-    // INVARIANT #9
     // Test that the total of all deposit instances is equal to the pool's totalDeposited storage variable
     function invariant_totalDeposited_greater_or_equals_tracked_deposits() public {
         emit LogUint("blendedPool.totalDeposited()", blendedPool.totalDeposited());
@@ -113,12 +94,18 @@ contract BlendedPoolInvariantTest is Test {
         assertGe(blendedPool.totalDeposited(), handler.netDeposits());
     }
 
-    // INVARIANT #10
-    // Test that the holders count equal depositors count
-    function invariant_users_count_greater_or_equal_deposits_count() public {
-        emit LogUint("Test users count", handler.users().length);
-        emit LogUint("Holders count ", blendedPool.getHoldersCount());
-        assertGe(handler.users().length, blendedPool.getHoldersCount());
+//    // Test that the sum of all user yields is equal to the the sum of all
+//    // amounts of yield distributed minus the total precision loss
+//    function invariant_total_yield() external {
+//        assertEq(handler.netYieldAccrued() - handler.yieldPrecisionLoss(), handler.sumUserYields());
+//    }
+
+    // Test that yieldPrecisionLoss <= maxPrecisionLossForYields
+    function invariant_yield_precision_loss_less_or_equal_max_precision_loss() external {
+        emit LogUint("handler.yieldPrecisionLoss()", handler.yieldPrecisionLoss());
+        emit LogUint("handler.maxPrecisionLossForYields()", handler.maxPrecisionLossForYields());
+
+        assertLe(handler.yieldPrecisionLoss(), handler.maxPrecisionLossForYields());
     }
 
     event LogUint(string, uint);

@@ -1,5 +1,7 @@
 pragma solidity 0.8.20;
 
+import "forge-std/console.sol";
+
 import {CommonBase} from "forge-std/Base.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
@@ -99,20 +101,34 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
     /// Distribute yields
     function distributeYield() external {
+        if (blendedPool.getHoldersCount() == 0) return;
+
         uint256 startingSumYields = sumUserYields();
+
+        console.log("startingSumYields %s", startingSumYields);
+
         uint256 newYieldToDistribute = 0.1e18;
 
         vm.prank(OWNER_ADDRESS);
         blendedPool.distributeYields(newYieldToDistribute);
 
         netYieldAccrued += newYieldToDistribute;
+
+        console.log("netYieldAccrued %s", netYieldAccrued);
+
         uint256 actualChangeInUserYields = sumUserYields() - startingSumYields;
+
+        console.log("actualChangeInUserYields %s", actualChangeInUserYields);
         yieldPrecisionLoss += newYieldToDistribute - actualChangeInUserYields;
+
+        console.log("yieldPrecisionLoss %s", yieldPrecisionLoss);
 
         // The maximum precision loss for this distribution is the total number of depositors minus 1
         // example: if there are 50 depositors and the distribution is 100049, there is a precision loss of 49
         if (blendedPool.getHoldersCount() > 0)
             maxPrecisionLossForYields += blendedPool.getHoldersCount() - 1;
+
+        console.log("maxPrecisionLossForYields %s", maxPrecisionLossForYields);
     }
 
     /// Finish pending withdrawal for a user
@@ -181,8 +197,9 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
     function sumUserYields() public view returns (uint sum){
         sum = 0;
-        for (uint i = 0; i < USER_ADDRESSES.length; i++) {
-            sum += blendedPool.yields(USER_ADDRESSES[i]);
+        for (uint i = 0; i < blendedPool.getHoldersCount(); i++) {
+            address holder = blendedPool.getHolderByIndex(i);
+            sum += blendedPool.yields(holder);
         }
     }
 

@@ -25,7 +25,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     PoolLibrary.DepositsStorage private depositsStorage;
 
-
     struct PoolInfo {
         uint256 lockupPeriod;
         uint256 minInvestmentAmount;

@@ -67,7 +67,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    function test_when_set_pool_factory_zero(address user) public {
+    function test_when_set_pool_factory_zero() public {
         vm.startPrank(OWNER_ADDRESS);
         vm.expectRevert(bytes("HG:ZERO_POOL_FACTORY"));
         heliosGlobals.setPoolFactory(address(0));

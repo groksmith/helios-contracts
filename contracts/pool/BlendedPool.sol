@@ -22,6 +22,19 @@ contract BlendedPool is AbstractPool {
         _depositLogic(_amount, msg.sender);
     }
 
+    /// @notice withdraws the caller's liquidity assets
+    /// @param _amount to be withdrawn
+    function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
+        require(balanceOf(msg.sender) >= _amount, "BP:INSUFFICIENT_FUNDS");
+        require(unlockedToWithdraw(msg.sender) >= _amount, "BP:TOKENS_LOCKED");
+
+        _burn(msg.sender, _amount);
+        _transferFunds(msg.sender, _amount);
+
+        _emitBalanceUpdatedEvent();
+        emit Withdrawal(msg.sender, _amount);
+    }
+
     /// @notice Only called by a RegPool when it doesn't have enough Assets
     /// @param _amountRequested the amount requested for compensation
     function requestAssets(uint256 _amountRequested) external nonReentrant onlyPool {

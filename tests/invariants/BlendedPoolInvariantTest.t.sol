@@ -5,7 +5,6 @@ import "forge-std/console.sol";
 
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
-import {Pool} from "../../contracts/pool/Pool.sol";
 import {PoolLibrary} from "../../contracts/library/PoolLibrary.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 
@@ -55,10 +54,10 @@ contract BlendedPoolInvariantTest is Test {
         assertGe(handler.users().length, blendedPool.getHoldersCount());
     }
 
-    // INVARIANT #1
     // Test that the pool's token balance is equal to:
     //  + total deposits
     //  - total withdrawals
+    //  - total yield withdrawals
     //  + total repaid
     //  - total borrowed
     function invariant_pool_balance_equals_tracked_deposits() external {
@@ -93,19 +92,5 @@ contract BlendedPoolInvariantTest is Test {
     // Test that yieldPrecisionLoss <= maxPrecisionLossForYields
     function invariant_yield_precision_loss_less_or_equal_max_precision_loss() external {
         assertLe(handler.totalYieldPrecisionLoss(), handler.maxPrecisionLossForYields());
-    }
-
-    event LogUint(string, uint);
-
-    function assertEqualWithinPrecision(uint x, uint y, uint precision) internal pure returns (bool){
-        return absDiff(x, y) <= precision;
-    }
-
-    function absDiff(uint x, uint y) internal pure returns (uint){
-        if (x > y) {
-            return x - y;
-        } else {
-            return y - x;
-        }
     }
 }

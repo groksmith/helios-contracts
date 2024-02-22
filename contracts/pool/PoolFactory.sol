@@ -70,7 +70,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
             _minInvestmentAmount
         );
 
-        require(blendedPoolAddress != address(0), "PF:INVALID_BLENDED_POOL");
         blendedPool = blendedPoolAddress;
 
         emit BlendedPoolCreated(_asset, blendedPoolAddress, msg.sender);

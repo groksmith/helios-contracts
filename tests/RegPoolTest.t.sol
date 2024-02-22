@@ -19,9 +19,20 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
-    function testFuzz_deposit_success(address user1, address user2) external {
-        user1 = createInvestorAndMintAsset(user1, 1000);
-        user2 = createInvestorAndMintAsset(user2, 1000);
+    function testFuzz_deposit_success(address user1, address user2, uint256 amount1, uint256 amount2) external {
+        uint256 user1Deposit = bound(
+            amount1,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 3);
+
+        uint256 user2Deposit = bound(
+            amount2,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 3);
+
+        user1 = createInvestorAndMintAsset(user1, user1Deposit);
+        user2 = createInvestorAndMintAsset(user2, user2Deposit);
+
         vm.assume(user1 != user2);
 
         vm.startPrank(user1);
@@ -31,7 +42,6 @@ contract RegPoolTest is FixtureContract {
         assertEq(regPool1.totalDeposited(), 0);
         assertEq(regPool1.getHoldersCount(), 0, "wrong holder number");
 
-        uint256 user1Deposit = 100;
         asset.approve(address(regPool1), user1Deposit);
         regPool1.deposit(user1Deposit);
 
@@ -45,7 +55,6 @@ contract RegPoolTest is FixtureContract {
         //now let's test for user2
         vm.startPrank(user2);
         assertEq(regPool1.balanceOf(user2), 0, "user2 shouldn't have > 0 atm");
-        uint256 user2Deposit = 101;
 
         asset.approve(address(regPool1), user2Deposit);
         regPool1.deposit(user2Deposit);
@@ -61,13 +70,13 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test attempt to deposit below minimum
     function testFuzz_deposit_failure(address user1, address user2) external {
-        uint256 depositAmountMax = 100000;
+        uint256 depositAmountMax = regPool1.getPoolInfo().investmentPoolSize;
+        uint256 depositAmountBelowMin = regPool1.getPoolInfo().minInvestmentAmount - 1;
 
         vm.startPrank(user1);
         createInvestorAndMintAsset(user1, depositAmountMax + 1);
         asset.approve(address(regPool1), depositAmountMax + 1);
 
-        uint256 depositAmountBelowMin = 99;
         vm.expectRevert("P:DEP_AMT_BELOW_MIN");
         regPool1.deposit(depositAmountBelowMin);
 
@@ -87,7 +96,10 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test attempt to withdraw, happy paths
     function testFuzz_withdraw(address user, uint256 amount) external {
-        uint256 amountBounded = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
+        uint256 amountBounded = bound(
+            amount, regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
         user = createInvestorAndMintAsset(user, amountBounded);
 
         vm.startPrank(user);
@@ -110,7 +122,11 @@ contract RegPoolTest is FixtureContract {
     function testFuzz_withdraw_with_request_from_blended_pool(address regularPoolInvestor, address blendedPoolInvestor, uint256 amount) external {
         vm.assume(regularPoolInvestor != blendedPoolInvestor);
 
-        uint256 regularPoolInvestment = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
+        uint256 regularPoolInvestment = bound(
+            amount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
         uint256 blendedPoolInvestment = regularPoolInvestment + 1000;
 
         regularPoolInvestor = createInvestorAndMintAsset(regularPoolInvestor, regularPoolInvestment);
@@ -154,7 +170,11 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test attempt to withdraw with admin approval
     function testFuzz_withdraw_with_pending(address regularPoolInvestor, uint256 amount) external {
-        uint256 regularPoolInvestment = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
+        uint256 regularPoolInvestment = bound(
+            amount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
         uint256 currentTime = block.timestamp;
 
         regularPoolInvestor = createInvestorAndMintAsset(regularPoolInvestor, regularPoolInvestment);
@@ -199,7 +219,11 @@ contract RegPoolTest is FixtureContract {
 
     /// @notice Test attempt to withdraw, unhappy paths
     function testFuzz_withdraw_failed(address user, uint256 amount) external {
-        uint256 amountBounded = bound(amount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize);
+        uint256 amountBounded = bound(
+            amount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
         user = createInvestorAndMintAsset(user, amountBounded);
 
         vm.startPrank(user);
@@ -223,11 +247,15 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test locked/unlocked deposits amounts
-    function testFuzz_unlocked_to_withdraw(address user) external {
-        user = createInvestorAndMintAsset(user, 1000);
+    function testFuzz_unlocked_to_withdraw(address user, uint256 amount) external {
+        uint256 depositAmount = bound(
+            amount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 3);
+
+        user = createInvestorAndMintAsset(user, 2 * depositAmount);
 
         vm.startPrank(user);
-        uint256 depositAmount = 150;
 
         asset.approve(address(regPool1), depositAmount);
         regPool1.deposit(depositAmount);
@@ -235,7 +263,7 @@ contract RegPoolTest is FixtureContract {
         uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
         assertEq(unlockedFundsAmount, 0);
 
-        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 10);
+        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 1);
 
         asset.approve(address(regPool1), depositAmount);
         regPool1.deposit(depositAmount);
@@ -243,7 +271,7 @@ contract RegPoolTest is FixtureContract {
         unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
         assertEq(unlockedFundsAmount, depositAmount);
 
-        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 10);
+        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 1);
         unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
         assertEq(unlockedFundsAmount, 2 * depositAmount);
     }
@@ -252,8 +280,12 @@ contract RegPoolTest is FixtureContract {
     function testFuzz_repay(address investor, uint256 depositAmount, uint256 yieldAmount) external {
         vm.startPrank(investor);
 
-        depositAmount = uint64(bound(depositAmount, regPool1.getPoolInfo().minInvestmentAmount, regPool1.getPoolInfo().investmentPoolSize));
-        yieldAmount = uint64(bound(yieldAmount, 0, asset.totalSupply()));
+        depositAmount = bound(
+            depositAmount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
+        yieldAmount = bound(yieldAmount, 0, asset.totalSupply());
 
         createInvestorAndMintAsset(investor, depositAmount);
 

@@ -26,9 +26,19 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
-    function test_deposit_success(address user1, address user2) external {
-        createInvestorAndMintAsset(user1, 1000);
-        createInvestorAndMintAsset(user2, 1000);
+    function testFuzz_deposit_success(address user1, address user2, uint256 amount1, uint256 amount2) external {
+        uint256 user1Deposit = bound(
+            amount1,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        uint256 user2Deposit = bound(
+            amount2,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        createInvestorAndMintAsset(user1, user1Deposit);
+        createInvestorAndMintAsset(user2, user2Deposit);
         vm.assume(user1 != user2);
 
         vm.startPrank(user1);
@@ -38,7 +48,6 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(blendedPool.totalBalance(), 0);
         assertEq(blendedPool.totalDeposited(), 0);
 
-        uint256 user1Deposit = 100;
         asset.approve(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
 
@@ -54,8 +63,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //now let's test for user2
         vm.startPrank(user2);
-        assertEq(blendedPool.balanceOf(user2), 0, "user2 shouldn't have >0 atm");
-        uint256 user2Deposit = 101;
+        assertEq(blendedPool.balanceOf(user2), 0, "user2 shouldn't have > 0 atm");
 
         asset.approve(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
@@ -73,29 +81,38 @@ contract BlendedPoolTest is Test, FixtureContract {
     /// @notice Test attempt to deposit below minimum
     function test_deposit_failure(address user) external {
         vm.startPrank(user);
+
         uint256 depositAmountBelowMin = 1;
         vm.expectRevert("P:DEP_AMT_BELOW_MIN");
         blendedPool.deposit(depositAmountBelowMin);
+
+        vm.expectRevert("BP:ZERO_AMOUNT");
+        blendedPool.deposit(0);
+        vm.stopPrank();
     }
 
     /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function test_withdraw(address user) external {
-        createInvestorAndMintAsset(user, 1000);
+    function testFuzz_withdraw(address user, uint256 amount) external {
+        uint256 depositAmount = bound(amount, blendedPool.getPoolInfo().minInvestmentAmount, type(uint80).max);
+
+        createInvestorAndMintAsset(user, depositAmount);
 
         vm.startPrank(user);
-        uint256 depositAmount = 150;
-        uint256 currentTime = block.timestamp;
 
         asset.approve(address(blendedPool), depositAmount);
         //the user can withdraw the sum he has deposited earlier
         blendedPool.deposit(depositAmount);
 
         //attempt to withdraw too early fails
-        vm.expectRevert("P:TOKENS_LOCKED");
+        vm.expectRevert("BP:TOKENS_LOCKED");
         blendedPool.withdraw(depositAmount);
 
-        vm.warp(currentTime + 1000);
+        vm.warp(blendedPool.getPoolInfo().lockupPeriod + 1);
         blendedPool.withdraw(depositAmount);
+
+        //attempt to withdraw too early fails
+        vm.expectRevert("BP:INSUFFICIENT_FUNDS");
+        blendedPool.withdraw(depositAmount + 1);
 
         vm.stopPrank();
     }

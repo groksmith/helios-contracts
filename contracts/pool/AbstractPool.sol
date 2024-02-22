@@ -68,18 +68,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _amount to deposit
     function deposit(uint256 _amount) external virtual;
 
-    /// @notice withdraws the caller's liquidity assets
+    /// @notice withdraws the caller's assets
     /// @param _amount to be withdrawn
-    function withdraw(uint256 _amount) public virtual nonReentrant whenProtocolNotPaused {
-        require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
-        require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
-
-        _burn(msg.sender, _amount);
-        _transferFunds(msg.sender, _amount);
-
-        _emitBalanceUpdatedEvent();
-        emit Withdrawal(msg.sender, _amount);
-    }
+    function withdraw(uint256 _amount) public virtual;
 
     /// @notice check how much funds already unlocked
     /// @param _holder to be checked

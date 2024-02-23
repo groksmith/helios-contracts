@@ -51,7 +51,6 @@ library PoolLibrary {
         require(_amount > 0, "PL:ZERO_AMOUNT");
         require(_unlockTime > block.timestamp, "PL:WRONG_UNLOCK_TIME");
 
-        // solc-ignore-next-line unused-return
         self.holders.add(_holder);
 
         // Add the deposit to the lockedDeposits mapping
@@ -61,28 +60,14 @@ library PoolLibrary {
         }));
     }
 
-    /// @notice Cleanup expired deposit info
-    /// @dev Should be extended to cleanup also holders
-    function cleanupDepositsStorage(DepositsStorage storage self, address _holder) internal {
-        DepositInstance[] storage depositInstances = self.lockedDeposits[_holder];
-
-        // Iterate in reverse to safely remove elements while modifying the array
-        for (int256 j = int256(depositInstances.length) - 1; j >= 0; j--) {
-            if (depositInstances[uint256(j)].unlockTime < block.timestamp) {
-                // Remove the expired DepositInstance
-                depositInstances[uint256(j)] = depositInstances[depositInstances.length - 1];
-                depositInstances.pop();
-            }
-        }
-    }
-
     /// @notice Get locked deposit amount for a specific holder
     function lockedDepositsAmount(DepositsStorage storage self, address _holder) internal view returns (uint256) {
         require(self.holders.contains(_holder), "PL:INVALID_HOLDER");
 
         uint256 lockedAmount = 0;
 
-        for (uint256 i = 0; i < self.lockedDeposits[_holder].length; i++) {
+        uint256 count = self.lockedDeposits[_holder].length;
+        for (uint256 i = 0; i < count; i++) {
             if (self.lockedDeposits[_holder][i].unlockTime > block.timestamp) {
                 lockedAmount += self.lockedDeposits[_holder][i].amount;
             }

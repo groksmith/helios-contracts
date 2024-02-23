@@ -142,37 +142,6 @@ contract PoolLibraryTest is Test, FixtureContract {
         depositsStorage.lockedDepositsAmount(address(0));
     }
 
-    function testFuzz_cleanup_deposit(address holder) public {
-        vm.assume(holder != address(0));
-        uint256 amount = 100;
-        uint256 lockTime1 = block.timestamp + 1000;
-        uint256 lockTime2 = lockTime1 + 6000;
-
-        vm.warp(block.timestamp);
-
-        depositsStorage.cleanupDepositsStorage(holder);
-        assertEq(depositsStorage.lockedDeposits[holder].length, 0);
-
-        depositsStorage.addDeposit(holder, amount, lockTime1);
-        assertEq(depositsStorage.lockedDeposits[holder].length, 1);
-
-        depositsStorage.addDeposit(holder, amount, lockTime2);
-        assertEq(depositsStorage.lockedDeposits[holder].length, 2);
-
-        depositsStorage.addDeposit(holder, amount, lockTime2);
-        assertEq(depositsStorage.lockedDeposits[holder].length, 3);
-
-        depositsStorage.addDeposit(holder, amount, lockTime2);
-        depositsStorage.cleanupDepositsStorage(holder);
-        assertEq(depositsStorage.lockedDeposits[holder].length, 4);
-
-        // all above will be expired and cleaned up
-        vm.warp(lockTime2 + 10);
-        depositsStorage.cleanupDepositsStorage(holder);
-
-        assertEq(depositsStorage.lockedDeposits[holder].length, 0);
-    }
-
     function expectOverflow(address holder, uint256 amount) public {
         if (depositsStorage.holderExists(holder))
         {

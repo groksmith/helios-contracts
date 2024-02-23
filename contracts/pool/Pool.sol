@@ -59,9 +59,13 @@ contract Pool is AbstractPool {
             // Validate that we want to do automatic "BP Compensation"
             if (sameToken && blendedPoolCapableToCoverInsufficientAmount && actorIsNotBlendedPool)
             {
+                _burn(msg.sender, _amount);
+
                 // Borrow liquidity from Blended Pool to Regional Pool
                 // Return back to Blended Pool equal amount of Regional Pool's tokens (so now Blended Pool act as investor for Regional Pool)
                 blendedPool.requestAssets(insufficientAmount);
+
+                // Now we have liquidity
             } else {
                 // Ok, going to manual flow
                 pendingWithdrawals[msg.sender] += _amount;
@@ -69,8 +73,10 @@ contract Pool is AbstractPool {
                 return;
             }
         }
-
-        _burn(msg.sender, _amount);
+        else
+        {
+            _burn(msg.sender, _amount);
+        }
 
         _transferFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();

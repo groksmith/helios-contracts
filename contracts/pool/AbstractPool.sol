@@ -102,7 +102,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     function distributeYields(uint256 _amount) external virtual onlyAdmin nonReentrant {
         require(_amount > 0, "P:INVALID_VALUE");
 
-        for (uint256 i = 0; i < depositsStorage.getHoldersCount(); i++) {
+        uint256 count = depositsStorage.getHoldersCount();
+        for (uint256 i = 0; i < count; i++) {
             address holder = depositsStorage.getHolderByIndex(i);
             yields[holder] += _calculateYield(holder, _amount);
         }
@@ -208,10 +209,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         _mintAndUpdateTotalDeposited(_holder, _amount);
 
-        asset.safeTransferFrom(_holder, address(this), _amount);
-
         _emitBalanceUpdatedEvent();
         emit Deposit(_holder, _amount);
+
+        asset.safeTransferFrom(_holder, address(this), _amount);
     }
 
     /// @notice Mint Pool assets to given `_account` address and update totalDeposited

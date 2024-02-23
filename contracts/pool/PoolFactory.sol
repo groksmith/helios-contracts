@@ -77,7 +77,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
 
     /// @notice Checks that the mapping key is valid (unique)
     /// @dev Only for external systems compatibility
-    function _isMappingKeyValid(string memory _key) internal view {
+    function _isMappingKeyValid(string calldata _key) internal view {
         require(pools[_key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 

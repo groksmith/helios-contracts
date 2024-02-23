@@ -35,17 +35,14 @@ abstract contract FixtureContract is Test {
         heliosGlobals.setAsset(address(asset), true);
 
         poolFactory = new PoolFactory(address(heliosGlobals));
-        heliosGlobals.setValidPoolFactory(address(poolFactory), true);
+        heliosGlobals.setPoolFactory(address(poolFactory));
 
         address poolAddress = poolFactory.createPool(
             "reg pool",
             address(asset),
-            2000,
             1000,
-            100000,
             100,
-            500,
-            1000
+            100000
         );
 
         regPool1 = Pool(poolAddress);
@@ -54,11 +51,8 @@ abstract contract FixtureContract is Test {
 
         address blendedPoolAddress = poolFactory.createBlendedPool(
             address(asset),
-            1000,
             300,
-            100,
-            500,
-            1000
+            100
         );
 
         blendedPool = BlendedPool(blendedPoolAddress);
@@ -68,9 +62,12 @@ abstract contract FixtureContract is Test {
         vm.stopPrank();
     }
 
+    /// @notice Mint and some checks
     function createInvestorAndMintAsset(address investor, uint256 amount) public returns (address) {
         vm.assume(investor != address(0));
         vm.assume(investor != OWNER_ADDRESS);
+        vm.assume(investor != address(regPool1));
+        vm.assume(investor != address(blendedPool));
         vm.assume(investor != address(asset));
         vm.assume(amount < assetElevated.totalSupply());
 
@@ -78,12 +75,13 @@ abstract contract FixtureContract is Test {
         return investor;
     }
 
+    /// @notice Mint assets
     function mintAsset(address user, uint256 amount) public {
         assetElevated.mint(user, amount);
     }
 
+    /// @notice Burn assets
     function burnAsset(address user, uint256 amount) public {
         assetElevated.burn(user, amount);
     }
-
 }

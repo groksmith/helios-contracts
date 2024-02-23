@@ -14,9 +14,13 @@ contract DeployScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         HeliosGlobals heliosGlobals = new HeliosGlobals(adminAddress);
-        new PoolFactory(address(heliosGlobals));
-        new MockTokenERC20("mUSDC", "mUSDC");
+        PoolFactory poolFactory = new PoolFactory(address(heliosGlobals));
+        MockTokenERC20 mockTokenERC20 = new MockTokenERC20("mUSDC", "mUSDC");
 
         vm.stopBroadcast();
+
+        console.log("HeliosGlobals %s", address(heliosGlobals));
+        console.log("PoolFactory %s", address(poolFactory));
+        console.log("MockTokenERC20 %s", address(mockTokenERC20));
     }
 }

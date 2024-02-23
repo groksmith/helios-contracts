@@ -18,11 +18,8 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            2000,
-            1000,
             100000,
             100,
-            500,
             1000
         );
 
@@ -35,56 +32,15 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "2",
             address(asset),
-            2000,
-            1000,
             100000,
             100,
-            500,
             1000
         );
 
         vm.expectRevert(bytes("P:PROTO_PAUSED"));
-        poolFactory.createBlendedPool(
-            address(asset),
-            1000,
-            100000,
-            100,
-            500,
-            1000
-        );
+        poolFactory.createBlendedPool(address(asset), 100000, 100);
 
         vm.stopPrank();
-    }
-
-    function test_admin_setGlobals() public {
-        vm.startPrank(OWNER_ADDRESS);
-
-        HeliosGlobals newGlobals = new HeliosGlobals(OWNER_ADDRESS);
-        address newGlobalsAddress = address(newGlobals);
-
-        assertNotEq(address(poolFactory.globals()), newGlobalsAddress);
-
-        poolFactory.setGlobals(newGlobalsAddress);
-
-        assertEq(address(poolFactory.globals()), newGlobalsAddress);
-
-        vm.expectRevert(bytes("PF:ZERO_NEW_GLOBALS"));
-        poolFactory.setGlobals(address(0));
-
-        vm.stopPrank();
-    }
-
-    function testFuzz_not_admin_setGlobals(address user) public {
-        vm.assume(user != OWNER_ADDRESS);
-        vm.startPrank(user);
-
-        HeliosGlobals newGlobals = new HeliosGlobals(OWNER_ADDRESS);
-        address newGlobalsAddress = address(newGlobals);
-
-        assertNotEq(address(poolFactory.globals()), newGlobalsAddress);
-
-        vm.expectRevert(bytes("PF:NOT_ADMIN"));
-        poolFactory.setGlobals(newGlobalsAddress);
     }
 
     function test_pool_already_exists() public {
@@ -93,11 +49,8 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            2000,
-            1000,
             100000,
             100,
-            500,
             1000
         );
 
@@ -105,11 +58,8 @@ contract PoolFactoryTest is Test, FixtureContract {
         poolFactory.createPool(
             "1",
             address(asset),
-            2000,
-            1000,
             100000,
             100,
-            500,
             1000
         );
 
@@ -121,14 +71,7 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         // Already created in parent FixtureContract
         vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
-        poolFactory.createBlendedPool(
-            address(asset),
-            1000,
-            100000,
-            100,
-            500,
-            1000
-        );
+        poolFactory.createBlendedPool(address(asset), 100000, 100);
 
         vm.stopPrank();
     }
@@ -136,11 +79,8 @@ contract PoolFactoryTest is Test, FixtureContract {
     function testFuzz_pool_create(
         string calldata poolId,
         uint256 lockupPeriod,
-        uint256 duration,
         uint256 investmentPoolSize,
         uint256 minInvestmentAmount,
-        uint256 withdrawThreshold,
-        uint256 withdrawPeriod,
         address randomAddress
     ) public {
         vm.startPrank(OWNER_ADDRESS);
@@ -149,14 +89,12 @@ contract PoolFactoryTest is Test, FixtureContract {
             poolId,
             address(asset),
             lockupPeriod,
-            duration,
-            investmentPoolSize,
             minInvestmentAmount,
-            withdrawThreshold,
-            withdrawPeriod
+            investmentPoolSize
         );
 
         vm.assume(randomAddress != poolAddress);
+        vm.assume(randomAddress != address(regPool1));
         
         assertEq(poolFactory.isValidPool(poolAddress), true);
         assertEq(poolFactory.isValidPool(randomAddress), false);

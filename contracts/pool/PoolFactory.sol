@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
-// @author Tigran Arakelyan
 pragma solidity 0.8.20;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import {Pool} from "./Pool.sol";
-import {BlendedPool} from "./BlendedPool.sol";
+import {PoolFactoryLibrary} from "../library/PoolFactoryLibrary.sol";
+import {BlendedPoolFactoryLibrary} from "../library/BlendedPoolFactoryLibrary.sol";
+
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 
-// PoolFactory instantiates Pools
+/// @title Factory for Pool creation
+/// @author Tigran Arakelyan
 contract PoolFactory is IPoolFactory, ReentrancyGuard {
-    IHeliosGlobals public override globals; // A HeliosGlobals instance
+    IHeliosGlobals public immutable override globals; // A HeliosGlobals instance
 
     address public blendedPool; // Address of Blended Pool
     mapping(string => address) public pools; // Map to reference Pools corresponding to their respective indices.
@@ -24,93 +25,80 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         globals = IHeliosGlobals(_globals);
     }
 
-    // Sets HeliosGlobals instance. Only the Admin can call this function
-    function setGlobals(address _newGlobals) external onlyAdmin {
-        require(_newGlobals != address(0), "PF:ZERO_NEW_GLOBALS");
-        globals = IHeliosGlobals(_newGlobals);
-    }
-
-    // Instantiates a Pool
+    /// @notice Instantiates a Pool
+    /// @param _poolId string for pool identification (for external systems)
+    /// @param _asset address of asset of pool
+    /// @param _lockupPeriod locking time for deposit's withdrawal
+    /// @param _minInvestmentAmount minimal amount of asset needed to deposit
+    /// @param _investmentPoolSize pool max capacity for deposits
     function createPool(
-        string memory poolId,
-        address asset,
-        uint256 lockupPeriod,
-        uint256 duration,
-        uint256 investmentPoolSize,
-        uint256 minInvestmentAmount,
-        uint256 withdrawThreshold,
-        uint256 withdrawPeriod
+        string calldata _poolId,
+        address _asset,
+        uint256 _lockupPeriod,
+        uint256 _minInvestmentAmount,
+        uint256 _investmentPoolSize
     ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address poolAddress) {
-        _isMappingKeyValid(poolId);
+        _isMappingKeyValid(_poolId);
 
-        Pool pool = new Pool(
-            asset,
-            lockupPeriod,
-            duration,
-            investmentPoolSize,
-            minInvestmentAmount,
-            withdrawThreshold,
-            withdrawPeriod
-        );
+        poolAddress = PoolFactoryLibrary.createPool(
+            _asset,
+            _lockupPeriod,
+            _minInvestmentAmount,
+            _investmentPoolSize);
 
-        poolAddress = address(pool);
-        pools[poolId] = poolAddress;
+        pools[_poolId] = poolAddress;
         isPool[poolAddress] = true;
 
-        emit PoolCreated(poolId, asset, poolAddress, msg.sender);
+        emit PoolCreated(_poolId, _asset, poolAddress, msg.sender);
     }
 
-    // Instantiates a Pool
+    /// @notice Instantiates a Blended Pool
+    /// @param _asset address of asset of pool
+    /// @param _lockupPeriod locking time for deposit's withdrawal
+    /// @param _minInvestmentAmount minimal amount of asset needed to deposit
     function createBlendedPool(
-        address asset,
-        uint256 lockupPeriod,
-        uint256 duration,
-        uint256 minInvestmentAmount,
-        uint256 withdrawThreshold,
-        uint256 withdrawPeriod
+        address _asset,
+        uint256 _lockupPeriod,
+        uint256 _minInvestmentAmount
     ) external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address blendedPoolAddress) {
 
         require(blendedPool == address(0), "PF:BLENDED_POOL_ALREADY_CREATED");
 
-        BlendedPool pool = new BlendedPool(
-            asset,
-            lockupPeriod,
-            duration,
-            minInvestmentAmount,
-            withdrawThreshold,
-            withdrawPeriod
+        blendedPoolAddress = BlendedPoolFactoryLibrary.createBlendedPool(
+            _asset,
+            _lockupPeriod,
+            _minInvestmentAmount
         );
 
-        blendedPoolAddress = address(pool);
         blendedPool = blendedPoolAddress;
 
-        emit BlendedPoolCreated(asset, blendedPoolAddress, msg.sender);
+        emit BlendedPoolCreated(_asset, blendedPoolAddress, msg.sender);
     }
 
-    // Checks that the mapping key is valid (unique)
-    function _isMappingKeyValid(string memory _key) internal view {
+    /// @notice Checks that the mapping key is valid (unique)
+    /// @dev Only for external systems compatibility
+    function _isMappingKeyValid(string calldata _key) internal view {
         require(pools[_key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
     }
 
+    /// @notice Whitelist pools created here
+    /// @param _pool address of pool to check
     function isValidPool(address _pool) external override view returns (bool) {
         return isPool[_pool];
     }
 
+    /// @notice Return blended pool address
     function getBlendedPool() external override view returns (address) {
         return blendedPool;
     }
 
-    /*
-    Modifiers
-    */
-
-    // Checks that `msg.sender` is the Admin
+    /// @notice Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {
         require(globals.isAdmin(msg.sender), "PF:NOT_ADMIN");
         _;
     }
 
-    // Checks that the protocol is not in a paused state
+    /// @notice Checks that the protocol is not in a paused state
     modifier whenProtocolNotPaused() {
         require(!globals.protocolPaused(), "P:PROTO_PAUSED");
         _;

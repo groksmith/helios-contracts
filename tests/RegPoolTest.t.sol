@@ -11,19 +11,28 @@ import {PoolLibrary} from "../contracts/library/PoolLibrary.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract RegPoolTest is FixtureContract {
-    using PoolLibrary for PoolLibrary.PoolInfo;
-
     event PendingYield(address indexed recipient, uint256 amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
+    event PendingWithdrawal(address indexed investor, uint256 amount);
 
     function setUp() public {
         fixture();
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
-    function testFuzz_depositSuccess(address user1, address user2) external {
-        user1 = createInvestorAndMintAsset(user1, 1000);
-        user2 = createInvestorAndMintAsset(user2, 1000);
+    function testFuzz_deposit_success(address user1, address user2, uint256 amount1, uint256 amount2) external {
+        uint256 user1Deposit = bound(
+            amount1,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 3);
+
+        uint256 user2Deposit = bound(
+            amount2,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 3);
+
+        user1 = createInvestorAndMintAsset(user1, user1Deposit);
+        user2 = createInvestorAndMintAsset(user2, user2Deposit);
+
         vm.assume(user1 != user2);
 
         vm.startPrank(user1);
@@ -31,11 +40,8 @@ contract RegPoolTest is FixtureContract {
         //testing initial condition i.e. zeroes
         assertEq(regPool1.balanceOf(user1), 0);
         assertEq(regPool1.totalDeposited(), 0);
+        assertEq(regPool1.getHoldersCount(), 0, "wrong holder number");
 
-        address[] memory holders = regPool1.getHolders();
-        assertEq(holders.length, 0, "wrong holder number");
-
-        uint256 user1Deposit = 100;
         asset.approve(address(regPool1), user1Deposit);
         regPool1.deposit(user1Deposit);
 
@@ -48,8 +54,7 @@ contract RegPoolTest is FixtureContract {
 
         //now let's test for user2
         vm.startPrank(user2);
-        assertEq(regPool1.balanceOf(user2), 0, "user2 shouldn't have >0 atm");
-        uint256 user2Deposit = 101;
+        assertEq(regPool1.balanceOf(user2), 0, "user2 shouldn't have > 0 atm");
 
         asset.approve(address(regPool1), user2Deposit);
         regPool1.deposit(user2Deposit);
@@ -58,22 +63,20 @@ contract RegPoolTest is FixtureContract {
 
         //pool's total minted should also be user1Deposit
         assertEq(regPool1.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
-
-        holders = regPool1.getHolders();
-        assertEq(holders.length, 2, "wrong holder number");
+        assertEq(regPool1.getHoldersCount(), 2, "wrong holder number");
 
         vm.stopPrank();
     }
 
     /// @notice Test attempt to deposit below minimum
-    function testFuzz_depositFailure(address user1, address user2) external {
-        uint256 depositAmountMax = 100000;
+    function testFuzz_deposit_failure(address user1, address user2) external {
+        uint256 depositAmountMax = regPool1.getPoolInfo().investmentPoolSize;
+        uint256 depositAmountBelowMin = regPool1.getPoolInfo().minInvestmentAmount - 1;
 
         vm.startPrank(user1);
         createInvestorAndMintAsset(user1, depositAmountMax + 1);
         asset.approve(address(regPool1), depositAmountMax + 1);
 
-        uint256 depositAmountBelowMin = 99;
         vm.expectRevert("P:DEP_AMT_BELOW_MIN");
         regPool1.deposit(depositAmountBelowMin);
 
@@ -91,86 +94,198 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function testFuzz_withdraw(address user) external {
-        user = createInvestorAndMintAsset(user, 1000);
+    /// @notice Test attempt to withdraw, happy paths
+    function testFuzz_withdraw(address user, uint256 amount) external {
+        uint256 amountBounded = bound(
+            amount, regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
+        user = createInvestorAndMintAsset(user, amountBounded);
 
         vm.startPrank(user);
-        uint256 depositAmount = 150;
         uint256 currentTime = block.timestamp;
 
-        asset.approve(address(regPool1), depositAmount);
-        //the user can withdraw the sum he has deposited earlier
-        regPool1.deposit(depositAmount);
+        asset.approve(address(regPool1), amountBounded);
 
-        //attempt to withdraw too early fails
-        uint16[] memory indices = new uint16[](1);
-        indices[0] = 0;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = depositAmount - 1;
-
-        vm.expectRevert("P:TOKENS_LOCKED");
-        regPool1.withdraw(amounts, indices);
+        regPool1.deposit(amountBounded);
 
         vm.warp(currentTime + 1000);
 
-        //attempt to withdraw too early fails
-        uint16[] memory indicesWrong = new uint16[](2);
-        indicesWrong[0] = 0;
-        indicesWrong[1] = 1;
-
-        vm.expectRevert("P:ARRAYS_INCONSISTENT");
-        regPool1.withdraw(amounts, indicesWrong);
-
-        regPool1.withdraw(amounts, indices);
-
-        // but he cannot withdraw more
-        vm.expectRevert("P:INSUFFICIENT_FUNDS");
-        regPool1.withdraw(amounts, indices);
+        // the user can withdraw the sum he has deposited earlier
+        regPool1.withdraw(amountBounded - 1);
+        regPool1.withdraw(1);
 
         vm.stopPrank();
     }
 
-    /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function testFuzz_unlockedToWithdraw(address user) external {
-        user = createInvestorAndMintAsset(user, 1000);
+    /// @notice Test attempt to withdraw with BP compensation
+    function testFuzz_withdraw_with_request_from_blended_pool(address regularPoolInvestor, address blendedPoolInvestor, uint256 amount) external {
+        vm.assume(regularPoolInvestor != blendedPoolInvestor);
 
-        vm.startPrank(user);
-        uint256 depositAmount = 150;
+        uint256 regularPoolInvestment = bound(
+            amount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
+        uint256 blendedPoolInvestment = regularPoolInvestment + 1000;
+
+        regularPoolInvestor = createInvestorAndMintAsset(regularPoolInvestor, regularPoolInvestment);
+        blendedPoolInvestor = createInvestorAndMintAsset(blendedPoolInvestor, blendedPoolInvestment);
+
+        assertEq(regPool1.balanceOf(address(blendedPool)), 0, "Expect no tokens from BP");
+
+        vm.startPrank(blendedPoolInvestor);
+        assertEq(blendedPool.totalBalance(), 0, "BP is not empty");
+        asset.approve(address(blendedPool), blendedPoolInvestment);
+        blendedPool.deposit(blendedPoolInvestment);
+        assertEq(blendedPool.totalSupply(), blendedPoolInvestment, "Expecting increasing BP by blendedPoolInvestment");
+        assertEq(blendedPool.totalBalance(), blendedPoolInvestment, "Wrong BP totalBalance");
+        vm.stopPrank();
+
+        vm.startPrank(regularPoolInvestor);
         uint256 currentTime = block.timestamp;
+        assertEq(regPool1.totalBalance(), 0, "RP is not empty");
+        asset.approve(address(regPool1), regularPoolInvestment);
+        regPool1.deposit(regularPoolInvestment);
+        assertEq(regPool1.totalBalance(), regularPoolInvestment, "Wrong RP totalBalance");
+        vm.stopPrank();
 
-        asset.approve(address(regPool1), depositAmount);
-        //the user can withdraw the sum he has deposited earlier
-        regPool1.deposit(depositAmount);
-
-        uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 0);
-        assertEq(unlockedFundsAmount, 0);
+        vm.startPrank(OWNER_ADDRESS);
+        uint256 borrowAmount = regPool1.totalBalance() - regPool1.principalOut();
+        regPool1.borrow(OWNER_ADDRESS, borrowAmount);
+        assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
+        vm.stopPrank();
 
         vm.warp(currentTime + 1000);
 
-        asset.approve(address(regPool1), depositAmount);
-        //the user can withdraw the sum he has deposited earlier
-        regPool1.deposit(depositAmount);
-
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 0);
-        assertEq(unlockedFundsAmount, depositAmount);
-
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 1);
-        assertEq(unlockedFundsAmount, 0);
-
-        vm.expectRevert("P:INVALID_INDEX");
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user, 4);
+        vm.startPrank(regularPoolInvestor);
+        assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
+        // the user can withdraw the sum he has deposited earlier
+        regPool1.withdraw(regularPoolInvestment);
+        assertEq(regPool1.totalBalance(), 0, "Wrong RP balance");
+        assertEq(regPool1.balanceOf(address(blendedPool)), regularPoolInvestment, "Wrong token amount from RP");
 
         vm.stopPrank();
+    }
+
+    /// @notice Test attempt to withdraw with admin approval
+    function testFuzz_withdraw_with_pending(address regularPoolInvestor, uint256 amount) external {
+        uint256 regularPoolInvestment = bound(
+            amount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
+        uint256 currentTime = block.timestamp;
+
+        regularPoolInvestor = createInvestorAndMintAsset(regularPoolInvestor, regularPoolInvestment);
+
+        assertEq(regPool1.balanceOf(address(blendedPool)), 0, "Expect no tokens from BP");
+        assertEq(blendedPool.totalBalance(), 0, "BP is not empty");
+
+        vm.startPrank(regularPoolInvestor);
+        assertEq(regPool1.totalBalance(), 0, "RP is not empty");
+        asset.approve(address(regPool1), regularPoolInvestment);
+        regPool1.deposit(regularPoolInvestment);
+        assertEq(regPool1.totalBalance(), regularPoolInvestment, "Wrong RP totalBalance");
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        uint256 borrowAmount = regPool1.totalBalance() - regPool1.principalOut();
+        regPool1.borrow(OWNER_ADDRESS, borrowAmount);
+        assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
+        vm.stopPrank();
+
+        vm.warp(currentTime + 1000);
+
+        vm.startPrank(regularPoolInvestor);
+        assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
+
+        vm.expectEmit(true, true, false, false);
+        // The expected event signature
+        emit PendingWithdrawal(regularPoolInvestor, regularPoolInvestment);
+        regPool1.withdraw(regularPoolInvestment);
+
+        uint256 pendingAmount = regPool1.pendingWithdrawals(address(regularPoolInvestor));
+        assertEq(pendingAmount, regularPoolInvestment, "Wrong pendingWithdrawals amount");
+
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        mintAsset(OWNER_ADDRESS, regularPoolInvestment);
+        asset.approve(address(regPool1), regularPoolInvestment);
+        regPool1.concludePendingWithdrawal(regularPoolInvestor);
+        vm.stopPrank();
+    }
+
+    /// @notice Test attempt to withdraw, unhappy paths
+    function testFuzz_withdraw_failed(address user, uint256 amount) external {
+        uint256 amountBounded = bound(
+            amount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
+        user = createInvestorAndMintAsset(user, amountBounded);
+
+        vm.startPrank(user);
+        uint256 currentTime = block.timestamp;
+
+        asset.approve(address(regPool1), amountBounded);
+
+        regPool1.deposit(amountBounded);
+
+        vm.expectRevert("P:TOKENS_LOCKED");
+        regPool1.withdraw(amountBounded);
+
+        vm.warp(currentTime + 1000);
+
+        regPool1.withdraw(amountBounded);
+
+        vm.expectRevert("P:INSUFFICIENT_FUNDS");
+        regPool1.withdraw(amountBounded);
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test locked/unlocked deposits amounts
+    function testFuzz_unlocked_to_withdraw(address user, uint256 amount) external {
+        uint256 depositAmount = bound(
+            amount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 3);
+
+        user = createInvestorAndMintAsset(user, 2 * depositAmount);
+
+        vm.startPrank(user);
+
+        asset.approve(address(regPool1), depositAmount);
+        regPool1.deposit(depositAmount);
+
+        uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
+        assertEq(unlockedFundsAmount, 0);
+
+        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 1);
+
+        asset.approve(address(regPool1), depositAmount);
+        regPool1.deposit(depositAmount);
+
+        unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
+        assertEq(unlockedFundsAmount, depositAmount);
+
+        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 1);
+        unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
+        assertEq(unlockedFundsAmount, 2 * depositAmount);
     }
 
     /// @notice Test repay
     function testFuzz_repay(address investor, uint256 depositAmount, uint256 yieldAmount) external {
         vm.startPrank(investor);
-        PoolLibrary.PoolInfo memory poolInfo = regPool1.getPoolInfo();
 
-        depositAmount = uint64(bound(depositAmount, poolInfo.minInvestmentAmount, poolInfo.investmentPoolSize));
-        yieldAmount = uint64(bound(yieldAmount, 0, asset.totalSupply()));
+        depositAmount = bound(
+            depositAmount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
+        yieldAmount = bound(yieldAmount, 0, asset.totalSupply());
 
         createInvestorAndMintAsset(investor, depositAmount);
 
@@ -208,95 +323,21 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    function testFuzz_maxPoolSize(uint256 _maxPoolSize) external {
+    /// @notice Test deposit above maxPoolSize
+    function testFuzz_max_pool_size(uint256 _maxPoolSize) external {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
-        _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
+        _maxPoolSize = bound(_maxPoolSize, 1, type(uint256).max - 1);
         address poolAddress = poolFactory.createPool(
             "1",
             address(asset),
-            2000,
             1000,
-            _maxPoolSize,
             0,
-            500,
-            1000
+            _maxPoolSize
         );
 
         Pool pool = Pool(poolAddress);
 
-        asset.approve(poolAddress, 1000);
-        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
-        pool.deposit(_maxPoolSize + 1);
-        vm.stopPrank();
-    }
-
-    function testFuzz_reinvest(address user) external {
-        user = createInvestorAndMintAsset(user, 1000);
-        vm.startPrank(user);
-
-        //firstly the user needs to deposit
-        uint256 user1Deposit = 1000;
-        asset.approve(address(regPool1), user1Deposit);
-        regPool1.deposit(user1Deposit);
-        vm.stopPrank();
-
-        //only the pool admin can call distributeYields()
-        vm.startPrank(OWNER_ADDRESS);
-
-        mintAsset(OWNER_ADDRESS, 1000);
-        asset.approve(address(regPool1), 1000);
-
-        regPool1.repay(1000);
-        regPool1.distributeYields(1000);
-        vm.stopPrank();
-
-        //now the user wishes to reinvest
-        vm.startPrank(user);
-        uint256 userYields = regPool1.yields(user);
-        assertEq(userYields, 10);
-
-        asset.approve(address(regPool1), userYields);
-
-        vm.expectRevert(bytes("P:INVALID_VALUE"));
-        regPool1.reinvestYield(0);
-
-        vm.expectRevert(bytes("P:INSUFFICIENT_BALANCE"));
-        regPool1.reinvestYield(userYields + 100);
-
-        regPool1.reinvestYield(userYields);
-
-        uint256 userBalanceNow = regPool1.balanceOf(user);
-        uint256 expected = user1Deposit + userYields;
-        assertEq(userBalanceNow, expected);
-
-        userYields = regPool1.yields(user);
-        assertEq(userYields, 0);
-
-        vm.stopPrank();
-    }
-
-    function test_maxPoolSize(address user, uint256 _maxPoolSize) external {
-        createInvestorAndMintAsset(user, 1000);
-
-        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
-
-        _maxPoolSize = bound(_maxPoolSize, 1, 1e36);
-        address poolAddress = poolFactory.createPool(
-            "1",
-            address(asset),
-            2000,
-            1000,
-            _maxPoolSize,
-            0,
-            500,
-            1000
-        );
-        vm.stopPrank();
-
-        Pool pool = Pool(poolAddress);
-
-        vm.startPrank(user);
         asset.approve(poolAddress, 1000);
         vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
         pool.deposit(_maxPoolSize + 1);
@@ -304,10 +345,11 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function testFuzz_distributeYieldsAndWithdraw(address user1, address user2) external {
+    function testFuzz_distribute_yields_and_withdraw(address user1, address user2) external {
+        vm.assume(user1 != user2);
+
         user1 = createInvestorAndMintAsset(user1, 1000);
         user2 = createInvestorAndMintAsset(user2, 1000);
-        vm.assume(user1 != user2);
 
         //firstly the users need to deposit before withdrawing
         uint256 user1Deposit = 100;
@@ -316,22 +358,26 @@ contract RegPoolTest is FixtureContract {
         regPool1.deposit(user1Deposit);
         vm.stopPrank();
 
-        uint256 user2Deposit = 1000;
+        uint256 user2Deposit = 900;
         vm.startPrank(user2);
         asset.approve(address(regPool1), user2Deposit);
         regPool1.deposit(user2Deposit);
         vm.stopPrank();
 
-        uint256 yieldGenerated = 10000;
+        uint256 yieldGenerated = 1000;
 
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
+
+        // No yield yet
+        vm.expectRevert("P:ZERO_YIELD");
+        regPool1.withdrawYield();
+
         vm.expectRevert("PF:NOT_ADMIN");
         regPool1.distributeYields(yieldGenerated);
 
         //only the pool admin can call distributeYields()
         vm.startPrank(OWNER_ADDRESS);
-
         vm.expectRevert("P:INVALID_VALUE");
         regPool1.distributeYields(0);
 
@@ -339,31 +385,93 @@ contract RegPoolTest is FixtureContract {
         asset.approve(address(regPool1), yieldGenerated);
         regPool1.repay(yieldGenerated);
         regPool1.distributeYields(yieldGenerated);
-        vm.stopPrank();
 
         //now we need to test if the users got assigned the correct yields
         uint256 user1Yields = regPool1.yields(user1);
         uint256 user2Yields = regPool1.yields(user2);
 
-        assertEq(user1Yields, 10, "wrong yield user1");
-        assertEq(user2Yields, 100, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
+        assertEq(user1Yields, 100, "wrong yield user1");
+        assertEq(user2Yields, 900, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
 
+        vm.stopPrank();
+
+        vm.startPrank(user1);
         uint256 user1BalanceBefore = asset.balanceOf(user1);
-        vm.prank(user1);
         regPool1.withdrawYield();
+
         assertEq(
             asset.balanceOf(user1) - user1BalanceBefore,
-            10,
+            100,
             "user1 balance not upd after withdrawYield()"
         );
+        vm.stopPrank();
 
+        vm.startPrank(user2);
         uint256 user2BalanceBefore = asset.balanceOf(user2);
-        vm.prank(user2);
         regPool1.withdrawYield();
         assertEq(
             asset.balanceOf(user2) - user2BalanceBefore,
-            100,
+            900,
             "user2 balance not upd after withdrawYield()"
         );
+        vm.stopPrank();
+    }
+
+    /// @notice Test getHolders
+    function testFuzz_get_holder_by_index(address user1, address user2) external {
+        vm.assume(user1 != user2);
+
+        user1 = createInvestorAndMintAsset(user1, 1000);
+        user2 = createInvestorAndMintAsset(user2, 1000);
+
+        //firstly the users need to deposit before withdrawing
+        uint256 user1Deposit = 100;
+        vm.startPrank(user1);
+        asset.approve(address(regPool1), user1Deposit);
+        regPool1.deposit(user1Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.getHolderByIndex(0), user1);
+
+        uint256 user2Deposit = 900;
+        vm.startPrank(user2);
+        asset.approve(address(regPool1), user2Deposit);
+        regPool1.deposit(user2Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.getHolderByIndex(1), user2);
+
+        vm.expectRevert("PL:INVALID_INDEX");
+        regPool1.getHolderByIndex(3);
+    }
+
+    /// @notice Test attempt to deposit below minimum
+    function testFuzz_pool_finalize(address user1) external {
+        uint256 depositAmount = 100000;
+
+        vm.startPrank(user1);
+        createInvestorAndMintAsset(user1, depositAmount);
+        asset.approve(address(regPool1), depositAmount);
+        regPool1.deposit(depositAmount);
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+
+        // Finalized. Deny any additional deposits
+        regPool1.finalize();
+        vm.stopPrank();
+
+        vm.startPrank(user1);
+        createInvestorAndMintAsset(user1, depositAmount);
+        asset.approve(address(regPool1), depositAmount);
+        vm.expectRevert("P:BAD_STATE");
+        regPool1.deposit(depositAmount);
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+
+        // Cannot finalize again
+        vm.expectRevert("P:BAD_STATE");
+        regPool1.finalize();
     }
 }

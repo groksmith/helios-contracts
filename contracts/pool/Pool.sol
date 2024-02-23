@@ -5,65 +5,103 @@ import {AbstractPool} from "./AbstractPool.sol";
 import {BlendedPool} from "./BlendedPool.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
 
-// Pool maintains all accounting and functionality related to Pools
+/// @title Regional Pool implementation
+/// @author Tigran Arakelyan
 contract Pool is AbstractPool {
-    constructor(
-        address _asset,
-        uint256 _lockupPeriod,
-        uint256 _duration,
-        uint256 _investmentPoolSize,
-        uint256 _minInvestmentAmount,
-        uint256 _withdrawThreshold,
-        uint256 _withdrawPeriod
-    ) AbstractPool(_asset, NAME, SYMBOL, _withdrawThreshold, _withdrawPeriod) {
-        poolInfo = PoolLibrary.PoolInfo(_lockupPeriod, _duration, _investmentPoolSize, _minInvestmentAmount, _withdrawThreshold);
+    enum State {Initialized, Finalized/*, Deactivated*/}
+    State public poolState;
+
+    event PoolStateChanged(State state);
+
+    constructor(address _asset, uint256 _lockupPeriod, uint256 _minInvestmentAmount, uint256 _investmentPoolSize)
+    AbstractPool(_asset, NAME, SYMBOL) {
+        poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, _investmentPoolSize);
+
+        poolState = State.Initialized;
+        emit PoolStateChanged(poolState);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
-    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
+    /// @param _amount the amount of assets to deposit
+    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant inState(State.Initialized) {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        _depositLogic(_amount);
+        _depositLogic(_amount, msg.sender);
     }
 
-    function _calculateYield(address _holder, uint256 _amount) internal view override returns (uint256) {
-        uint256 holderBalance = balanceOf(_holder);
-        uint256 holderShare = (holderBalance * 1e18) / poolInfo.investmentPoolSize;
-        return holderShare * _amount / 1e18;
+    /// @notice Called only from Blended Pool. Part of BP compensation mechanism
+    /// @param _amount the amount of assets to deposit
+    function blendedPoolDeposit(uint256 _amount) external
+    onlyBlendedPool whenProtocolNotPaused inState(State.Initialized) {
+        _depositLogic(_amount, msg.sender);
     }
 
-    /// TODO: Tigran. I guess we don't need request funds compensation from Blended Pool here. Should be revisited!
-    /// @notice Used to transfer the investor's yield to him
-//    function withdrawYield() external override whenProtocolNotPaused returns (bool) {
-//        uint256 callerYields = yields[msg.sender];
-//        require(callerYields >= 0, "P:NOT_HOLDER");
-//        uint256 totalBalance = totalBalance();
-//
-//        BlendedPool blendedPool = getBlendedPool();
-//
-//        yields[msg.sender] = 0;
-//
-//        if (totalBalance < callerYields) {
-//            uint256 amountMissing = callerYields - totalBalance;
-//
-//            if (blendedPool.totalBalance() < amountMissing) {
-//                pendingYields[msg.sender] += callerYields;
-//                emit PendingYield(msg.sender, callerYields);
-//                return false;
-//            }
-//
-//            blendedPool.requestAssets(amountMissing);
-//            _mintAndUpdateTotalDeposited(address(blendedPool), amountMissing);
-//
-//            require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
-//
-//            emit YieldWithdrawn(msg.sender, callerYields);
-//            return true;
-//        }
-//
-//        require(_transferFunds(msg.sender, callerYields), "P:ERROR_TRANSFERRING_YIELD");
-//
-//        emit YieldWithdrawn(msg.sender, callerYields);
-//        return true;
-//    }
+    /// @notice withdraws the caller's assets
+    /// @param _amount the amount of assets to be withdrawn
+    function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
+        require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
+        require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
+
+        if (totalBalance() < _amount) {
+            uint256 insufficientAmount = _amount - totalBalance();
+
+            BlendedPool blendedPool = BlendedPool(poolFactory.getBlendedPool());
+
+            // are we toking about same token?
+            bool sameToken = (asset == blendedPool.asset());
+
+            // Make sure there is enough funds in Blended Pool to invest
+            bool blendedPoolCapableToCoverInsufficientAmount = (insufficientAmount < blendedPool.totalBalance());
+
+            // skip requesting "BP Compensation" for Blended Pool. It doesn't make sense.
+            bool actorIsNotBlendedPool = (msg.sender != address(blendedPool));
+
+            // Validate that we want to do automatic "BP Compensation"
+            if (sameToken && blendedPoolCapableToCoverInsufficientAmount && actorIsNotBlendedPool)
+            {
+                _burn(msg.sender, _amount);
+
+                // Borrow liquidity from Blended Pool to Regional Pool
+                // Return back to Blended Pool equal amount of Regional Pool's tokens (so now Blended Pool act as investor for Regional Pool)
+                blendedPool.requestAssets(insufficientAmount);
+
+                // Now we have liquidity
+            } else {
+                // Ok, going to manual flow
+                pendingWithdrawals[msg.sender] += _amount;
+                emit PendingWithdrawal(msg.sender, _amount);
+                return;
+            }
+        }
+        else
+        {
+            _burn(msg.sender, _amount);
+        }
+
+        _transferFunds(msg.sender, _amount);
+        _emitBalanceUpdatedEvent();
+        emit Withdrawal(msg.sender, _amount);
+    }
+
+    /*
+    Admin flow
+    */
+
+    /// @notice Finalize pool, disable any new deposits
+    function finalize() external onlyAdmin inState(State.Initialized) {
+        poolState = State.Finalized;
+        emit PoolStateChanged(poolState);
+    }
+
+    /// @notice Check if pool in given state
+    modifier inState(State _state) {
+        require(poolState == _state, "P:BAD_STATE");
+        _;
+    }
+
+    /// @notice Check if blended pool calling
+    modifier onlyBlendedPool() {
+        require(poolFactory.getBlendedPool() == msg.sender, "P:NOT_BP");
+        _;
+    }
 }

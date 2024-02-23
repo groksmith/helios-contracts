@@ -26,9 +26,19 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
-    function test_depositSuccess(address user1, address user2) external {
-        createInvestorAndMintAsset(user1, 1000);
-        createInvestorAndMintAsset(user2, 1000);
+    function testFuzz_deposit_success(address user1, address user2, uint256 amount1, uint256 amount2) external {
+        uint256 user1Deposit = bound(
+            amount1,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        uint256 user2Deposit = bound(
+            amount2,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        createInvestorAndMintAsset(user1, user1Deposit);
+        createInvestorAndMintAsset(user2, user2Deposit);
         vm.assume(user1 != user2);
 
         vm.startPrank(user1);
@@ -38,7 +48,6 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(blendedPool.totalBalance(), 0);
         assertEq(blendedPool.totalDeposited(), 0);
 
-        uint256 user1Deposit = 100;
         asset.approve(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
 
@@ -54,8 +63,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //now let's test for user2
         vm.startPrank(user2);
-        assertEq(blendedPool.balanceOf(user2), 0, "user2 shouldn't have >0 atm");
-        uint256 user2Deposit = 101;
+        assertEq(blendedPool.balanceOf(user2), 0, "user2 shouldn't have > 0 atm");
 
         asset.approve(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
@@ -71,57 +79,85 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test attempt to deposit below minimum
-    function test_depositFailure(address user) external {
+    function test_deposit_failure(address user) external {
         vm.startPrank(user);
+
         uint256 depositAmountBelowMin = 1;
         vm.expectRevert("P:DEP_AMT_BELOW_MIN");
         blendedPool.deposit(depositAmountBelowMin);
+
+        vm.expectRevert("BP:ZERO_AMOUNT");
+        blendedPool.deposit(0);
+        vm.stopPrank();
     }
 
     /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function test_withdraw(address user) external {
-        createInvestorAndMintAsset(user, 1000);
+    function testFuzz_withdraw(address user, uint256 amount) external {
+        uint256 depositAmount = bound(amount, blendedPool.getPoolInfo().minInvestmentAmount, type(uint80).max);
+
+        createInvestorAndMintAsset(user, depositAmount);
 
         vm.startPrank(user);
-        uint256 depositAmount = 150;
-        uint256 currentTime = block.timestamp;
 
         asset.approve(address(blendedPool), depositAmount);
         //the user can withdraw the sum he has deposited earlier
         blendedPool.deposit(depositAmount);
 
         //attempt to withdraw too early fails
-        vm.expectRevert("P:TOKENS_LOCKED");
-        uint16[] memory indices = new uint16[](1);
-        indices[0] = 0;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = depositAmount;
-        blendedPool.withdraw(amounts, indices);
+        vm.expectRevert("BP:TOKENS_LOCKED");
+        blendedPool.withdraw(depositAmount);
 
-        vm.warp(currentTime + 1000);
-        blendedPool.withdraw(amounts, indices);
+        vm.warp(blendedPool.getPoolInfo().lockupPeriod + 1);
+        blendedPool.withdraw(depositAmount);
 
-        // but he cannot withdraw more
-        // vm.expectRevert("P:INSUFFICIENT_BALANCE");
-        // blendedPool.withdraw(1, indices);
+        //attempt to withdraw too early fails
+        vm.expectRevert("BP:INSUFFICIENT_FUNDS");
+        blendedPool.withdraw(depositAmount + 1);
 
         vm.stopPrank();
     }
 
+    /// @notice Test attempt to withdraw; both happy and unhappy paths
+    function test_request_assets(address user) external {
+        createInvestorAndMintAsset(user, 1000);
+
+        vm.expectRevert(bytes("P:NOT_POOL"));
+        blendedPool.requestAssets(10);
+
+        vm.startPrank(address(regPool1));
+        vm.expectRevert(bytes("BP:INVALID_AMOUNT"));
+        blendedPool.requestAssets(0);
+
+        vm.expectRevert(bytes("BP:NOT_ENOUGH_ASSETS"));
+        blendedPool.requestAssets(100);
+
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        mintAsset(OWNER_ADDRESS, 100);
+        asset.approve(address(blendedPool), 100);
+        blendedPool.repay(100);
+        vm.stopPrank();
+
+        vm.startPrank(address(regPool1));
+        blendedPool.requestAssets(100);
+        vm.stopPrank();
+    }
+
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function test_distributeYieldsAndWithdraw(address user1, address user2) external {
-        createInvestorAndMintAsset(user1, 1000);
-        createInvestorAndMintAsset(user2, 1000);
+    function test_distribute_yields_and_withdraw(address user1, address user2) external {
+        uint256 user1Deposit = 100;
+        uint256 user2Deposit = 1000;
+        createInvestorAndMintAsset(user1, user1Deposit);
+        createInvestorAndMintAsset(user2, user2Deposit);
         vm.assume(user1 != user2);
 
         //firstly the users need to deposit before withdrawing
-        uint256 user1Deposit = 100;
         vm.startPrank(user1);
         asset.approve(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
         vm.stopPrank();
 
-        uint256 user2Deposit = 1000;
         vm.startPrank(user2);
         asset.approve(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
@@ -140,20 +176,12 @@ contract BlendedPoolTest is Test, FixtureContract {
         uint256 user1BalanceBefore = asset.balanceOf(user1);
         vm.prank(user1);
         blendedPool.withdrawYield();
-        assertApproxEqAbs(
-            asset.balanceOf(user1) - user1BalanceBefore,
-            90,
-            1
-        );
+        assertEq(asset.balanceOf(user1) - user1BalanceBefore, 90);
 
         uint256 user2BalanceBefore = asset.balanceOf(user2);
         vm.prank(user2);
         blendedPool.withdrawYield();
-        assertApproxEqAbs(
-            asset.balanceOf(user2) - user2BalanceBefore,
-            910,
-            1
-        );
+        assertEq(asset.balanceOf(user2) - user2BalanceBefore, 909);
 
         //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
@@ -162,7 +190,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test scenario when there are not enough funds on the pool
-    function test_insufficientFundsWithdrawYield(address user) external {
+    function test_insufficient_funds_withdraw_yield(address user) external {
         createInvestorAndMintAsset(user, 1000);
 
         //firstly the users need to deposit before withdrawing
@@ -215,13 +243,11 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(user1BalanceAfter, user1BalanceBefore + 1000, "invalid user1 LA balance after concluding");
     }
 
-    function test_subsidingRegPoolWithBlendedPool(address user) external {
+    function test_subsiding_reg_pool_with_blended_pool(address user) external {
         createInvestorAndMintAsset(user, 1000);
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
-        address poolAddress = poolFactory.createPool(
-            "1", address(asset), 2000, 1000, 1000, 100, 500, 1000
-        );
+        address poolAddress = poolFactory.createPool("1", address(asset), 1000, 100, 1000);
 
         Pool pool = Pool(poolAddress);
 
@@ -240,7 +266,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         pool.borrow(OWNER_ADDRESS, 100);
         vm.stopPrank();
 
-        //now let's repay LA to the blended pool
+        //now let's repay assets to the blended pool
         vm.startPrank(OWNER_ADDRESS);
         mintAsset(OWNER_ADDRESS, 100);
         asset.approve(address(blendedPool), 100);
@@ -251,30 +277,5 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.startPrank(user);
         asset.approve(poolAddress, 10000);
         pool.withdrawYield();
-    }
-
-    function test_reinvestYield(address user) external {
-        createInvestorAndMintAsset(user, 1000);
-
-        //firstly the user needs to deposit
-        uint256 user1Deposit = 100;
-        vm.startPrank(user);
-        asset.approve(address(blendedPool), 10000);
-        blendedPool.deposit(user1Deposit);
-        vm.stopPrank();
-
-        //only the pool admin can call distributeYields()
-        vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(1000);
-
-        mintAsset(address(blendedPool), 1003);
-
-        //now the user wishes to reinvest
-        uint256 userYields = blendedPool.yields(user);
-        vm.startPrank(user);
-        blendedPool.reinvestYield(1000);
-        uint256 userBalanceNow = blendedPool.balanceOf(user);
-        uint256 expected = user1Deposit + userYields;
-        assertEq(userBalanceNow, expected);
     }
 }

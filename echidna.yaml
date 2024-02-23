@@ -1,5 +1,0 @@
-codeSize: 0xFFFF
-testLimit: 10000000
-corpusDir: tests-results/echidna/corpus
-testMode: property
-seqLen: 200

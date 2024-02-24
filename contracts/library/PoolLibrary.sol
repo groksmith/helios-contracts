@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -14,7 +12,7 @@ library PoolLibrary {
     using EnumerableSet for EnumerableSet.AddressSet;
     using Math for uint256;
 
-    uint256 internal constant PRECISION = 1e18;
+    uint256 internal constant PRECISION = 1e72;
 
     /// @notice Single deposit info
     struct DepositInstance {
@@ -66,7 +64,7 @@ library PoolLibrary {
         }));
     }
 
-    function previewChangeDepositOwnership(
+    function transferDepositOwnership(
         DepositsStorage storage self,
         address _holder,
         address _newHolder,
@@ -76,24 +74,34 @@ library PoolLibrary {
         require(_newHolder != address(0), "PL:INVALID_NEW_HOLDER");
         require(_amount > 0, "PL:ZERO_AMOUNT");
 
-        uint256 totalMoved = 0;
         uint256 totalAmount = PoolLibrary.totalDepositsAmount(self, _holder);
+
+        if (totalAmount == 0) {
+            // Nothing to transfer if the total amount is zero
+            return 0;
+        }
 
         uint256 share = _amount.mulDiv(PRECISION, totalAmount);
 
         self.holders.add(_newHolder);
 
-        if (share == 0) return totalMoved;
+        if (share == 0) return 0;
 
         uint256 count = self.lockedDeposits[_holder].length;
+        uint256 totalMoved = 0;
+
         for (uint256 i = 0; i < count; i++) {
             uint256 unlockTime = self.lockedDeposits[_holder][i].unlockTime;
-
             uint256 amountToMove = share.mulDiv(self.lockedDeposits[_holder][i].amount, PRECISION);
+
+            // Last deposit. Try to round up. In real-world scenarios, it should be effective.
+            if (i == (count - 1)) {
+                amountToMove = Math.min(amountToMove, _amount - totalMoved);
+            }
+
             totalMoved += amountToMove;
 
-            if (amountToMove > 0)
-            {
+            if (amountToMove > 0) {
                 // Add the deposit to the lockedDeposits mapping
                 self.lockedDeposits[_newHolder].push(DepositInstance({
                     amount: amountToMove,

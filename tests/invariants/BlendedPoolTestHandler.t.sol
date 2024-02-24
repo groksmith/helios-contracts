@@ -6,7 +6,9 @@ import {CommonBase} from "forge-std/Base.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 
@@ -36,7 +38,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     uint256 public totalYieldAccrued;
     uint256 public totalYieldWithdrawn;
     uint256 public totalYieldPrecisionLoss;
-    uint256 public totalTransferPrecisionPercentage;
+    uint256 public maxTransferPrecisionInaccuracy;
     uint256 public totalBorrowed;
     uint256 public totalRepaid;
     uint256 public maxPrecisionLossForYields;
@@ -187,8 +189,12 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
         vm.prank(user);
         blendedPool.transfer(address(userNew), amount);
+
         uint256 balanceAfter = blendedPool.balanceOf(user);
-        totalTransferPrecisionPercentage += ((balanceBefore - balanceAfter) * 100)/ balanceBefore;
+
+        uint256 accuracy = (balanceBefore - balanceAfter);
+
+        maxTransferPrecisionInaccuracy = Math.max(maxTransferPrecisionInaccuracy, accuracy);
     }
 
     /// Time warp simulation

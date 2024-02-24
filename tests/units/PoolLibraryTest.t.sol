@@ -166,7 +166,7 @@ contract PoolLibraryTest is Test, FixtureContract {
         depositsStorage.addDeposit(holder, 10, lockTime3);
         assertEq(depositsStorage.lockedDepositsAmount(holder), amountBounded1 + amountBounded2 + 10);
 
-        depositsStorage.previewChangeDepositOwnership(holder, newHolder, amountBounded1 + 5);
+        depositsStorage.transferDepositOwnership(holder, newHolder, amountBounded1 + 5);
 
         assertEq(
             depositsStorage.totalDepositsAmount(holder) + depositsStorage.totalDepositsAmount(newHolder),

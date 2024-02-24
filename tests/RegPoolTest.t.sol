@@ -493,7 +493,6 @@ contract RegPoolTest is FixtureContract {
 
         uint256 lockTime1 = block.timestamp + 1000;
         uint256 lockTime2 = lockTime1 + 6000;
-        uint256 lockTime3 = lockTime1 + 12000;
 
         vm.startPrank(holder);
         mintAsset(holder, amountBounded1);

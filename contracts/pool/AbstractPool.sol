@@ -165,7 +165,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     function transfer(address to, uint256 value) public override returns (bool) {
         address owner = _msgSender();
 
-        uint256 transferAmount = depositsStorage.previewChangeDepositOwnership(owner, to, value);
+        uint256 transferAmount = depositsStorage.transferDepositOwnership(owner, to, value);
 
         _transfer(owner, to, transferAmount);
         return true;
@@ -174,7 +174,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     function transferFrom(address from, address to, uint256 value) public override returns (bool) {
         address spender = _msgSender();
 
-        uint256 transferAmount = depositsStorage.previewChangeDepositOwnership(from, to, value);
+        uint256 transferAmount = depositsStorage.transferDepositOwnership(from, to, value);
 
         _spendAllowance(from, spender, transferAmount);
         _transfer(from, to, transferAmount);

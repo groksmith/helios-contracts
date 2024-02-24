@@ -142,6 +142,47 @@ contract PoolLibraryTest is Test, FixtureContract {
         depositsStorage.lockedDepositsAmount(address(0));
     }
 
+    function testFuzz_transfer_deposits_amount(address holder, address newHolder, uint256 amount1, uint256 amount2) public {
+        vm.assume(holder != address(0));
+        vm.assume(newHolder != address(0));
+        vm.assume(newHolder != holder);
+
+        uint256 amountBounded1 = bound(amount1, 1, type(uint256).max / 4);
+        uint256 amountBounded2 = bound(amount2, 1, type(uint256).max / 4);
+
+        uint256 lockTime1 = block.timestamp + 1000;
+        uint256 lockTime2 = lockTime1 + 6000;
+        uint256 lockTime3 = lockTime1 + 12000;
+
+        // check for overflow
+        expectOverflow(holder, amountBounded1);
+
+        depositsStorage.addDeposit(holder, amountBounded1, lockTime1);
+        assertEq(depositsStorage.lockedDepositsAmount(holder), amountBounded1);
+
+        depositsStorage.addDeposit(holder, amountBounded2, lockTime2);
+        assertEq(depositsStorage.lockedDepositsAmount(holder), amountBounded1 + amountBounded2);
+
+        depositsStorage.addDeposit(holder, 10, lockTime3);
+        assertEq(depositsStorage.lockedDepositsAmount(holder), amountBounded1 + amountBounded2 + 10);
+
+        depositsStorage.previewChangeDepositOwnership(holder, newHolder, amountBounded1 + 5);
+
+        assertEq(
+            depositsStorage.totalDepositsAmount(holder) + depositsStorage.totalDepositsAmount(newHolder),
+            amountBounded1 + amountBounded2 + 10);
+
+        assertEq(
+            depositsStorage.lockedDepositsAmount(holder) + depositsStorage.lockedDepositsAmount(newHolder),
+            amountBounded1 + amountBounded2 + 10);
+
+        vm.warp(lockTime3 + 5);
+
+        assertEq(
+            depositsStorage.totalDepositsAmount(holder) + depositsStorage.totalDepositsAmount(newHolder),
+            amountBounded1 + amountBounded2 + 10);
+    }
+
     function expectOverflow(address holder, uint256 amount) public {
         if (depositsStorage.holderExists(holder))
         {

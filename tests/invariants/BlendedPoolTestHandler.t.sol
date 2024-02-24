@@ -36,6 +36,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     uint256 public totalYieldAccrued;
     uint256 public totalYieldWithdrawn;
     uint256 public totalYieldPrecisionLoss;
+    uint256 public totalTransferPrecisionPercentage;
     uint256 public totalBorrowed;
     uint256 public totalRepaid;
     uint256 public maxPrecisionLossForYields;
@@ -168,6 +169,26 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         blendedPool.repay(amount);
 
         totalRepaid += amount;
+    }
+
+    /// Repay money to the pool
+    function transfer(uint256 amount, uint256 user_idx, uint256 user_idx_new) external {
+        address user = pickUpUser(user_idx);
+        address userNew = pickUpUser(user_idx_new);
+
+        if (blendedPool.balanceOf(user) < 1) return;
+
+        amount = bound(amount, 1, blendedPool.balanceOf(user));
+
+        vm.prank(user);
+        blendedPool.approve(address(userNew), amount);
+
+        uint256 balanceBefore = blendedPool.balanceOf(user);
+
+        vm.prank(user);
+        blendedPool.transfer(address(userNew), amount);
+        uint256 balanceAfter = blendedPool.balanceOf(user);
+        totalTransferPrecisionPercentage += ((balanceBefore - balanceAfter) * 100)/ balanceBefore;
     }
 
     /// Time warp simulation

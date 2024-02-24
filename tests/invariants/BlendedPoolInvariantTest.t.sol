@@ -93,4 +93,10 @@ contract BlendedPoolInvariantTest is Test {
     function invariant_yield_precision_loss_less_or_equal_max_precision_loss() external {
         assertLe(handler.totalYieldPrecisionLoss(), handler.maxPrecisionLossForYields());
     }
+
+    // Test that yieldPrecisionLoss <= maxPrecisionLossForYields
+    function invariant_transfer_precision_loss_less_or_equal_max_precision_loss() external {
+        console.log("totalTransferPrecisionPercentage: ", handler.totalTransferPrecisionPercentage());
+        assertLe(handler.totalTransferPrecisionPercentage(), 1e4);
+    }
 }

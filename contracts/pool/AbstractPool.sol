@@ -159,6 +159,29 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     }
 
     /*
+    ERC20 Overrides
+    */
+
+    function transfer(address to, uint256 value) public override returns (bool) {
+        address owner = _msgSender();
+
+        uint256 transferAmount = depositsStorage.previewChangeDepositOwnership(owner, to, value);
+
+        _transfer(owner, to, transferAmount);
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 value) public override returns (bool) {
+        address spender = _msgSender();
+
+        uint256 transferAmount = depositsStorage.previewChangeDepositOwnership(from, to, value);
+
+        _spendAllowance(from, spender, transferAmount);
+        _transfer(from, to, transferAmount);
+        return true;
+    }
+
+    /*
     Helpers
     */
 

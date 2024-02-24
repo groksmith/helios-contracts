@@ -260,7 +260,7 @@ contract RegPoolTest is FixtureContract {
         asset.approve(address(regPool1), depositAmount);
         regPool1.deposit(depositAmount);
 
-        uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
+        uint256 unlockedFundsAmount = regPool1.unlockedBalanceOf(user);
         assertEq(unlockedFundsAmount, 0);
 
         vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 1);
@@ -268,11 +268,11 @@ contract RegPoolTest is FixtureContract {
         asset.approve(address(regPool1), depositAmount);
         regPool1.deposit(depositAmount);
 
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
+        unlockedFundsAmount = regPool1.unlockedBalanceOf(user);
         assertEq(unlockedFundsAmount, depositAmount);
 
         vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 1);
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
+        unlockedFundsAmount = regPool1.unlockedBalanceOf(user);
         assertEq(unlockedFundsAmount, 2 * depositAmount);
     }
 
@@ -499,9 +499,8 @@ contract RegPoolTest is FixtureContract {
         asset.approve(address(regPool1), amountBounded1);
         regPool1.deposit(amountBounded1);
 
-        mintAsset(holder, amountBounded1);
-        asset.approve(address(regPool1), amountBounded1);
-        regPool1.deposit(amountBounded1);
+        vm.expectRevert("P:TOKENS_LOCKED");
+        regPool1.transfer(newHolder, amountBounded1);
 
         vm.warp(lockTime1);
         mintAsset(holder, amountBounded2);
@@ -516,7 +515,7 @@ contract RegPoolTest is FixtureContract {
         uint256 holderTokensAmountBefore = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
 
-        regPool1.transfer(newHolder, amountBounded1 + amountBounded2 + 10);
+        regPool1.transfer(newHolder, amountBounded1 + amountBounded2);
 
         uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);

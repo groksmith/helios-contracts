@@ -67,7 +67,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         if (user == address(0)) return;
 
         vm.prank(user);
-        uint256 unlocked = blendedPool.unlockedToWithdraw(user);
+        uint256 unlocked = blendedPool.unlockedBalanceOf(user);
         if (unlocked == 0) return;
 
         unlocked = bound(amount, 1, unlocked);
@@ -187,8 +187,10 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
         uint256 balanceBefore = blendedPool.balanceOf(user);
 
+        uint256 unlocked = blendedPool.unlockedBalanceOf(user);
+
         vm.prank(user);
-        blendedPool.transfer(address(userNew), amount);
+        blendedPool.transfer(address(userNew), unlocked);
 
         uint256 balanceAfter = blendedPool.balanceOf(user);
 
@@ -220,7 +222,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         sum = 0;
         for (uint i = 0; i < blendedPool.getHoldersCount(); i++) {
             address holder = blendedPool.getHolderByIndex(i);
-            sum += blendedPool.balanceOf(holder) - blendedPool.unlockedToWithdraw(holder);
+            sum += blendedPool.balanceOf(holder) - blendedPool.unlockedBalanceOf(holder);
         }
     }
 

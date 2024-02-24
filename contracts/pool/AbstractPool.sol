@@ -74,7 +74,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice check how much funds already unlocked
     /// @param _holder to be checked
-    function unlockedToWithdraw(address _holder) public view returns (uint256) {
+    function unlockedBalanceOf(address _holder) public view returns (uint256) {
         return balanceOf(_holder) - depositsStorage.lockedDepositsAmount(_holder);
     }
 
@@ -162,22 +162,20 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     ERC20 Overrides
     */
 
-    function transfer(address to, uint256 value) public override returns (bool) {
+    function transfer(address _to, uint256 _value) public override returns (bool) {
         address owner = _msgSender();
+        require(unlockedBalanceOf(owner) >= _value, "P:TOKENS_LOCKED");
 
-        uint256 transferAmount = depositsStorage.transferDepositOwnership(owner, to, value);
-
-        _transfer(owner, to, transferAmount);
+        _transfer(owner, _to, _value);
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) public override returns (bool) {
+    function transferFrom(address _from, address _to, uint256 _value) public override returns (bool) {
         address spender = _msgSender();
+        require(unlockedBalanceOf(_from) >= _value, "P:TOKENS_LOCKED");
 
-        uint256 transferAmount = depositsStorage.transferDepositOwnership(from, to, value);
-
-        _spendAllowance(from, spender, transferAmount);
-        _transfer(from, to, transferAmount);
+        _spendAllowance(_from, spender, _value);
+        _transfer(_from, _to, _value);
         return true;
     }
 

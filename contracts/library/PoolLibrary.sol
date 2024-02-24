@@ -64,57 +64,6 @@ library PoolLibrary {
         }));
     }
 
-    function transferDepositOwnership(
-        DepositsStorage storage self,
-        address _holder,
-        address _newHolder,
-        uint256 _amount
-    ) internal returns (uint256) {
-        require(_holder != address(0), "PL:INVALID_HOLDER");
-        require(_newHolder != address(0), "PL:INVALID_NEW_HOLDER");
-        require(_amount > 0, "PL:ZERO_AMOUNT");
-
-        uint256 totalAmount = PoolLibrary.totalDepositsAmount(self, _holder);
-
-        if (totalAmount == 0) {
-            // Nothing to transfer if the total amount is zero
-            return 0;
-        }
-
-        uint256 share = _amount.mulDiv(PRECISION, totalAmount);
-
-        self.holders.add(_newHolder);
-
-        if (share == 0) return 0;
-
-        uint256 count = self.lockedDeposits[_holder].length;
-        uint256 totalMoved = 0;
-
-        for (uint256 i = 0; i < count; i++) {
-            uint256 unlockTime = self.lockedDeposits[_holder][i].unlockTime;
-            uint256 amountToMove = share.mulDiv(self.lockedDeposits[_holder][i].amount, PRECISION);
-
-            // Last deposit. Try to round up. In real-world scenarios, it should be effective.
-            if (i == (count - 1)) {
-                amountToMove = Math.min(amountToMove, _amount - totalMoved);
-            }
-
-            totalMoved += amountToMove;
-
-            if (amountToMove > 0) {
-                // Add the deposit to the lockedDeposits mapping
-                self.lockedDeposits[_newHolder].push(DepositInstance({
-                    amount: amountToMove,
-                    unlockTime: unlockTime
-                }));
-
-                self.lockedDeposits[_holder][i].amount -= amountToMove;
-            }
-        }
-
-        return totalMoved;
-    }
-
     /// @notice Get locked deposit amount for a specific holder
     function lockedDepositsAmount(DepositsStorage storage self, address _holder) internal view returns (uint256) {
         require(self.holders.contains(_holder), "PL:INVALID_HOLDER");
@@ -129,18 +78,5 @@ library PoolLibrary {
         }
 
         return lockedAmount;
-    }
-    /// @notice Get locked deposit amount for a specific holder
-    function totalDepositsAmount(DepositsStorage storage self, address _holder) internal view returns (uint256) {
-        require(self.holders.contains(_holder), "PL:INVALID_HOLDER");
-
-        uint256 totalAmount = 0;
-
-        uint256 count = self.lockedDeposits[_holder].length;
-        for (uint256 i = 0; i < count; i++) {
-            totalAmount += self.lockedDeposits[_holder][i].amount;
-        }
-
-        return totalAmount;
     }
 }

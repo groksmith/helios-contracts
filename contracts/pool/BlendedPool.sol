@@ -26,7 +26,7 @@ contract BlendedPool is AbstractPool {
     /// @param _amount to be withdrawn
     function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
         require(balanceOf(msg.sender) >= _amount, "BP:INSUFFICIENT_FUNDS");
-        require(unlockedToWithdraw(msg.sender) >= _amount, "BP:TOKENS_LOCKED");
+        require(unlockedBalanceOf(msg.sender) >= _amount, "BP:TOKENS_LOCKED");
 
         _burn(msg.sender, _amount);
         _transferFunds(msg.sender, _amount);

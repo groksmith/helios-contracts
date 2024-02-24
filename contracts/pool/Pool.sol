@@ -40,7 +40,7 @@ contract Pool is AbstractPool {
     /// @param _amount the amount of assets to be withdrawn
     function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
         require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
-        require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
+        require(unlockedBalanceOf(msg.sender) >= _amount, "P:TOKENS_LOCKED");
 
         if (totalBalance() < _amount) {
             uint256 insufficientAmount = _amount - totalBalance();

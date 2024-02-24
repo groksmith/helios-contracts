@@ -96,6 +96,6 @@ contract BlendedPoolInvariantTest is Test {
 
     // Test that yieldPrecisionLoss <= maxPrecisionLossForYields
     function invariant_transfer_precision_loss_less_or_equal_max_precision_loss() external {
-        console.log("maxTransferPrecisionInaccuracy", handler.maxTransferPrecisionInaccuracy());
+        assertLe(handler.maxTransferPrecisionInaccuracy(), 1);
     }
 }

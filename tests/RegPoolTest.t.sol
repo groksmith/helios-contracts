@@ -474,4 +474,53 @@ contract RegPoolTest is FixtureContract {
         vm.expectRevert("P:BAD_STATE");
         regPool1.finalize();
     }
+    /// @notice Test attempt transfer tokens
+    function testFuzz_pool_deposit_transfer(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
+        vm.assume(holder != address(0));
+        vm.assume(newHolder != address(0));
+        vm.assume(newHolder != holder);
+
+        uint256 amountBounded1 = bound(
+            amount1,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 4);
+
+        uint256 amountBounded2 = bound(
+            amount2,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 4);
+
+        uint256 lockTime1 = block.timestamp + 1000;
+        uint256 lockTime2 = lockTime1 + 6000;
+
+        vm.startPrank(holder);
+        mintAsset(holder, amountBounded1);
+        asset.approve(address(regPool1), amountBounded1);
+        regPool1.deposit(amountBounded1);
+
+        vm.expectRevert("P:TOKENS_LOCKED");
+        regPool1.transfer(newHolder, amountBounded1);
+
+        vm.warp(lockTime1);
+        mintAsset(holder, amountBounded2);
+        asset.approve(address(regPool1), amountBounded2);
+        regPool1.deposit(amountBounded2);
+
+        vm.warp(lockTime2);
+        mintAsset(holder, amountBounded1);
+        asset.approve(address(regPool1), amountBounded1);
+        regPool1.deposit(amountBounded1);
+
+        uint256 holderTokensAmountBefore = regPool1.balanceOf(holder);
+        uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
+
+        regPool1.transfer(newHolder, amountBounded1 + amountBounded2);
+
+        uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
+        uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);
+
+        assertEq(
+            holderTokensAmountBefore - holderTokensAmountAfter,
+            newHolderTokensAmountAfter - newHolderTokensAmountBefore);
+    }
 }

@@ -162,21 +162,14 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     ERC20 Overrides
     */
 
-    function transfer(address _to, uint256 _value) public override returns (bool) {
-        address owner = _msgSender();
-        require(unlockedBalanceOf(owner) >= _value, "P:TOKENS_LOCKED");
-
-        _transfer(owner, _to, _value);
-        return true;
+    function transfer(address to, uint amount) public override returns (bool) {
+        require(amount <= unlockedBalanceOf(msg.sender), "P:TOKENS_LOCKED");
+        return super.transfer(to, amount);
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) public override returns (bool) {
-        address spender = _msgSender();
-        require(unlockedBalanceOf(_from) >= _value, "P:TOKENS_LOCKED");
-
-        _spendAllowance(_from, spender, _value);
-        _transfer(_from, _to, _value);
-        return true;
+    function transferFrom(address from, address to, uint amount) public override returns (bool) {
+        require(amount <= unlockedBalanceOf(from), "P:TOKENS_LOCKED");
+        return super.transferFrom(from, to, amount);
     }
 
     /*

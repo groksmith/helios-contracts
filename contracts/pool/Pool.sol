@@ -8,7 +8,7 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 /// @title Regional Pool implementation
 /// @author Tigran Arakelyan
 contract Pool is AbstractPool {
-    enum State {Initialized, Finalized/*, Deactivated*/}
+    enum State {Active, Closed/*, Deactivated*/}
     State public poolState;
 
     event PoolStateChanged(State state);
@@ -17,13 +17,13 @@ contract Pool is AbstractPool {
     AbstractPool(_asset, NAME, SYMBOL) {
         poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, _investmentPoolSize);
 
-        poolState = State.Initialized;
+        poolState = State.Active;
         emit PoolStateChanged(poolState);
     }
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount the amount of assets to deposit
-    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant inState(State.Initialized) {
+    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant inState(State.Active) {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
         _depositLogic(_amount, msg.sender);
@@ -32,7 +32,7 @@ contract Pool is AbstractPool {
     /// @notice Called only from Blended Pool. Part of BP compensation mechanism
     /// @param _amount the amount of assets to deposit
     function blendedPoolDeposit(uint256 _amount) external
-    onlyBlendedPool whenProtocolNotPaused inState(State.Initialized) {
+    onlyBlendedPool whenProtocolNotPaused inState(State.Active) {
         _depositLogic(_amount, msg.sender);
     }
 
@@ -88,8 +88,8 @@ contract Pool is AbstractPool {
     */
 
     /// @notice Finalize pool, disable any new deposits
-    function finalize() external onlyAdmin inState(State.Initialized) {
-        poolState = State.Finalized;
+    function close() external onlyAdmin inState(State.Active) {
+        poolState = State.Closed;
         emit PoolStateChanged(poolState);
     }
 

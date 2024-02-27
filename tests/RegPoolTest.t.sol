@@ -445,8 +445,8 @@ contract RegPoolTest is FixtureContract {
         regPool1.getHolderByIndex(3);
     }
 
-    /// @notice Test attempt to deposit below minimum
-    function testFuzz_pool_finalize(address user1) external {
+    /// @notice Test attempt to change states
+    function testFuzz_pool_close(address user1) external {
         uint256 depositAmount = 100000;
 
         vm.startPrank(user1);
@@ -457,8 +457,8 @@ contract RegPoolTest is FixtureContract {
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
-        // Finalized. Deny any additional deposits
-        regPool1.finalize();
+        // Closed. Deny any additional deposits
+        regPool1.close();
         vm.stopPrank();
 
         vm.startPrank(user1);
@@ -470,9 +470,9 @@ contract RegPoolTest is FixtureContract {
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
-        // Cannot finalize again
+        // Cannot close again
         vm.expectRevert("P:BAD_STATE");
-        regPool1.finalize();
+        regPool1.close();
     }
     /// @notice Test attempt transfer tokens
     function testFuzz_pool_deposit_transfer(address holder, address newHolder, uint256 amount1, uint256 amount2) external {

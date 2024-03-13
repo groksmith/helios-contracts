@@ -91,6 +91,15 @@ contract RegPoolTest is FixtureContract {
         asset.approve(address(regPool1), depositAmountMax + 1);
         vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
         regPool1.deposit(1);
+
+        vm.startPrank(OWNER_ADDRESS);
+        regPool1.close();
+        vm.stopPrank();
+
+        vm.startPrank(user1);
+        vm.expectRevert("P:BAD_STATE");
+        regPool1.deposit(1);
+
         vm.stopPrank();
     }
 
@@ -151,6 +160,8 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
 
         vm.startPrank(OWNER_ADDRESS);
+        regPool1.close();
+
         uint256 borrowAmount = regPool1.totalBalance() - regPool1.principalOut();
         regPool1.borrow(OWNER_ADDRESS, borrowAmount);
         assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
@@ -190,6 +201,8 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
 
         vm.startPrank(OWNER_ADDRESS);
+        regPool1.close();
+
         uint256 borrowAmount = regPool1.totalBalance() - regPool1.principalOut();
         regPool1.borrow(OWNER_ADDRESS, borrowAmount);
         assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
@@ -295,6 +308,8 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+        regPool1.close();
+
         asset.approve(address(regPool1), depositAmount + yieldAmount);
         mintAsset(OWNER_ADDRESS, yieldAmount);
 
@@ -380,6 +395,8 @@ contract RegPoolTest is FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
         vm.expectRevert("P:INVALID_VALUE");
         regPool1.distributeYields(0);
+
+        regPool1.close();
 
         mintAsset(OWNER_ADDRESS, yieldGenerated);
         asset.approve(address(regPool1), yieldGenerated);

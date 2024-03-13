@@ -32,7 +32,7 @@ contract Pool is AbstractPool {
     /// @notice Called only from Blended Pool. Part of BP compensation mechanism
     /// @param _amount the amount of assets to deposit
     function blendedPoolDeposit(uint256 _amount) external
-    onlyBlendedPool whenProtocolNotPaused inState(State.Active) {
+    onlyBlendedPool whenProtocolNotPaused inState(State.Closed) {
         _depositLogic(_amount, msg.sender);
     }
 
@@ -86,6 +86,14 @@ contract Pool is AbstractPool {
     /*
     Admin flow
     */
+
+    function borrow(address _to, uint256 _amount) public override inState(State.Closed) {
+        super.borrow(_to, _amount);
+    }
+
+    function repay(uint256 _amount) public override inState(State.Closed) {
+        super.repay(_amount);
+    }
 
     /// @notice Finalize pool, disable any new deposits
     function close() external onlyAdmin inState(State.Active) {

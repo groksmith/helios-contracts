@@ -121,10 +121,14 @@ contract BlendedPoolTest is Test, FixtureContract {
     function test_request_assets(address user) external {
         createInvestorAndMintAsset(user, 1000);
 
+        vm.prank(OWNER_ADDRESS);
+        regPool1.close();
+
         vm.expectRevert(bytes("P:NOT_POOL"));
         blendedPool.requestAssets(10);
 
         vm.startPrank(address(regPool1));
+
         vm.expectRevert(bytes("BP:INVALID_AMOUNT"));
         blendedPool.requestAssets(0);
 
@@ -261,6 +265,8 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //the admin distributes yields and takes all the LA, emptying the pool
         vm.startPrank(OWNER_ADDRESS);
+
+        pool.close();
 
         pool.distributeYields(100);
         pool.borrow(OWNER_ADDRESS, 100);

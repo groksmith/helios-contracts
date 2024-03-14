@@ -22,6 +22,8 @@ library PoolLibrary {
         EnumerableSet.AddressSet holders;
 
         mapping(address => DepositInstance[]) lockedDeposits;
+
+        uint256 totalDeposited;
     }
 
     /// @notice Get the count of holders
@@ -58,6 +60,8 @@ library PoolLibrary {
             amount: _amount,
             unlockTime: _unlockTime
         }));
+
+        self.totalDeposited += _amount;
     }
 
     /// @notice Get locked deposit amount for a specific holder

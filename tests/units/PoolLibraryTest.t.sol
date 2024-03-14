@@ -16,7 +16,7 @@ contract PoolLibraryTest is Test, FixtureContract {
     }
 
     function testFuzz_get_holders_count(address[100] calldata holders, uint256 amount) public {
-        uint256 amountBounded = bound(amount, 1, type(uint256).max);
+        uint256 amountBounded = bound(amount, 1, 1e24);
 
         // Initial state
         assertEq(depositsStorage.getHoldersCount(), 0);

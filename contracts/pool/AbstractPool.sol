@@ -33,7 +33,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     PoolInfo public poolInfo;
 
-    uint256 public totalDeposited;
     uint256 public principalOut;
 
     mapping(address => uint256) public yields;
@@ -202,6 +201,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         return poolInfo;
     }
 
+    /// @notice Get historical total deposited
+    function totalDeposited() external view returns (uint256) {
+        return depositsStorage.totalDeposited;
+    }
+
     /*
     Internals
     */
@@ -221,20 +225,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         depositsStorage.addDeposit(_holder, _amount, block.timestamp + poolInfo.lockupPeriod);
 
-        _mintAndUpdateTotalDeposited(_holder, _amount);
+        _mint(_holder, _amount);
 
         _emitBalanceUpdatedEvent();
         emit Deposit(_holder, _amount);
 
         asset.safeTransferFrom(_holder, address(this), _amount);
-    }
-
-    /// @notice Mint Pool assets to given `_account` address and update totalDeposited
-    /// @param _account holder's address
-    /// @param _amount to be minted
-    function _mintAndUpdateTotalDeposited(address _account, uint256 _amount) internal {
-        _mint(_account, _amount);
-        totalDeposited += _amount;
     }
 
     /// @notice Transfers Pool assets to given `_to` address

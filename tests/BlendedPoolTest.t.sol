@@ -86,7 +86,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.expectRevert("P:DEP_AMT_BELOW_MIN");
         blendedPool.deposit(depositAmountBelowMin);
 
-        vm.expectRevert("BP:ZERO_AMOUNT");
+        vm.expectRevert("P:INVALID_VALUE");
         blendedPool.deposit(0);
         vm.stopPrank();
     }
@@ -129,7 +129,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         vm.startPrank(address(regPool1));
 
-        vm.expectRevert(bytes("BP:INVALID_AMOUNT"));
+        vm.expectRevert(bytes("P:INVALID_VALUE"));
         blendedPool.requestAssets(0);
 
         vm.expectRevert(bytes("BP:NOT_ENOUGH_ASSETS"));

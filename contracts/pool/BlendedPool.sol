@@ -17,8 +17,7 @@ contract BlendedPool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount the amount of assets to be deposited
-    function deposit(uint256 _amount) public override whenProtocolNotPaused nonReentrant {
-        require(_amount > 0, "BP:ZERO_AMOUNT");
+    function deposit(uint256 _amount) public override notZero(_amount) whenProtocolNotPaused nonReentrant {
         super.deposit(_amount);
     }
 
@@ -36,18 +35,17 @@ contract BlendedPool is AbstractPool {
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets
-    /// @param _amountRequested the amount requested for compensation
-    function requestAssets(uint256 _amountRequested) external nonReentrant onlyPool {
-        require(_amountRequested > 0, "BP:INVALID_AMOUNT");
-        require(totalBalance() >= _amountRequested, "BP:NOT_ENOUGH_ASSETS");
+    /// @param _amount the amount requested for compensation
+    function requestAssets(uint256 _amount) external notZero(_amount) nonReentrant onlyPool {
+        require(totalBalance() >= _amount, "BP:NOT_ENOUGH_ASSETS");
 
         Pool pool = Pool(msg.sender);
-        bool success = asset.approve(address(pool), _amountRequested);
+        bool success = asset.approve(address(pool), _amount);
 
         if(success)
         {
-            pool.blendedPoolDeposit(_amountRequested);
-            emit RegPoolRequested(msg.sender, _amountRequested);
+            pool.blendedPoolDeposit(_amount);
+            emit RegPoolRequested(msg.sender, _amount);
         }
     }
 

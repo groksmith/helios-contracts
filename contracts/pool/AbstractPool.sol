@@ -140,17 +140,14 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Borrow the pool's money for investment
     /// @param _to address for borrow funds
     /// @param _amount amount to be borrowed
-    function borrow(address _to, uint256 _amount) public virtual nonReentrant onlyAdmin {
-        require(_amount > 0, "P:INVALID_VALUE");
-
+    function borrow(address _to, uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
         principalOut += _amount;
         _transferFunds(_to, _amount);
     }
 
     /// @notice Repay asset without minimal threshold or getting LP in return
     /// @param _amount amount to be repaid
-    function repay(uint256 _amount) public virtual nonReentrant onlyAdmin {
-        require(_amount > 0, "P:INVALID_VALUE");
+    function repay(uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
         require(_amount <= principalOut, "P:REPAID_MORE_THAN_BORROWED");
         require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
 
@@ -161,8 +158,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Repay and distribute yields
     /// @param _amount amount to be repaid
-    function repayYield(uint256 _amount) public virtual nonReentrant onlyAdmin {
-        require(_amount > 0, "P:INVALID_VALUE");
+    function repayYield(uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
         require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
 
         uint256 count = depositsStorage.getHoldersCount();
@@ -249,6 +245,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /*
     Modifiers
     */
+
+    /// @notice Checks that the protocol is not in a paused state
+    modifier notZero(uint256 _value) {
+        require(_value > 0, "P:INVALID_VALUE");
+        _;
+    }
 
     /// @notice Checks that the protocol is not in a paused state
     modifier whenProtocolNotPaused() {

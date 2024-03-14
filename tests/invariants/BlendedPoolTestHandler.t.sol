@@ -100,16 +100,21 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     */
 
     /// Distribute yields
-    function distributeYield() external {
+    function repayYield() external {
         if (blendedPool.getHoldersCount() == 0) return;
 
         uint256 startingSumYields = sumUserYields();
 
         uint256 newYieldToDistribute = 0.1e18;
+        assetElevated.mint(OWNER_ADDRESS, newYieldToDistribute);
 
         vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(newYieldToDistribute);
+        asset.approve(address(blendedPool), newYieldToDistribute);
 
+        vm.prank(OWNER_ADDRESS);
+        blendedPool.repayYield(newYieldToDistribute);
+
+        totalRepaid += newYieldToDistribute;
         totalYieldAccrued += newYieldToDistribute;
 
         uint256 actualChangeInUserYields = sumUserYields() - startingSumYields;
@@ -147,7 +152,9 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
     /// Borrow money from the deposits
     function borrow(uint256 amount) external {
-        amount = bound(amount, 0, blendedPool.totalBalance());
+        if (blendedPool.totalBalance() == 0) return;
+
+        amount = bound(amount, 1, blendedPool.totalBalance());
 
         vm.prank(OWNER_ADDRESS);
         blendedPool.borrow(OWNER_ADDRESS, amount);
@@ -157,7 +164,9 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
     /// Repay money to the pool
     function repay(uint256 amount) external {
-        amount = bound(amount, 1, type(uint80).max);
+        if (blendedPool.principalOut() == 0) return;
+
+        amount = bound(amount, 1, blendedPool.principalOut());
 
         assetElevated.mint(OWNER_ADDRESS, amount);
 

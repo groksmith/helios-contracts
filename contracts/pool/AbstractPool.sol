@@ -96,18 +96,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         return true;
     }
 
-    /// @notice Used to distribute yields among investors (LP token holders)
-    /// @param  _amount the amount to be divided among investors
-    function distributeYields(uint256 _amount) external virtual onlyAdmin nonReentrant {
-        require(_amount > 0, "P:INVALID_VALUE");
-
-        uint256 count = depositsStorage.getHoldersCount();
-        for (uint256 i = 0; i < count; i++) {
-            address holder = depositsStorage.getHolderByIndex(i);
-            yields[holder] += _calculateYield(holder, _amount);
-        }
-    }
-
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _holder address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _holder) external nonReentrant onlyAdmin {
@@ -158,13 +146,19 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         asset.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
-    /// @notice Repay yields
+    /// @notice Repay and distribute yields
     /// @param _amount amount to be repaid
     function repayYield(uint256 _amount) public virtual nonReentrant onlyAdmin {
         require(_amount > 0, "P:INVALID_VALUE");
         require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
 
-        asset.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 count = depositsStorage.getHoldersCount();
+        for (uint256 i = 0; i < count; i++) {
+            address holder = depositsStorage.getHolderByIndex(i);
+            yields[holder] += _calculateYield(holder, _amount);
+        }
+
+    asset.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     /*

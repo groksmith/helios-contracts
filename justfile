@@ -101,7 +101,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-single: && _timer
-	forge test -vvvvv --match-contract RegPoolTest
+	forge test -vvvvv --match-contract BlendedPoolInvariant
 
 test-gas: && _timer
     forge test --gas-report

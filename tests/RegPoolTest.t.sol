@@ -407,7 +407,6 @@ contract RegPoolTest is FixtureContract {
 
         uint256 yieldGenerated = 1000;
 
-        //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
 
         // No yield yet
@@ -415,19 +414,17 @@ contract RegPoolTest is FixtureContract {
         regPool1.withdrawYield();
 
         vm.expectRevert("PF:NOT_ADMIN");
-        regPool1.distributeYields(yieldGenerated);
+        regPool1.repayYield(yieldGenerated);
 
-        //only the pool admin can call distributeYields()
         vm.startPrank(OWNER_ADDRESS);
         vm.expectRevert("P:INVALID_VALUE");
-        regPool1.distributeYields(0);
+        regPool1.repayYield(0);
 
         regPool1.close();
 
         mintAsset(OWNER_ADDRESS, yieldGenerated);
         asset.approve(address(regPool1), yieldGenerated);
         regPool1.repayYield(yieldGenerated);
-        regPool1.distributeYields(yieldGenerated);
 
         //now we need to test if the users got assigned the correct yields
         uint256 user1Yields = regPool1.yields(user1);

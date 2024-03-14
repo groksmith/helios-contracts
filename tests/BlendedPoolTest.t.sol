@@ -140,7 +140,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
         mintAsset(OWNER_ADDRESS, 100);
         asset.approve(address(blendedPool), 100);
-        blendedPool.repay(100);
+        blendedPool.deposit(100);
         vm.stopPrank();
 
         vm.startPrank(address(regPool1));
@@ -149,27 +149,31 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function test_distribute_yields_and_withdraw(address user1, address user2) external {
+    function test_repay_yields_and_withdraw(address user1, address user2) external {
         uint256 user1Deposit = 100;
         uint256 user2Deposit = 1000;
         createInvestorAndMintAsset(user1, user1Deposit);
         createInvestorAndMintAsset(user2, user2Deposit);
         vm.assume(user1 != user2);
 
-        //firstly the users need to deposit before withdrawing
+        // User1 Deposit
         vm.startPrank(user1);
         asset.approve(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
         vm.stopPrank();
 
+        // User2 Deposit
         vm.startPrank(user2);
         asset.approve(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
         vm.stopPrank();
 
-        //only the pool admin can call distributeYields()
-        vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(1000);
+        // Repay yield
+        vm.startPrank(OWNER_ADDRESS);
+        mintAsset(OWNER_ADDRESS, 1000);
+        asset.approve(address(blendedPool), 1000);
+        blendedPool.repayYield(1000);
+        vm.stopPrank();
 
         //now we need to test if the users got assigned the correct yields
         uint256 user1Yields = blendedPool.yields(user1);
@@ -177,110 +181,60 @@ contract BlendedPoolTest is Test, FixtureContract {
         assertEq(user1Yields, 90, "wrong yield user1");
         assertEq(user2Yields, 909, "wrong yield user2"); //NOTE: 1 is lost as a dust value :(
 
+        // Withdraw yield for user1
         uint256 user1BalanceBefore = asset.balanceOf(user1);
         vm.prank(user1);
         blendedPool.withdrawYield();
         assertEq(asset.balanceOf(user1) - user1BalanceBefore, 90);
 
+        // Withdraw yield for user2
         uint256 user2BalanceBefore = asset.balanceOf(user2);
         vm.prank(user2);
         blendedPool.withdrawYield();
         assertEq(asset.balanceOf(user2) - user2BalanceBefore, 909);
 
-        //a non-pool-admin address shouldn't be able to call distributeYields()
+        //a non-pool-admin address shouldn't be able to call repayYield()
         vm.prank(user1);
         vm.expectRevert("PF:NOT_ADMIN");
-        blendedPool.distributeYields(1000);
-    }
+        blendedPool.repayYield(1000);
 
-    /// @notice Test scenario when there are not enough funds on the pool
-    function test_insufficient_funds_withdraw_yield(address user) external {
-        createInvestorAndMintAsset(user, 1000);
-
-        //firstly the users need to deposit before withdrawing
-        uint256 user1Deposit = 100;
-        vm.startPrank(user);
-        asset.approve(address(blendedPool), 10000);
-        blendedPool.deposit(user1Deposit);
-        vm.stopPrank();
-
-        //only the pool admin can call distributeYields()
-        vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(1000);
-
+        // Cannot repay zero yield
         vm.prank(OWNER_ADDRESS);
         vm.expectRevert("P:INVALID_VALUE");
-        blendedPool.distributeYields(0);
-
-        assertEq(blendedPool.yields(user), 1000, "yields should be 1000 atm");
-
-        // now let's deplete the pool's balance
-        vm.startPrank(OWNER_ADDRESS);
-        uint256 borrowAmount = blendedPool.totalSupply() - blendedPool.principalOut();
-        blendedPool.borrow(OWNER_ADDRESS, borrowAmount);
-        vm.stopPrank();
-
-        //..and withdraw yields as user1
-        vm.startPrank(user);
-        vm.expectEmit(false, false, false, false);
-        // The expected event signature
-        emit PendingYield(user, 1000);
-        assertFalse(blendedPool.withdrawYield(), "should return false if not enough LA");
-
-        vm.stopPrank();
-
-        assertEq(blendedPool.yields(user), 0, "yields should be 0 after withdraw attempt");
-
-        assertEq(blendedPool.pendingYields(user), 1000, "pending yields should be 1000 after withdraw attempt");
-
-        uint256 user1BalanceBefore = asset.balanceOf(user);
-
-        mintAsset(OWNER_ADDRESS, blendedPool.pendingYields(user));
-        vm.startPrank(OWNER_ADDRESS);
-        asset.approve(address(blendedPool), blendedPool.pendingYields(user));
-        blendedPool.concludePendingYield(user);
-
-        uint256 user1BalanceAfter = asset.balanceOf(user);
-
-        //checking if the user got his money now
-        assertEq(user1BalanceAfter, user1BalanceBefore + 1000, "invalid user1 LA balance after concluding");
+        blendedPool.repayYield(0);
     }
 
     function test_subsiding_reg_pool_with_blended_pool(address user) external {
         createInvestorAndMintAsset(user, 1000);
 
+        // Create pool
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
         address poolAddress = poolFactory.createPool("1", address(asset), 1000, 100, 1000);
-
         Pool pool = Pool(poolAddress);
-
         vm.stopPrank();
 
-        //a user deposits some LA to the RegPool
+        //Deposit to pool
         vm.startPrank(user);
-        asset.approve(poolAddress, 1000);
+        asset.approve(poolAddress, 500);
         pool.deposit(500);
         vm.stopPrank();
 
-        //the admin distributes yields and takes all the LA, emptying the pool
+        // Close pool and borrow
         vm.startPrank(OWNER_ADDRESS);
-
         pool.close();
+        pool.borrow(OWNER_ADDRESS, 500);
 
-        pool.distributeYields(100);
-        pool.borrow(OWNER_ADDRESS, 100);
+        // Deposit to Blended Pool
+        mintAsset(OWNER_ADDRESS, 500);
+        asset.approve(address(blendedPool), 500);
+        blendedPool.deposit(500);
         vm.stopPrank();
 
-        //now let's repay assets to the blended pool
-        vm.startPrank(OWNER_ADDRESS);
-        mintAsset(OWNER_ADDRESS, 100);
-        asset.approve(address(blendedPool), 100);
-        blendedPool.repay(100);
-        vm.stopPrank();
+        // locked period is passed
+        vm.warp(block.timestamp + 1001);
 
-        //now let's withdraw yield. The blended pool will help
+        //now let's withdraw. The blended pool will help
         vm.startPrank(user);
-        asset.approve(poolAddress, 10000);
-        pool.withdrawYield();
+        pool.withdraw(500);
     }
 }

@@ -78,9 +78,10 @@ contract Pool is AbstractPool {
             _burn(msg.sender, _amount);
         }
 
-        _transferFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
+
+        _transferFunds(msg.sender, _amount);
     }
 
     /*

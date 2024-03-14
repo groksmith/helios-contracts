@@ -35,6 +35,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     uint256 public principalOut;
 
+    uint256 public principalBalanceAmount;
+    uint256 public rewardBalanceAmount;
+
     mapping(address => uint256) public yields;
     mapping(address => uint256) public pendingWithdrawals;
     mapping(address => uint256) public pendingYields;
@@ -77,7 +80,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         _emitBalanceUpdatedEvent();
         emit Deposit(holder, _amount);
 
-        asset.safeTransferFrom(holder, address(this), _amount);
+        _receiveFunds(holder, _amount);
     }
 
     /// @notice withdraws the caller's assets
@@ -103,7 +106,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             return false;
         }
 
-        _transferFunds(msg.sender, callerYields);
+        _transferRewards(msg.sender, callerYields);
 
         emit YieldWithdrawn(msg.sender, callerYields);
         return true;
@@ -153,7 +156,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         principalOut -= _amount;
 
-        asset.safeTransferFrom(msg.sender, address(this), _amount);
+        _receiveFunds(msg.sender, _amount);
     }
 
     /// @notice Repay and distribute yields
@@ -167,7 +170,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             yields[holder] += _calculateYield(holder, _amount);
         }
 
-        asset.safeTransferFrom(msg.sender, address(this), _amount);
+        _receiveRewards(msg.sender, _amount);
     }
 
     /*
@@ -234,7 +237,32 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _to receiver's address
     /// @param _value amount to be transferred
     function _transferFunds(address _to, uint256 _value) internal {
+        principalBalanceAmount -= _value;
         require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
+    }
+
+    /// @notice Receive Pool assets from given `_from` address
+    /// @param _from sender's address
+    /// @param _value amount to be received
+    function _receiveFunds(address _from, uint256 _value) internal {
+        principalBalanceAmount += _value;
+        asset.safeTransferFrom(_from, address(this), _value);
+    }
+
+    /// @notice Transfers reward assets to given `_to` address
+    /// @param _to receiver's address
+    /// @param _value amount to be transferred
+    function _transferRewards(address _to, uint256 _value) internal {
+        rewardBalanceAmount -= _value;
+        require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
+    }
+
+    /// @notice Receive Pool reward assets from given `_from` address
+    /// @param _from sender's address
+    /// @param _value amount to be received
+    function _receiveRewards(address _from, uint256 _value) internal {
+        rewardBalanceAmount += _value;
+        asset.safeTransferFrom(_from, address(this), _value);
     }
 
     /// @notice Emits a `BalanceUpdated` event for Pool

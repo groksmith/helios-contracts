@@ -28,10 +28,11 @@ contract BlendedPool is AbstractPool {
         require(unlockedToWithdraw(msg.sender) >= _amount, "BP:TOKENS_LOCKED");
 
         _burn(msg.sender, _amount);
-        _transferFunds(msg.sender, _amount);
 
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
+
+        _transferFunds(msg.sender, _amount);
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets
@@ -42,7 +43,7 @@ contract BlendedPool is AbstractPool {
         Pool pool = Pool(msg.sender);
         bool success = asset.approve(address(pool), _amount);
 
-        if(success)
+        if (success)
         {
             pool.blendedPoolDeposit(_amount);
             emit RegPoolRequested(msg.sender, _amount);

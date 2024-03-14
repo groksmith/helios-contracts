@@ -65,7 +65,20 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount to deposit
-    function deposit(uint256 _amount) external virtual;
+    function deposit(uint256 _amount) public virtual {
+        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+
+        address holder = msg.sender;
+
+        depositsStorage.addDeposit(holder, _amount, block.timestamp + poolInfo.lockupPeriod);
+
+        _mint(holder, _amount);
+
+        _emitBalanceUpdatedEvent();
+        emit Deposit(holder, _amount);
+
+        asset.safeTransferFrom(holder, address(this), _amount);
+    }
 
     /// @notice withdraws the caller's assets
     /// @param _amount to be withdrawn
@@ -158,7 +171,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             yields[holder] += _calculateYield(holder, _amount);
         }
 
-    asset.safeTransferFrom(msg.sender, address(this), _amount);
+        asset.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     /*
@@ -219,22 +232,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _amount to be shared proportionally
     function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256) {
         return (_amount * balanceOf(_holder)) / totalSupply();
-    }
-
-    /// @notice Shared deposit logic
-    /// @param _amount to be deposited
-    /// @param _holder holders address
-    function _depositLogic(uint256 _amount, address _holder) internal {
-        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-
-        depositsStorage.addDeposit(_holder, _amount, block.timestamp + poolInfo.lockupPeriod);
-
-        _mint(_holder, _amount);
-
-        _emitBalanceUpdatedEvent();
-        emit Deposit(_holder, _amount);
-
-        asset.safeTransferFrom(_holder, address(this), _amount);
     }
 
     /// @notice Transfers Pool assets to given `_to` address

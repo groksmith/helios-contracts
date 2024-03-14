@@ -23,17 +23,17 @@ contract Pool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount the amount of assets to deposit
-    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant inState(State.Active) {
+    function deposit(uint256 _amount) public override whenProtocolNotPaused nonReentrant inState(State.Active) {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        _depositLogic(_amount, msg.sender);
+        super.deposit(_amount);
     }
 
     /// @notice Called only from Blended Pool. Part of BP compensation mechanism
     /// @param _amount the amount of assets to deposit
     function blendedPoolDeposit(uint256 _amount) external
     onlyBlendedPool whenProtocolNotPaused inState(State.Closed) {
-        _depositLogic(_amount, msg.sender);
+        super.deposit(_amount);
     }
 
     /// @notice withdraws the caller's assets

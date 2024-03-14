@@ -17,9 +17,9 @@ contract BlendedPool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount the amount of assets to be deposited
-    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
+    function deposit(uint256 _amount) public override whenProtocolNotPaused nonReentrant {
         require(_amount > 0, "BP:ZERO_AMOUNT");
-        _depositLogic(_amount, msg.sender);
+        super.deposit(_amount);
     }
 
     /// @notice withdraws the caller's liquidity assets

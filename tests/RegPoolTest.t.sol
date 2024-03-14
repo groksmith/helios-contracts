@@ -290,15 +290,13 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test repay
-    function testFuzz_repay(address investor, uint256 depositAmount, uint256 yieldAmount) external {
+    function testFuzz_borrow(address investor, uint256 depositAmount) external {
         vm.startPrank(investor);
 
         depositAmount = bound(
             depositAmount,
             regPool1.getPoolInfo().minInvestmentAmount,
             regPool1.getPoolInfo().investmentPoolSize);
-
-        yieldAmount = bound(yieldAmount, 0, asset.totalSupply());
 
         createInvestorAndMintAsset(investor, depositAmount);
 
@@ -310,30 +308,58 @@ contract RegPoolTest is FixtureContract {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
         regPool1.close();
 
-        asset.approve(address(regPool1), depositAmount + yieldAmount);
-        mintAsset(OWNER_ADDRESS, yieldAmount);
+        vm.expectRevert(bytes("P:INVALID_VALUE"));
+        regPool1.borrow(OWNER_ADDRESS, 0);
 
-        // Just toying with multiple borrow and repay
         regPool1.borrow(OWNER_ADDRESS, depositAmount - 10);
-        assertEq(regPool1.principalOut(), depositAmount - 10);
 
-        regPool1.borrow(OWNER_ADDRESS, 10);
+        vm.stopPrank();
+    }
+
+    /// @notice Test repay
+    function testFuzz_repay(address investor, uint256 depositAmount) external {
+        // Deposit
+        vm.startPrank(investor);
+
+        depositAmount = bound(
+            depositAmount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
+        createInvestorAndMintAsset(investor, depositAmount);
+
+        asset.approve(address(regPool1), depositAmount);
+        regPool1.deposit(depositAmount);
+        vm.stopPrank();
+
+        // Close pool
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+        regPool1.close();
+
+        // Borrow
+        regPool1.borrow(OWNER_ADDRESS, depositAmount);
         assertEq(regPool1.principalOut(), depositAmount);
 
+        // Approve
+        asset.approve(address(regPool1), depositAmount);
+
+        // Partial repay
         regPool1.repay(depositAmount - 10);
         assertEq(regPool1.principalOut(), 10);
+
+        // Partial repay
         regPool1.repay(10);
         assertEq(regPool1.principalOut(), 0);
 
-        regPool1.repay(yieldAmount);
-        assertEq(regPool1.principalOut(), 0);
+        // Repay more than borrow
+        vm.expectRevert(bytes("P:REPAID_MORE_THAN_BORROWED"));
+        regPool1.repay(10);
 
-        uint256 balance = asset.balanceOf(OWNER_ADDRESS);
-        asset.approve(address(regPool1), 2 * balance);
-
+        // Repay with insufficient balance
+        regPool1.borrow(OWNER_ADDRESS, 10);
+        burnAsset(OWNER_ADDRESS, asset.balanceOf(OWNER_ADDRESS));
         vm.expectRevert(bytes("P:NOT_ENOUGH_BALANCE"));
-        regPool1.repay(balance + 10);
-        // Stop toying
+        regPool1.repay(10);
 
         vm.stopPrank();
     }
@@ -400,7 +426,7 @@ contract RegPoolTest is FixtureContract {
 
         mintAsset(OWNER_ADDRESS, yieldGenerated);
         asset.approve(address(regPool1), yieldGenerated);
-        regPool1.repay(yieldGenerated);
+        regPool1.repayYield(yieldGenerated);
         regPool1.distributeYields(yieldGenerated);
 
         //now we need to test if the users got assigned the correct yields
@@ -491,6 +517,7 @@ contract RegPoolTest is FixtureContract {
         vm.expectRevert("P:BAD_STATE");
         regPool1.close();
     }
+
     /// @notice Test attempt transfer tokens
     function testFuzz_pool_deposit_transfer(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
         vm.assume(holder != address(0));

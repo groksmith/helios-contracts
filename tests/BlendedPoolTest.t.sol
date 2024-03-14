@@ -235,10 +235,9 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         uint256 user1BalanceBefore = asset.balanceOf(user);
 
-        mintAsset(OWNER_ADDRESS, 1000);
+        mintAsset(OWNER_ADDRESS, blendedPool.pendingYields(user));
         vm.startPrank(OWNER_ADDRESS);
-        asset.approve(address(blendedPool), 1000);
-        blendedPool.repay(1000);
+        asset.approve(address(blendedPool), blendedPool.pendingYields(user));
         blendedPool.concludePendingYield(user);
 
         uint256 user1BalanceAfter = asset.balanceOf(user);

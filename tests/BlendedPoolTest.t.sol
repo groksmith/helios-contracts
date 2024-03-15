@@ -8,21 +8,11 @@ import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
 import {BlendedPool} from "../contracts/pool/BlendedPool.sol";
-
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract BlendedPoolTest is Test, FixtureContract {
-    event PendingYield(address indexed recipient, uint256 amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
-
     function setUp() public {
         fixture();
-        vm.prank(OWNER_ADDRESS);
-        asset.approve(address(blendedPool), 1000);
-        vm.stopPrank();
-        vm.prank(USER_ADDRESS);
-        asset.approve(address(blendedPool), 1000);
-        vm.stopPrank();
     }
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
@@ -204,6 +194,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.repayYield(0);
     }
 
+    /// @notice Test complete scenario of subsiding regular pool with blended pool
     function test_subsiding_reg_pool_with_blended_pool(address user) external {
         createInvestorAndMintAsset(user, 1000);
 

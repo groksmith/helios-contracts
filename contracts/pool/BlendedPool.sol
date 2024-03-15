@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
@@ -26,6 +26,7 @@ contract BlendedPool is AbstractPool {
     function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
         require(balanceOf(msg.sender) >= _amount, "BP:INSUFFICIENT_FUNDS");
         require(unlockedToWithdraw(msg.sender) >= _amount, "BP:TOKENS_LOCKED");
+        require(principalBalanceAmount >= _amount, "BP:NOT_ENOUGH_ASSETS");
 
         _burn(msg.sender, _amount);
 
@@ -38,7 +39,7 @@ contract BlendedPool is AbstractPool {
     /// @notice Only called by a RegPool when it doesn't have enough Assets
     /// @param _amount the amount requested for compensation
     function requestAssets(uint256 _amount) external notZero(_amount) nonReentrant onlyPool {
-        require(totalBalance() >= _amount, "BP:NOT_ENOUGH_ASSETS");
+        require(principalBalanceAmount >= _amount, "BP:NOT_ENOUGH_ASSETS");
 
         Pool pool = Pool(msg.sender);
         bool success = asset.approve(address(pool), _amount);

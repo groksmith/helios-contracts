@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -33,23 +32,18 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     PoolInfo public poolInfo;
 
-    uint256 public principalOut;
-
     uint256 public principalBalanceAmount;
     uint256 public rewardBalanceAmount;
+    uint256 public principalOut;
 
     mapping(address => uint256) public yields;
     mapping(address => uint256) public pendingWithdrawals;
-    mapping(address => uint256) public pendingYields;
 
     event Deposit(address indexed investor, uint256 amount);
     event Withdrawal(address indexed investor, uint256 amount);
     event PendingWithdrawal(address indexed investor, uint256 amount);
     event PendingWithdrawalConcluded(address indexed investor, uint256 amount);
     event YieldWithdrawn(address indexed recipient, uint256 amount);
-    event PendingYield(address indexed recipient, uint256 amount);
-    event PendingYieldConcluded(address indexed recipient, uint256 amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
     event BalanceUpdated(address indexed pool, address indexed token, uint256 balance);
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
@@ -96,19 +90,14 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield() external virtual nonReentrant whenProtocolNotPaused returns (bool) {
         require(yields[msg.sender] > 0, "P:ZERO_YIELD");
+        require(rewardBalanceAmount >= yields[msg.sender], "P:INSUFFICIENT_FUNDS");
 
         uint256 callerYields = yields[msg.sender];
         yields[msg.sender] = 0;
 
-        if (totalBalance() < callerYields) {
-            pendingYields[msg.sender] += callerYields;
-            emit PendingYield(msg.sender, callerYields);
-            return false;
-        }
+        emit YieldWithdrawn(msg.sender, callerYields);
 
         _transferRewards(msg.sender, callerYields);
-
-        emit YieldWithdrawn(msg.sender, callerYields);
         return true;
     }
 
@@ -127,23 +116,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         emit PendingWithdrawalConcluded(_holder, amount);
     }
 
-    /// @notice Admin function used for unhappy path after yield withdraw failure
-    /// @param _holder address of the recipient who didn't get the yield
-    function concludePendingYield(address _holder) external nonReentrant onlyAdmin {
-        uint256 amount = pendingYields[_holder];
-
-        //remove from pendingWithdrawals mapping:
-        delete pendingYields[_holder];
-
-        _transferFunds(_holder, amount);
-
-        emit PendingYieldConcluded(_holder, amount);
-    }
-
     /// @notice Borrow the pool's money for investment
     /// @param _to address for borrow funds
     /// @param _amount amount to be borrowed
     function borrow(address _to, uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
+        require(principalBalanceAmount >= _amount, "P:BORROWED_MORE_THAN_DEPOSITED");
         principalOut += _amount;
         _transferFunds(_to, _amount);
     }

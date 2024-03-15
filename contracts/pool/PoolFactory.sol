@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
@@ -70,6 +70,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
             _minInvestmentAmount
         );
 
+        require(blendedPoolAddress != address(0), "PF:BLENDED_POOL_NOT_CREATED");
         blendedPool = blendedPoolAddress;
 
         emit BlendedPoolCreated(_asset, blendedPoolAddress, msg.sender);

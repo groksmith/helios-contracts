@@ -11,7 +11,6 @@ import {PoolLibrary} from "../contracts/library/PoolLibrary.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract RegPoolTest is FixtureContract {
-    event PendingYield(address indexed recipient, uint256 amount);
     event PendingWithdrawal(address indexed investor, uint256 amount);
 
     function setUp() public {
@@ -457,7 +456,7 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test getHolders
+    /// @notice Test get holders
     function testFuzz_get_holder_by_index(address user1, address user2) external {
         vm.assume(user1 != user2);
 

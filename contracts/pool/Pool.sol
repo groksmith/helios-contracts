@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {BlendedPool} from "./BlendedPool.sol";
@@ -42,8 +42,8 @@ contract Pool is AbstractPool {
         require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
         require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
 
-        if (totalBalance() < _amount) {
-            uint256 insufficientAmount = _amount - totalBalance();
+        if (principalBalanceAmount < _amount) {
+            uint256 insufficientAmount = _amount - principalBalanceAmount;
 
             BlendedPool blendedPool = BlendedPool(poolFactory.getBlendedPool());
 

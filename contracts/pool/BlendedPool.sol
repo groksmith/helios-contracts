@@ -46,9 +46,17 @@ contract BlendedPool is AbstractPool {
 
         if (success)
         {
-            pool.blendedPoolDeposit(_amount);
             emit RegPoolRequested(msg.sender, _amount);
+            pool.blendedPoolDeposit(_amount);
         }
+    }
+
+    function borrow(address _to, uint256 _amount) public override nonReentrant {
+        super.borrow(_to, _amount);
+    }
+
+    function repay(uint256 _amount) public override nonReentrant {
+        super.repay(_amount);
     }
 
     /// @notice Only pool can call

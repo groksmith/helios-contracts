@@ -56,8 +56,10 @@ contract Pool is AbstractPool {
             // skip requesting "BP Compensation" for Blended Pool. It doesn't make sense.
             bool actorIsNotBlendedPool = (msg.sender != address(blendedPool));
 
+            bool inCorrectState = poolState == State.Closed;
+
             // Validate that we want to do automatic "BP Compensation"
-            if (sameToken && blendedPoolCapableToCoverInsufficientAmount && actorIsNotBlendedPool)
+            if (sameToken && blendedPoolCapableToCoverInsufficientAmount && actorIsNotBlendedPool && inCorrectState)
             {
                 _burn(msg.sender, _amount);
 
@@ -88,11 +90,11 @@ contract Pool is AbstractPool {
     Admin flow
     */
 
-    function borrow(address _to, uint256 _amount) public override inState(State.Closed) {
+    function borrow(address _to, uint256 _amount) public override nonReentrant inState(State.Closed) {
         super.borrow(_to, _amount);
     }
 
-    function repay(uint256 _amount) public override inState(State.Closed) {
+    function repay(uint256 _amount) public override nonReentrant inState(State.Closed) {
         super.repay(_amount);
     }
 

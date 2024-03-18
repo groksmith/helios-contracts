@@ -119,7 +119,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Borrow the pool's money for investment
     /// @param _to address for borrow funds
     /// @param _amount amount to be borrowed
-    function borrow(address _to, uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
+    function borrow(address _to, uint256 _amount) public virtual notZero(_amount) onlyAdmin {
         require(principalBalanceAmount >= _amount, "P:BORROWED_MORE_THAN_DEPOSITED");
         principalOut += _amount;
         _transferFunds(_to, _amount);
@@ -127,7 +127,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Repay asset without minimal threshold or getting LP in return
     /// @param _amount amount to be repaid
-    function repay(uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
+    function repay(uint256 _amount) public virtual notZero(_amount) onlyAdmin {
         require(_amount <= principalOut, "P:REPAID_MORE_THAN_BORROWED");
         require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
 

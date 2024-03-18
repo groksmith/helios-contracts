@@ -33,7 +33,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     PoolInfo public poolInfo;
 
     uint256 public principalBalanceAmount;
-    uint256 public rewardBalanceAmount;
+    uint256 public yieldBalanceAmount;
     uint256 public principalOut;
 
     mapping(address => uint256) public yields;
@@ -90,7 +90,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield() external virtual nonReentrant whenProtocolNotPaused returns (bool) {
         require(yields[msg.sender] > 0, "P:ZERO_YIELD");
-        require(rewardBalanceAmount >= yields[msg.sender], "P:INSUFFICIENT_FUNDS");
+        require(yieldBalanceAmount >= yields[msg.sender], "P:INSUFFICIENT_FUNDS");
 
         uint256 callerYields = yields[msg.sender];
         yields[msg.sender] = 0;
@@ -230,7 +230,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _to receiver's address
     /// @param _value amount to be transferred
     function _transferYields(address _to, uint256 _value) internal {
-        rewardBalanceAmount -= _value;
+        yieldBalanceAmount -= _value;
         require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
     }
 
@@ -238,7 +238,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _from sender's address
     /// @param _value amount to be received
     function _transferYieldsFrom(address _from, uint256 _value) internal {
-        rewardBalanceAmount += _value;
+        yieldBalanceAmount += _value;
         asset.safeTransferFrom(_from, address(this), _value);
     }
 

@@ -85,7 +85,7 @@ contract BlendedPoolInvariantTest is Test {
 
     // Test that the total of all deposits is equal to the pool's totalDeposited storage variable
     function invariant_totalBalance_equals_to_sum_of_rewardBalanceAmount_and_principalBalanceAmount() public {
-        assertGe(blendedPool.totalBalance(), blendedPool.principalBalanceAmount() + blendedPool.rewardBalanceAmount());
+        assertGe(blendedPool.totalBalance(), blendedPool.principalBalanceAmount() + blendedPool.yieldBalanceAmount());
     }
 
     // Test that the sum of all user yields is equal to the the sum of all

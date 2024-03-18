@@ -33,7 +33,7 @@ contract BlendedPool is AbstractPool {
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
 
-        _transferFunds(msg.sender, _amount);
+        _transferAssets(msg.sender, _amount);
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets

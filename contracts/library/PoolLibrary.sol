@@ -64,6 +64,14 @@ library PoolLibrary {
         self.totalDeposited += _amount;
     }
 
+    /// @notice Add new holder
+    /// @dev Add the holder to holders AddressSet. Used for transfer tokens
+    function addHolder(DepositsStorage storage self, address _holder) internal {
+        require(_holder != address(0), "PL:INVALID_HOLDER");
+
+        self.holders.add(_holder);
+    }
+
     /// @notice Get locked deposit amount for a specific holder
     function lockedDepositsAmount(DepositsStorage storage self, address _holder) internal view returns (uint256) {
         require(self.holders.contains(_holder), "PL:INVALID_HOLDER");

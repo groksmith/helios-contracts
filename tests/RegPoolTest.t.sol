@@ -388,7 +388,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function testFuzz_distribute_yields_and_withdraw(address user1, address user2) external {
+    function test_distribute_yields_and_withdraw(address user1, address user2) external {
         vm.assume(user1 != user2);
 
         user1 = createInvestorAndMintAsset(user1, 1000);
@@ -460,7 +460,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test get holders
-    function testFuzz_get_holder_by_index(address user1, address user2) external {
+    function test_get_holder_by_index(address user1, address user2) external {
         vm.assume(user1 != user2);
 
         user1 = createInvestorAndMintAsset(user1, 1000);
@@ -488,7 +488,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to change states
-    function testFuzz_pool_close(address user1) external {
+    function test_pool_close(address user1) external {
         uint256 depositAmount = 100000;
 
         vm.startPrank(user1);
@@ -558,6 +558,57 @@ contract RegPoolTest is FixtureContract {
         uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
 
         regPool1.transfer(newHolder, amountBounded1 + amountBounded2);
+
+        uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
+        uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);
+
+        assertEq(
+            holderTokensAmountBefore - holderTokensAmountAfter,
+            newHolderTokensAmountAfter - newHolderTokensAmountBefore);
+    }
+
+    /// @notice Test attempt transfer tokens
+    function testFuzz_pool_deposit_transferFrom(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
+        vm.assume(holder != address(0));
+        vm.assume(newHolder != address(0));
+        vm.assume(newHolder != holder);
+
+        uint256 amountBounded1 = bound(
+            amount1,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 4);
+
+        uint256 amountBounded2 = bound(
+            amount2,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 4);
+
+        uint256 lockTime1 = block.timestamp + 1000;
+        uint256 lockTime2 = lockTime1 + 6000;
+
+        vm.startPrank(holder);
+        mintAsset(holder, amountBounded1);
+        asset.approve(address(regPool1), amountBounded1);
+        regPool1.deposit(amountBounded1);
+
+        vm.expectRevert("P:TOKENS_LOCKED");
+        regPool1.transferFrom(holder, newHolder, amountBounded1);
+
+        vm.warp(lockTime1);
+        mintAsset(holder, amountBounded2);
+        asset.approve(address(regPool1), amountBounded2);
+        regPool1.deposit(amountBounded2);
+
+        vm.warp(lockTime2);
+        mintAsset(holder, amountBounded1);
+        asset.approve(address(regPool1), amountBounded1);
+        regPool1.deposit(amountBounded1);
+
+        uint256 holderTokensAmountBefore = regPool1.balanceOf(holder);
+        uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
+
+        regPool1.approve(address(holder), amountBounded1 + amountBounded2);
+        regPool1.transferFrom(holder, newHolder, amountBounded1 + amountBounded2);
 
         uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);

@@ -356,7 +356,7 @@ contract RegPoolTest is FixtureContract {
 
         // Repay with insufficient balance
         regPool1.borrow(OWNER_ADDRESS, 10);
-        burnAsset(OWNER_ADDRESS, asset.balanceOf(OWNER_ADDRESS));
+        burnAllAssets(OWNER_ADDRESS);
         vm.expectRevert(bytes("P:NOT_ENOUGH_BALANCE"));
         regPool1.repay(10);
 

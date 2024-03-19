@@ -163,13 +163,106 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
+    /// @notice Test attempt to borrow
+    function testFuzz_borrow(address user1, address user2, uint256 amount1, uint256 amount2) external {
+        //setup
+        uint256 user1Deposit = bound(
+            amount1,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        uint256 user2Deposit = bound(
+            amount2,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        createInvestorAndMintAsset(user1, user1Deposit);
+        createInvestorAndMintAsset(user2, user2Deposit);
+        vm.assume(user1 != user2);
+
+        //testing initial condition
+
+        // user1 deposit
+        vm.startPrank(user1);
+        asset.approve(address(blendedPool), user1Deposit);
+        blendedPool.deposit(user1Deposit);
+        vm.stopPrank();
+
+        // user2 deposit
+        vm.startPrank(user2);
+        asset.approve(address(blendedPool), user2Deposit);
+        blendedPool.deposit(user2Deposit);
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        blendedPool.borrow(OWNER_ADDRESS, user1Deposit);
+        blendedPool.borrow(OWNER_ADDRESS, user2Deposit);
+
+        vm.expectRevert("P:BORROWED_MORE_THAN_DEPOSITED");
+        blendedPool.borrow(OWNER_ADDRESS, 1);
+        vm.stopPrank();
+    }
+
+    /// @notice Test attempt to repay
+    function testFuzz_repay(address user1, address user2, uint256 amount1, uint256 amount2) external {
+        //setup
+        uint256 user1Deposit = bound(
+            amount1,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        uint256 user2Deposit = bound(
+            amount2,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        createInvestorAndMintAsset(user1, user1Deposit);
+        createInvestorAndMintAsset(user2, user2Deposit);
+        vm.assume(user1 != user2);
+
+        //testing initial condition
+
+        // user1 deposit
+        vm.startPrank(user1);
+        asset.approve(address(blendedPool), user1Deposit);
+        blendedPool.deposit(user1Deposit);
+        vm.stopPrank();
+
+        // user2 deposit
+        vm.startPrank(user2);
+        asset.approve(address(blendedPool), user2Deposit);
+        blendedPool.deposit(user2Deposit);
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+        blendedPool.borrow(OWNER_ADDRESS, user1Deposit + user2Deposit);
+
+        mintAsset(OWNER_ADDRESS, user1Deposit);
+        asset.approve(address(blendedPool), user1Deposit);
+        blendedPool.repay(user1Deposit);
+
+        burnAllAssets(OWNER_ADDRESS);
+        vm.expectRevert("P:NOT_ENOUGH_BALANCE");
+        blendedPool.repay(user2Deposit);
+
+        mintAsset(OWNER_ADDRESS, user2Deposit);
+        asset.approve(address(blendedPool), user2Deposit);
+        blendedPool.repay(user2Deposit);
+
+        vm.expectRevert("P:REPAID_MORE_THAN_BORROWED");
+        blendedPool.repay(1);
+        vm.stopPrank();
+    }
+
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function test_repay_yields_and_withdraw_success(address user1, address user2) external {
+    function test_yields_repay_and_withdraw_success(address user1, address user2) external {
         uint256 user1Deposit = 100;
         uint256 user2Deposit = 1000;
         createInvestorAndMintAsset(user1, user1Deposit);
         createInvestorAndMintAsset(user2, user2Deposit);
         vm.assume(user1 != user2);
+
+        assertEq(blendedPool.yieldBalanceAmount(), 0, "wrong yield balance");
 
         // User1 Deposit
         vm.startPrank(user1);
@@ -190,6 +283,8 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.repayYield(1000);
         vm.stopPrank();
 
+        assertEq(blendedPool.yieldBalanceAmount(), 1000, "wrong yield balance");
+
         //now we need to test if the users got assigned the correct yields
         uint256 user1Yields = blendedPool.yields(user1);
         uint256 user2Yields = blendedPool.yields(user2);
@@ -207,10 +302,112 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.prank(user2);
         blendedPool.withdrawYield();
         assertEq(asset.balanceOf(user2) - user2BalanceBefore, 909);
+
+        assertApproxEqAbs(blendedPool.yieldBalanceAmount(), 0, 1, "wrong yield balance");
     }
 
-    /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function test_repay_yields_and_withdraw_failure(address user) external {
+    /// @notice Test overall balances correctness
+    function test_balances(address user1, address user2, uint256 amount1, uint256 amount2) external {
+        //setup
+        uint256 user1Deposit = bound(
+            amount1,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        uint256 user2Deposit = bound(
+            amount2,
+            blendedPool.getPoolInfo().minInvestmentAmount,
+            blendedPool.getPoolInfo().investmentPoolSize / 3);
+
+        createInvestorAndMintAsset(user1, user1Deposit);
+        createInvestorAndMintAsset(user2, user2Deposit);
+        vm.assume(user1 != user2);
+
+        assertEq(blendedPool.yieldBalanceAmount(), 0);
+        assertEq(blendedPool.principalBalanceAmount(), 0);
+        assertEq(blendedPool.principalOut(), 0);
+
+        // user1 deposit
+        vm.startPrank(user1);
+        asset.approve(address(blendedPool), user1Deposit);
+        blendedPool.deposit(user1Deposit);
+        vm.stopPrank();
+
+        // user2 deposit
+        vm.startPrank(user2);
+        asset.approve(address(blendedPool), user2Deposit);
+        blendedPool.deposit(user2Deposit);
+        vm.stopPrank();
+
+        assertEq(blendedPool.yieldBalanceAmount(), 0);
+        assertEq(blendedPool.principalBalanceAmount(), user1Deposit + user2Deposit);
+        assertEq(blendedPool.principalOut(), 0);
+
+        // Repay yield
+        vm.startPrank(OWNER_ADDRESS);
+        mintAsset(OWNER_ADDRESS, 1000);
+        asset.approve(address(blendedPool), 1000);
+        blendedPool.repayYield(1000);
+        vm.stopPrank();
+
+        assertEq(blendedPool.yieldBalanceAmount(), 1000);
+        assertEq(blendedPool.principalBalanceAmount(), user1Deposit + user2Deposit);
+        assertEq(blendedPool.principalOut(), 0);
+
+        // borrow 1
+        uint256 borrow1Amount = user2Deposit;
+        vm.startPrank(OWNER_ADDRESS);
+        blendedPool.borrow(OWNER_ADDRESS, borrow1Amount);
+        vm.stopPrank();
+
+        assertEq(blendedPool.yieldBalanceAmount(), 1000);
+        assertEq(blendedPool.principalBalanceAmount(), user1Deposit + user2Deposit - borrow1Amount);
+        assertEq(blendedPool.principalOut(), borrow1Amount);
+
+        // borrow 2
+        uint256 borrow2Amount = user1Deposit;
+        vm.startPrank(OWNER_ADDRESS);
+        blendedPool.borrow(OWNER_ADDRESS, borrow2Amount);
+        vm.stopPrank();
+
+        assertEq(blendedPool.yieldBalanceAmount(), 1000);
+        assertEq(blendedPool.principalBalanceAmount(), (user1Deposit + user2Deposit) - (borrow1Amount + borrow2Amount));
+        assertEq(blendedPool.principalOut(), borrow1Amount + borrow2Amount);
+
+        assertApproxEqAbs(blendedPool.yieldBalanceAmount(), blendedPool.yields(user1) + blendedPool.yields(user2), 1);
+
+        // withdraw yield 1
+        if (blendedPool.yields(user1) > 0)
+        {
+            vm.prank(user1);
+            blendedPool.withdrawYield();
+        }
+
+        // withdraw yield 2
+        if (blendedPool.yields(user2) > 0)
+        {
+            vm.prank(user2);
+            blendedPool.withdrawYield();
+        }
+
+        assertApproxEqAbs(blendedPool.yieldBalanceAmount(), 0, 1);
+        assertEq(blendedPool.principalBalanceAmount(), (user1Deposit + user2Deposit) - (borrow1Amount + borrow2Amount));
+        assertEq(blendedPool.principalOut(), borrow1Amount + borrow2Amount);
+
+        // repay
+        vm.startPrank(OWNER_ADDRESS);
+        mintAsset(OWNER_ADDRESS, borrow1Amount + borrow2Amount);
+        asset.approve(address(blendedPool), borrow1Amount + borrow2Amount);
+        blendedPool.repay(borrow1Amount + borrow2Amount);
+        vm.stopPrank();
+
+        assertApproxEqAbs(blendedPool.yieldBalanceAmount(), 0, 1);
+        assertEq(blendedPool.principalBalanceAmount(), (user1Deposit + user2Deposit));
+        assertEq(blendedPool.principalOut(), 0);
+    }
+
+    /// @notice Test failure scenario of distribution of yield
+    function test_repay_yield_failure(address user) external {
         createInvestor(user);
 
         //a non-pool-admin address shouldn't be able to call repayYield()
@@ -222,6 +419,12 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.prank(OWNER_ADDRESS);
         vm.expectRevert("P:INVALID_VALUE");
         blendedPool.repayYield(0);
+
+        uint256 adminBalance = asset.balanceOf(OWNER_ADDRESS);
+
+        vm.prank(OWNER_ADDRESS);
+        vm.expectRevert("P:NOT_ENOUGH_BALANCE");
+        blendedPool.repayYield(adminBalance + 1);
     }
 
     /// @notice Test complete scenario of subsiding regular pool with blended pool

@@ -94,4 +94,9 @@ abstract contract FixtureContract is Test {
     function burnAsset(address user, uint256 amount) public {
         assetElevated.burn(user, amount);
     }
+
+    /// @notice Burn all assets
+    function burnAllAssets(address user) public {
+        assetElevated.burn(user, asset.balanceOf(user));
+    }
 }

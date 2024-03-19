@@ -220,6 +220,9 @@ contract RegPoolTest is FixtureContract {
         uint256 pendingAmount = regPool1.getPendingWithdrawalAmount(address(regularPoolInvestor));
         assertEq(pendingAmount, regularPoolInvestment, "Wrong pendingWithdrawals amount");
 
+        address[] memory holders = regPool1.getPendingWithdrawalHolders();
+        assertEq(holders.length, 1, "Wrong pendingWithdrawalHolder amount");
+
         vm.stopPrank();
 
         vm.startPrank(OWNER_ADDRESS);
@@ -356,7 +359,7 @@ contract RegPoolTest is FixtureContract {
 
         // Repay with insufficient balance
         regPool1.borrow(OWNER_ADDRESS, 10);
-        burnAsset(OWNER_ADDRESS, asset.balanceOf(OWNER_ADDRESS));
+        burnAllAssets(OWNER_ADDRESS);
         vm.expectRevert(bytes("P:NOT_ENOUGH_BALANCE"));
         regPool1.repay(10);
 

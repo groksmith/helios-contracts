@@ -3,6 +3,8 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+
 import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
@@ -17,6 +19,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
     /// @notice Test attempt to deposit; checking if variables are updated correctly
     function testFuzz_deposit_success(address user1, address user2, uint256 amount1, uint256 amount2) external {
+        //setup
         uint256 user1Deposit = bound(
             amount1,
             blendedPool.getPoolInfo().minInvestmentAmount,
@@ -31,39 +34,35 @@ contract BlendedPoolTest is Test, FixtureContract {
         createInvestorAndMintAsset(user2, user2Deposit);
         vm.assume(user1 != user2);
 
-        vm.startPrank(user1);
-
-        //testing initial condition i.e. zeroes
+        //testing initial condition
         assertEq(blendedPool.balanceOf(user1), 0);
+        assertEq(blendedPool.balanceOf(user2), 0);
         assertEq(blendedPool.totalBalance(), 0);
         assertEq(blendedPool.totalDeposited(), 0);
+        vm.expectRevert();
+        blendedPool.getPendingWithdrawalAmount(user1);
 
+        // user1
+        vm.startPrank(user1);
+
+        // deposit
         asset.approve(address(blendedPool), user1Deposit);
         blendedPool.deposit(user1Deposit);
 
-        //user's LP balance should be 100 now
         assertEq(blendedPool.balanceOf(user1), user1Deposit, "wrong LP balance for user1");
-
-        //pool's total LA balance should be user1Deposit now
         assertEq(blendedPool.totalBalance(), user1Deposit, "wrong LA balance after user1 deposit");
-
-        //pool's total minted should also be user1Deposit
         assertEq(blendedPool.totalDeposited(), user1Deposit, "wrong totalDeposit after user1 deposit");
         vm.stopPrank();
 
-        //now let's test for user2
+        // user2
         vm.startPrank(user2);
-        assertEq(blendedPool.balanceOf(user2), 0, "user2 shouldn't have > 0 atm");
 
+        // deposit
         asset.approve(address(blendedPool), user2Deposit);
         blendedPool.deposit(user2Deposit);
 
         assertEq(blendedPool.balanceOf(user2), user2Deposit, "wrong user2 LP balance");
-
-        //pool's total LA balance should be user1Deposit now
         assertEq(blendedPool.totalBalance(), user1Deposit + user2Deposit, "wrong totalLA after user2");
-
-        //pool's total minted should also be user1Deposit
         assertEq(blendedPool.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
         vm.stopPrank();
     }
@@ -81,16 +80,33 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test attempt to withdraw; both happy and unhappy paths
-    function testFuzz_withdraw(address user, uint256 amount) external {
+    /// @notice Test attempt to withdraw; happy paths
+    function testFuzz_withdraw_success(address user, uint256 amount) external {
         uint256 depositAmount = bound(amount, blendedPool.getPoolInfo().minInvestmentAmount, type(uint80).max);
-
         createInvestorAndMintAsset(user, depositAmount);
 
         vm.startPrank(user);
 
+        // deposit
         asset.approve(address(blendedPool), depositAmount);
-        //the user can withdraw the sum he has deposited earlier
+        blendedPool.deposit(depositAmount);
+
+        // withdraw
+        vm.warp(blendedPool.getPoolInfo().lockupPeriod + 1);
+        blendedPool.withdraw(depositAmount);
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test attempt to withdraw; unhappy paths
+    function testFuzz_withdraw_failure(address user, uint256 amount) external {
+        uint256 depositAmount = bound(amount, blendedPool.getPoolInfo().minInvestmentAmount, type(uint80).max);
+        createInvestorAndMintAsset(user, depositAmount);
+
+        vm.startPrank(user);
+
+        // deposit
+        asset.approve(address(blendedPool), depositAmount);
         blendedPool.deposit(depositAmount);
 
         //attempt to withdraw too early fails
@@ -98,12 +114,21 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.withdraw(depositAmount);
 
         vm.warp(blendedPool.getPoolInfo().lockupPeriod + 1);
-        blendedPool.withdraw(depositAmount);
 
-        //attempt to withdraw too early fails
+        //attempt to withdraw more than deposited
         vm.expectRevert("BP:INSUFFICIENT_FUNDS");
         blendedPool.withdraw(depositAmount + 1);
 
+        vm.stopPrank();
+
+        // drawdown pool
+        vm.prank(OWNER_ADDRESS);
+        blendedPool.borrow(OWNER_ADDRESS, depositAmount);
+
+        vm.startPrank(user);
+        //attempt to withdraw when not enough assets in pool
+        vm.expectRevert("BP:NOT_ENOUGH_ASSETS");
+        blendedPool.withdraw(depositAmount);
         vm.stopPrank();
     }
 
@@ -139,7 +164,7 @@ contract BlendedPoolTest is Test, FixtureContract {
     }
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function test_repay_yields_and_withdraw(address user1, address user2) external {
+    function test_repay_yields_and_withdraw_success(address user1, address user2) external {
         uint256 user1Deposit = 100;
         uint256 user2Deposit = 1000;
         createInvestorAndMintAsset(user1, user1Deposit);
@@ -182,9 +207,14 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.prank(user2);
         blendedPool.withdrawYield();
         assertEq(asset.balanceOf(user2) - user2BalanceBefore, 909);
+    }
+
+    /// @notice Test complete scenario of depositing, distribution of yield and withdraw
+    function test_repay_yields_and_withdraw_failure(address user) external {
+        createInvestor(user);
 
         //a non-pool-admin address shouldn't be able to call repayYield()
-        vm.prank(user1);
+        vm.prank(user);
         vm.expectRevert("PF:NOT_ADMIN");
         blendedPool.repayYield(1000);
 

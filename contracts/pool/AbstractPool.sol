@@ -39,7 +39,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     uint256 public principalOut;
 
     mapping(address => uint256) public yields;
-    // mapping(address => uint256) public pendingWithdrawals;
     EnumerableMap.AddressToUintMap internal pendingWithdrawals;
 
     event Deposit(address indexed investor, uint256 amount);

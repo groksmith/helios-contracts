@@ -75,6 +75,16 @@ abstract contract FixtureContract is Test {
         return investor;
     }
 
+    /// @notice Mint and some checks
+    function createInvestor(address investor) public view returns (address) {
+        vm.assume(investor != address(0));
+        vm.assume(investor != OWNER_ADDRESS);
+        vm.assume(investor != address(regPool1));
+        vm.assume(investor != address(blendedPool));
+        vm.assume(investor != address(asset));
+        return investor;
+    }
+
     /// @notice Mint assets
     function mintAsset(address user, uint256 amount) public {
         assetElevated.mint(user, amount);

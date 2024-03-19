@@ -129,7 +129,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     function concludePendingWithdrawal(uint256 user_idx) external {
         address user = pickUpUser(user_idx);
 
-        uint256 pendingWithdrawalAmount = blendedPool.pendingWithdrawals(user);
+        uint256 pendingWithdrawalAmount = blendedPool.getPendingWithdrawalAmount(user);
 
         vm.prank(OWNER_ADDRESS);
         blendedPool.concludePendingWithdrawal(user);

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -14,6 +15,7 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 /// @dev Should be inherited
 abstract contract AbstractPool is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
     using PoolLibrary for PoolLibrary.DepositsStorage;
 
     string public constant NAME = "Helios Pool TKN";
@@ -37,7 +39,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     uint256 public principalOut;
 
     mapping(address => uint256) public yields;
-    mapping(address => uint256) public pendingWithdrawals;
+    // mapping(address => uint256) public pendingWithdrawals;
+    EnumerableMap.AddressToUintMap internal pendingWithdrawals;
 
     event Deposit(address indexed investor, uint256 amount);
     event Withdrawal(address indexed investor, uint256 amount);
@@ -104,12 +107,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _holder address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _holder) external nonReentrant onlyAdmin {
-        uint256 amount = pendingWithdrawals[_holder];
+        uint256 amount = pendingWithdrawals.get(_holder);
 
         _burn(_holder, amount);
 
         //remove from pendingWithdrawals mapping
-        delete pendingWithdrawals[_holder];
+        pendingWithdrawals.remove(_holder);
 
         asset.safeTransferFrom(msg.sender, _holder, amount);
 
@@ -197,6 +200,17 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Get historical total deposited
     function totalDeposited() external view returns (uint256) {
         return depositsStorage.totalDeposited;
+    }
+
+    /// @notice Get pending withdrawal for holder total deposited
+    /// @param _holder address of holder
+    function getPendingWithdrawalAmount(address _holder) external view returns (uint256) {
+        return pendingWithdrawals.get(_holder);
+    }
+
+    /// @notice Get pending withdrawal for holder total deposited
+    function getPendingWithdrawalHolders() external view returns (address[] memory) {
+        return pendingWithdrawals.keys();
     }
 
     /*

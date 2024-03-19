@@ -217,7 +217,7 @@ contract RegPoolTest is FixtureContract {
         emit PendingWithdrawal(regularPoolInvestor, regularPoolInvestment);
         regPool1.withdraw(regularPoolInvestment);
 
-        uint256 pendingAmount = regPool1.pendingWithdrawals(address(regularPoolInvestor));
+        uint256 pendingAmount = regPool1.getPendingWithdrawalAmount(address(regularPoolInvestor));
         assertEq(pendingAmount, regularPoolInvestment, "Wrong pendingWithdrawals amount");
 
         vm.stopPrank();

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+
 import {AbstractPool} from "./AbstractPool.sol";
 import {BlendedPool} from "./BlendedPool.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
@@ -8,6 +10,8 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 /// @title Regional Pool implementation
 /// @author Tigran Arakelyan
 contract Pool is AbstractPool {
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
+
     enum State {Active, Closed/*, Deactivated*/}
     State public poolState;
 
@@ -70,7 +74,10 @@ contract Pool is AbstractPool {
                 // Now we have liquidity
             } else {
                 // Ok, going to manual flow
-                pendingWithdrawals[msg.sender] += _amount;
+                (, uint256 currentValue) = pendingWithdrawals.tryGet(msg.sender);
+                uint256 updatedValue = currentValue + _amount;
+                pendingWithdrawals.set(msg.sender, updatedValue);
+
                 emit PendingWithdrawal(msg.sender, _amount);
                 return;
             }

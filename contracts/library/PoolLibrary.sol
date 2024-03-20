@@ -22,6 +22,8 @@ library PoolLibrary {
         EnumerableSet.AddressSet holders;
 
         mapping(address => DepositInstance[]) lockedDeposits;
+
+        uint256 totalDeposited;
     }
 
     /// @notice Get the count of holders
@@ -58,6 +60,16 @@ library PoolLibrary {
             amount: _amount,
             unlockTime: _unlockTime
         }));
+
+        self.totalDeposited += _amount;
+    }
+
+    /// @notice Add new holder
+    /// @dev Add the holder to holders AddressSet. Used for transfer tokens
+    function addHolder(DepositsStorage storage self, address _holder) internal {
+        require(_holder != address(0), "PL:INVALID_HOLDER");
+
+        self.holders.add(_holder);
     }
 
     /// @notice Get locked deposit amount for a specific holder

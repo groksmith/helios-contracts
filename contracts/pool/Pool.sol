@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
+
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {BlendedPool} from "./BlendedPool.sol";
@@ -8,6 +10,8 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 /// @title Regional Pool implementation
 /// @author Tigran Arakelyan
 contract Pool is AbstractPool {
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
+
     enum State {Active, Closed/*, Deactivated*/}
     State public poolState;
 
@@ -23,17 +27,17 @@ contract Pool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount the amount of assets to deposit
-    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant inState(State.Active) {
+    function deposit(uint256 _amount) public override whenProtocolNotPaused nonReentrant inState(State.Active) {
         require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
 
-        _depositLogic(_amount, msg.sender);
+        super.deposit(_amount);
     }
 
     /// @notice Called only from Blended Pool. Part of BP compensation mechanism
     /// @param _amount the amount of assets to deposit
     function blendedPoolDeposit(uint256 _amount) external
     onlyBlendedPool whenProtocolNotPaused inState(State.Closed) {
-        _depositLogic(_amount, msg.sender);
+        super.deposit(_amount);
     }
 
     /// @notice withdraws the caller's assets
@@ -42,8 +46,8 @@ contract Pool is AbstractPool {
         require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
         require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
 
-        if (totalBalance() < _amount) {
-            uint256 insufficientAmount = _amount - totalBalance();
+        if (principalBalanceAmount < _amount) {
+            uint256 insufficientAmount = _amount - principalBalanceAmount;
 
             BlendedPool blendedPool = BlendedPool(poolFactory.getBlendedPool());
 
@@ -56,8 +60,10 @@ contract Pool is AbstractPool {
             // skip requesting "BP Compensation" for Blended Pool. It doesn't make sense.
             bool actorIsNotBlendedPool = (msg.sender != address(blendedPool));
 
+            bool inCorrectState = poolState == State.Closed;
+
             // Validate that we want to do automatic "BP Compensation"
-            if (sameToken && blendedPoolCapableToCoverInsufficientAmount && actorIsNotBlendedPool)
+            if (sameToken && blendedPoolCapableToCoverInsufficientAmount && actorIsNotBlendedPool && inCorrectState)
             {
                 _burn(msg.sender, _amount);
 
@@ -68,7 +74,10 @@ contract Pool is AbstractPool {
                 // Now we have liquidity
             } else {
                 // Ok, going to manual flow
-                pendingWithdrawals[msg.sender] += _amount;
+                (, uint256 currentValue) = pendingWithdrawals.tryGet(msg.sender);
+                uint256 updatedValue = currentValue + _amount;
+                pendingWithdrawals.set(msg.sender, updatedValue);
+
                 emit PendingWithdrawal(msg.sender, _amount);
                 return;
             }
@@ -78,20 +87,21 @@ contract Pool is AbstractPool {
             _burn(msg.sender, _amount);
         }
 
-        _transferFunds(msg.sender, _amount);
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
+
+        _transferAssets(msg.sender, _amount);
     }
 
     /*
     Admin flow
     */
 
-    function borrow(address _to, uint256 _amount) public override inState(State.Closed) {
+    function borrow(address _to, uint256 _amount) public override nonReentrant inState(State.Closed) {
         super.borrow(_to, _amount);
     }
 
-    function repay(uint256 _amount) public override inState(State.Closed) {
+    function repay(uint256 _amount) public override nonReentrant inState(State.Closed) {
         super.repay(_amount);
     }
 

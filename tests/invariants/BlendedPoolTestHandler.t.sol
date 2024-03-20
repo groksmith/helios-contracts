@@ -90,8 +90,6 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
             // withdrawn
             totalYieldAccrued -= user_current_yield;
             totalYieldWithdrawn += user_current_yield;
-        } else {
-            // added to pending yields
         }
     }
 
@@ -100,16 +98,21 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     */
 
     /// Distribute yields
-    function distributeYield() external {
+    function repayYield() external {
         if (blendedPool.getHoldersCount() == 0) return;
 
         uint256 startingSumYields = sumUserYields();
 
         uint256 newYieldToDistribute = 0.1e18;
+        assetElevated.mint(OWNER_ADDRESS, newYieldToDistribute);
 
         vm.prank(OWNER_ADDRESS);
-        blendedPool.distributeYields(newYieldToDistribute);
+        asset.approve(address(blendedPool), newYieldToDistribute);
 
+        vm.prank(OWNER_ADDRESS);
+        blendedPool.repayYield(newYieldToDistribute);
+
+        totalRepaid += newYieldToDistribute;
         totalYieldAccrued += newYieldToDistribute;
 
         uint256 actualChangeInUserYields = sumUserYields() - startingSumYields;
@@ -126,7 +129,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     function concludePendingWithdrawal(uint256 user_idx) external {
         address user = pickUpUser(user_idx);
 
-        uint256 pendingWithdrawalAmount = blendedPool.pendingWithdrawals(user);
+        uint256 pendingWithdrawalAmount = blendedPool.getPendingWithdrawalAmount(user);
 
         vm.prank(OWNER_ADDRESS);
         blendedPool.concludePendingWithdrawal(user);
@@ -134,20 +137,11 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         totalWithdrawn += pendingWithdrawalAmount;
     }
 
-    /// Finish pending yield withdrawal for a user
-    function concludePendingYield(uint256 user_idx) external {
-        address user = pickUpUser(user_idx);
-        uint256 pendingYieldAmount = blendedPool.pendingYields(user);
-        vm.prank(OWNER_ADDRESS);
-        blendedPool.concludePendingYield(user);
-
-        totalYieldAccrued -= pendingYieldAmount;
-        totalYieldWithdrawn += pendingYieldAmount;
-    }
-
     /// Borrow money from the deposits
     function borrow(uint256 amount) external {
-        amount = bound(amount, 0, blendedPool.totalBalance());
+        if (blendedPool.principalBalanceAmount() == 0) return;
+
+        amount = bound(amount, 1, blendedPool.principalBalanceAmount());
 
         vm.prank(OWNER_ADDRESS);
         blendedPool.borrow(OWNER_ADDRESS, amount);
@@ -157,7 +151,9 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
     /// Repay money to the pool
     function repay(uint256 amount) external {
-        amount = bound(amount, 1, type(uint80).max);
+        if (blendedPool.principalOut() == 0) return;
+
+        amount = bound(amount, 1, blendedPool.principalOut());
 
         assetElevated.mint(OWNER_ADDRESS, amount);
 
@@ -185,7 +181,6 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         for (uint i = 0; i < blendedPool.getHoldersCount(); i++) {
             address holder = blendedPool.getHolderByIndex(i);
             sum += blendedPool.yields(holder);
-            sum += blendedPool.pendingYields(holder);
         }
     }
 

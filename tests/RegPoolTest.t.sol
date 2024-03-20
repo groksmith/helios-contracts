@@ -11,7 +11,6 @@ import {PoolLibrary} from "../contracts/library/PoolLibrary.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 
 contract RegPoolTest is FixtureContract {
-    event PendingYield(address indexed recipient, uint256 amount);
     event PendingWithdrawal(address indexed investor, uint256 amount);
 
     function setUp() public {
@@ -218,8 +217,11 @@ contract RegPoolTest is FixtureContract {
         emit PendingWithdrawal(regularPoolInvestor, regularPoolInvestment);
         regPool1.withdraw(regularPoolInvestment);
 
-        uint256 pendingAmount = regPool1.pendingWithdrawals(address(regularPoolInvestor));
+        uint256 pendingAmount = regPool1.getPendingWithdrawalAmount(address(regularPoolInvestor));
         assertEq(pendingAmount, regularPoolInvestment, "Wrong pendingWithdrawals amount");
+
+        address[] memory holders = regPool1.getPendingWithdrawalHolders();
+        assertEq(holders.length, 1, "Wrong pendingWithdrawalHolder amount");
 
         vm.stopPrank();
 
@@ -290,15 +292,13 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test repay
-    function testFuzz_repay(address investor, uint256 depositAmount, uint256 yieldAmount) external {
+    function testFuzz_borrow(address investor, uint256 depositAmount) external {
         vm.startPrank(investor);
 
         depositAmount = bound(
             depositAmount,
             regPool1.getPoolInfo().minInvestmentAmount,
             regPool1.getPoolInfo().investmentPoolSize);
-
-        yieldAmount = bound(yieldAmount, 0, asset.totalSupply());
 
         createInvestorAndMintAsset(investor, depositAmount);
 
@@ -310,30 +310,58 @@ contract RegPoolTest is FixtureContract {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
         regPool1.close();
 
-        asset.approve(address(regPool1), depositAmount + yieldAmount);
-        mintAsset(OWNER_ADDRESS, yieldAmount);
+        vm.expectRevert(bytes("P:INVALID_VALUE"));
+        regPool1.borrow(OWNER_ADDRESS, 0);
 
-        // Just toying with multiple borrow and repay
         regPool1.borrow(OWNER_ADDRESS, depositAmount - 10);
-        assertEq(regPool1.principalOut(), depositAmount - 10);
 
-        regPool1.borrow(OWNER_ADDRESS, 10);
+        vm.stopPrank();
+    }
+
+    /// @notice Test repay
+    function testFuzz_repay(address investor, uint256 depositAmount) external {
+        // Deposit
+        vm.startPrank(investor);
+
+        depositAmount = bound(
+            depositAmount,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize);
+
+        createInvestorAndMintAsset(investor, depositAmount);
+
+        asset.approve(address(regPool1), depositAmount);
+        regPool1.deposit(depositAmount);
+        vm.stopPrank();
+
+        // Close pool
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+        regPool1.close();
+
+        // Borrow
+        regPool1.borrow(OWNER_ADDRESS, depositAmount);
         assertEq(regPool1.principalOut(), depositAmount);
 
+        // Approve
+        asset.approve(address(regPool1), depositAmount);
+
+        // Partial repay
         regPool1.repay(depositAmount - 10);
         assertEq(regPool1.principalOut(), 10);
+
+        // Partial repay
         regPool1.repay(10);
         assertEq(regPool1.principalOut(), 0);
 
-        regPool1.repay(yieldAmount);
-        assertEq(regPool1.principalOut(), 0);
+        // Repay more than borrow
+        vm.expectRevert(bytes("P:CANT_REPAY_MORE_THAN_BORROWED"));
+        regPool1.repay(10);
 
-        uint256 balance = asset.balanceOf(OWNER_ADDRESS);
-        asset.approve(address(regPool1), 2 * balance);
-
+        // Repay with insufficient balance
+        regPool1.borrow(OWNER_ADDRESS, 10);
+        burnAllAssets(OWNER_ADDRESS);
         vm.expectRevert(bytes("P:NOT_ENOUGH_BALANCE"));
-        regPool1.repay(balance + 10);
-        // Stop toying
+        regPool1.repay(10);
 
         vm.stopPrank();
     }
@@ -360,7 +388,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test complete scenario of depositing, distribution of yield and withdraw
-    function testFuzz_distribute_yields_and_withdraw(address user1, address user2) external {
+    function test_distribute_yields_and_withdraw(address user1, address user2) external {
         vm.assume(user1 != user2);
 
         user1 = createInvestorAndMintAsset(user1, 1000);
@@ -381,7 +409,6 @@ contract RegPoolTest is FixtureContract {
 
         uint256 yieldGenerated = 1000;
 
-        //a non-pool-admin address shouldn't be able to call distributeYields()
         vm.prank(user1);
 
         // No yield yet
@@ -389,19 +416,17 @@ contract RegPoolTest is FixtureContract {
         regPool1.withdrawYield();
 
         vm.expectRevert("PF:NOT_ADMIN");
-        regPool1.distributeYields(yieldGenerated);
+        regPool1.repayYield(yieldGenerated);
 
-        //only the pool admin can call distributeYields()
         vm.startPrank(OWNER_ADDRESS);
         vm.expectRevert("P:INVALID_VALUE");
-        regPool1.distributeYields(0);
+        regPool1.repayYield(0);
 
         regPool1.close();
 
         mintAsset(OWNER_ADDRESS, yieldGenerated);
         asset.approve(address(regPool1), yieldGenerated);
-        regPool1.repay(yieldGenerated);
-        regPool1.distributeYields(yieldGenerated);
+        regPool1.repayYield(yieldGenerated);
 
         //now we need to test if the users got assigned the correct yields
         uint256 user1Yields = regPool1.yields(user1);
@@ -434,8 +459,8 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
     }
 
-    /// @notice Test getHolders
-    function testFuzz_get_holder_by_index(address user1, address user2) external {
+    /// @notice Test get holders
+    function test_get_holder_by_index(address user1, address user2) external {
         vm.assume(user1 != user2);
 
         user1 = createInvestorAndMintAsset(user1, 1000);
@@ -463,7 +488,7 @@ contract RegPoolTest is FixtureContract {
     }
 
     /// @notice Test attempt to change states
-    function testFuzz_pool_close(address user1) external {
+    function test_pool_close(address user1) external {
         uint256 depositAmount = 100000;
 
         vm.startPrank(user1);
@@ -491,6 +516,7 @@ contract RegPoolTest is FixtureContract {
         vm.expectRevert("P:BAD_STATE");
         regPool1.close();
     }
+
     /// @notice Test attempt transfer tokens
     function testFuzz_pool_deposit_transfer(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
         vm.assume(holder != address(0));
@@ -532,6 +558,57 @@ contract RegPoolTest is FixtureContract {
         uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
 
         regPool1.transfer(newHolder, amountBounded1 + amountBounded2);
+
+        uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
+        uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);
+
+        assertEq(
+            holderTokensAmountBefore - holderTokensAmountAfter,
+            newHolderTokensAmountAfter - newHolderTokensAmountBefore);
+    }
+
+    /// @notice Test attempt transfer tokens
+    function testFuzz_pool_deposit_transferFrom(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
+        vm.assume(holder != address(0));
+        vm.assume(newHolder != address(0));
+        vm.assume(newHolder != holder);
+
+        uint256 amountBounded1 = bound(
+            amount1,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 4);
+
+        uint256 amountBounded2 = bound(
+            amount2,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 4);
+
+        uint256 lockTime1 = block.timestamp + 1000;
+        uint256 lockTime2 = lockTime1 + 6000;
+
+        vm.startPrank(holder);
+        mintAsset(holder, amountBounded1);
+        asset.approve(address(regPool1), amountBounded1);
+        regPool1.deposit(amountBounded1);
+
+        vm.expectRevert("P:TOKENS_LOCKED");
+        regPool1.transferFrom(holder, newHolder, amountBounded1);
+
+        vm.warp(lockTime1);
+        mintAsset(holder, amountBounded2);
+        asset.approve(address(regPool1), amountBounded2);
+        regPool1.deposit(amountBounded2);
+
+        vm.warp(lockTime2);
+        mintAsset(holder, amountBounded1);
+        asset.approve(address(regPool1), amountBounded1);
+        regPool1.deposit(amountBounded1);
+
+        uint256 holderTokensAmountBefore = regPool1.balanceOf(holder);
+        uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
+
+        regPool1.approve(address(holder), amountBounded1 + amountBounded2);
+        regPool1.transferFrom(holder, newHolder, amountBounded1 + amountBounded2);
 
         uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);

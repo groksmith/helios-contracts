@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -15,6 +15,7 @@ import {PoolLibrary} from "../library/PoolLibrary.sol";
 /// @dev Should be inherited
 abstract contract AbstractPool is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
     using PoolLibrary for PoolLibrary.DepositsStorage;
 
     string public constant NAME = "Helios Pool TKN";
@@ -33,21 +34,18 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     PoolInfo public poolInfo;
 
-    uint256 public totalDeposited;
+    uint256 public principalBalanceAmount;
+    uint256 public yieldBalanceAmount;
     uint256 public principalOut;
 
     mapping(address => uint256) public yields;
-    mapping(address => uint256) public pendingWithdrawals;
-    mapping(address => uint256) public pendingYields;
+    EnumerableMap.AddressToUintMap internal pendingWithdrawals;
 
     event Deposit(address indexed investor, uint256 amount);
     event Withdrawal(address indexed investor, uint256 amount);
     event PendingWithdrawal(address indexed investor, uint256 amount);
     event PendingWithdrawalConcluded(address indexed investor, uint256 amount);
     event YieldWithdrawn(address indexed recipient, uint256 amount);
-    event PendingYield(address indexed recipient, uint256 amount);
-    event PendingYieldConcluded(address indexed recipient, uint256 amount);
-    event WithdrawalOverThreshold(address indexed caller, uint256 amount);
     event BalanceUpdated(address indexed pool, address indexed token, uint256 balance);
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
@@ -66,7 +64,20 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount to deposit
-    function deposit(uint256 _amount) external virtual;
+    function deposit(uint256 _amount) public virtual {
+        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+
+        address holder = msg.sender;
+
+        depositsStorage.addDeposit(holder, _amount, block.timestamp + poolInfo.lockupPeriod);
+
+        _mint(holder, _amount);
+
+        _emitBalanceUpdatedEvent();
+        emit Deposit(holder, _amount);
+
+        _depositAssetsFrom(holder, _amount);
+    }
 
     /// @notice withdraws the caller's assets
     /// @param _amount to be withdrawn
@@ -81,81 +92,64 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield() external virtual nonReentrant whenProtocolNotPaused returns (bool) {
         require(yields[msg.sender] > 0, "P:ZERO_YIELD");
+        require(yieldBalanceAmount >= yields[msg.sender], "P:INSUFFICIENT_FUNDS");
 
         uint256 callerYields = yields[msg.sender];
         yields[msg.sender] = 0;
 
-        if (totalBalance() < callerYields) {
-            pendingYields[msg.sender] += callerYields;
-            emit PendingYield(msg.sender, callerYields);
-            return false;
-        }
-
-        _transferFunds(msg.sender, callerYields);
-
         emit YieldWithdrawn(msg.sender, callerYields);
+
+        _transferYields(msg.sender, callerYields);
         return true;
-    }
-
-    /// @notice Used to distribute yields among investors (LP token holders)
-    /// @param  _amount the amount to be divided among investors
-    function distributeYields(uint256 _amount) external virtual onlyAdmin nonReentrant {
-        require(_amount > 0, "P:INVALID_VALUE");
-
-        uint256 count = depositsStorage.getHoldersCount();
-        for (uint256 i = 0; i < count; i++) {
-            address holder = depositsStorage.getHolderByIndex(i);
-            yields[holder] += _calculateYield(holder, _amount);
-        }
     }
 
     /// @notice Admin function used for unhappy path after withdrawal failure
     /// @param _holder address of the recipient who didn't get the liquidity
     function concludePendingWithdrawal(address _holder) external nonReentrant onlyAdmin {
-        uint256 amount = pendingWithdrawals[_holder];
+        uint256 amount = pendingWithdrawals.get(_holder);
 
         _burn(_holder, amount);
 
         //remove from pendingWithdrawals mapping
-        delete pendingWithdrawals[_holder];
+        pendingWithdrawals.remove(_holder);
 
         asset.safeTransferFrom(msg.sender, _holder, amount);
 
         emit PendingWithdrawalConcluded(_holder, amount);
     }
 
-    /// @notice Admin function used for unhappy path after yield withdraw failure
-    /// @param _holder address of the recipient who didn't get the yield
-    function concludePendingYield(address _holder) external nonReentrant onlyAdmin {
-        uint256 amount = pendingYields[_holder];
-
-        //remove from pendingWithdrawals mapping:
-        delete pendingYields[_holder];
-
-        _transferFunds(_holder, amount);
-
-        emit PendingYieldConcluded(_holder, amount);
-    }
-
     /// @notice Borrow the pool's money for investment
     /// @param _to address for borrow funds
     /// @param _amount amount to be borrowed
-    function borrow(address _to, uint256 _amount) public virtual nonReentrant onlyAdmin {
+    function borrow(address _to, uint256 _amount) public virtual notZero(_amount) onlyAdmin {
+        require(principalBalanceAmount >= _amount, "P:BORROWED_MORE_THAN_DEPOSITED");
         principalOut += _amount;
-        _transferFunds(_to, _amount);
+        _transferAssets(_to, _amount);
     }
 
     /// @notice Repay asset without minimal threshold or getting LP in return
     /// @param _amount amount to be repaid
-    function repay(uint256 _amount) public virtual nonReentrant onlyAdmin {
+    function repay(uint256 _amount) public virtual notZero(_amount) onlyAdmin {
+        require(_amount <= principalOut, "P:CANT_REPAY_MORE_THAN_BORROWED");
         require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
-        if (_amount >= principalOut) {
-            principalOut = 0;
-        } else {
-            principalOut -= _amount;
+
+        principalOut -= _amount;
+
+        _depositAssetsFrom(msg.sender, _amount);
+    }
+
+    /// @notice Repay and distribute yields
+    /// @param _amount amount to be repaid
+    function repayYield(uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
+        require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
+
+        uint256 count = depositsStorage.getHoldersCount();
+        for (uint256 i = 0; i < count; i++) {
+            address holder = depositsStorage.getHolderByIndex(i);
+            yields[holder] += _calculateYield(holder, _amount);
         }
 
-        asset.safeTransferFrom(msg.sender, address(this), _amount);
+        _depositYieldsFrom(msg.sender, _amount);
     }
 
     /*
@@ -164,11 +158,13 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     function transfer(address to, uint amount) public override returns (bool) {
         require(amount <= unlockedToWithdraw(msg.sender), "P:TOKENS_LOCKED");
+        depositsStorage.addHolder(to);
         return super.transfer(to, amount);
     }
 
     function transferFrom(address from, address to, uint amount) public override returns (bool) {
         require(amount <= unlockedToWithdraw(from), "P:TOKENS_LOCKED");
+        depositsStorage.addHolder(to);
         return super.transferFrom(from, to, amount);
     }
 
@@ -202,6 +198,22 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         return poolInfo;
     }
 
+    /// @notice Get historical total deposited
+    function totalDeposited() external view returns (uint256) {
+        return depositsStorage.totalDeposited;
+    }
+
+    /// @notice Get pending withdrawal for holder total deposited
+    /// @param _holder address of holder
+    function getPendingWithdrawalAmount(address _holder) external view returns (uint256) {
+        return pendingWithdrawals.get(_holder);
+    }
+
+    /// @notice Get pending withdrawal for holder total deposited
+    function getPendingWithdrawalHolders() external view returns (address[] memory) {
+        return pendingWithdrawals.keys();
+    }
+
     /*
     Internals
     */
@@ -213,35 +225,36 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         return (_amount * balanceOf(_holder)) / totalSupply();
     }
 
-    /// @notice Shared deposit logic
-    /// @param _amount to be deposited
-    /// @param _holder holders address
-    function _depositLogic(uint256 _amount, address _holder) internal {
-        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
-
-        depositsStorage.addDeposit(_holder, _amount, block.timestamp + poolInfo.lockupPeriod);
-
-        _mintAndUpdateTotalDeposited(_holder, _amount);
-
-        _emitBalanceUpdatedEvent();
-        emit Deposit(_holder, _amount);
-
-        asset.safeTransferFrom(_holder, address(this), _amount);
-    }
-
-    /// @notice Mint Pool assets to given `_account` address and update totalDeposited
-    /// @param _account holder's address
-    /// @param _amount to be minted
-    function _mintAndUpdateTotalDeposited(address _account, uint256 _amount) internal {
-        _mint(_account, _amount);
-        totalDeposited += _amount;
-    }
-
     /// @notice Transfers Pool assets to given `_to` address
     /// @param _to receiver's address
     /// @param _value amount to be transferred
-    function _transferFunds(address _to, uint256 _value) internal {
+    function _transferAssets(address _to, uint256 _value) internal {
+        principalBalanceAmount -= _value;
         require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
+    }
+
+    /// @notice Transfer Pool assets from given `_from` address
+    /// @param _from sender's address
+    /// @param _value amount to be received
+    function _depositAssetsFrom(address _from, uint256 _value) internal {
+        principalBalanceAmount += _value;
+        asset.safeTransferFrom(_from, address(this), _value);
+    }
+
+    /// @notice Transfers yield assets to given `_to` address
+    /// @param _to receiver's address
+    /// @param _value amount to be transferred
+    function _transferYields(address _to, uint256 _value) internal {
+        yieldBalanceAmount -= _value;
+        require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
+    }
+
+    /// @notice Deposit yield assets from given `_from` address
+    /// @param _from sender's address
+    /// @param _value amount to be received
+    function _depositYieldsFrom(address _from, uint256 _value) internal {
+        yieldBalanceAmount += _value;
+        asset.safeTransferFrom(_from, address(this), _value);
     }
 
     /// @notice Emits a `BalanceUpdated` event for Pool
@@ -252,6 +265,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /*
     Modifiers
     */
+
+    /// @notice Checks that the protocol is not in a paused state
+    modifier notZero(uint256 _value) {
+        require(_value > 0, "P:INVALID_VALUE");
+        _;
+    }
 
     /// @notice Checks that the protocol is not in a paused state
     modifier whenProtocolNotPaused() {

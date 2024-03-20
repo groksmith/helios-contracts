@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
@@ -17,9 +17,8 @@ contract BlendedPool is AbstractPool {
 
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount the amount of assets to be deposited
-    function deposit(uint256 _amount) external override whenProtocolNotPaused nonReentrant {
-        require(_amount > 0, "BP:ZERO_AMOUNT");
-        _depositLogic(_amount, msg.sender);
+    function deposit(uint256 _amount) public override notZero(_amount) whenProtocolNotPaused nonReentrant {
+        super.deposit(_amount);
     }
 
     /// @notice withdraws the caller's liquidity assets
@@ -27,28 +26,37 @@ contract BlendedPool is AbstractPool {
     function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
         require(balanceOf(msg.sender) >= _amount, "BP:INSUFFICIENT_FUNDS");
         require(unlockedToWithdraw(msg.sender) >= _amount, "BP:TOKENS_LOCKED");
+        require(principalBalanceAmount >= _amount, "BP:NOT_ENOUGH_ASSETS");
 
         _burn(msg.sender, _amount);
-        _transferFunds(msg.sender, _amount);
 
         _emitBalanceUpdatedEvent();
         emit Withdrawal(msg.sender, _amount);
+
+        _transferAssets(msg.sender, _amount);
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets
-    /// @param _amountRequested the amount requested for compensation
-    function requestAssets(uint256 _amountRequested) external nonReentrant onlyPool {
-        require(_amountRequested > 0, "BP:INVALID_AMOUNT");
-        require(totalBalance() >= _amountRequested, "BP:NOT_ENOUGH_ASSETS");
+    /// @param _amount the amount requested for compensation
+    function requestAssets(uint256 _amount) external notZero(_amount) nonReentrant onlyPool {
+        require(principalBalanceAmount >= _amount, "BP:NOT_ENOUGH_ASSETS");
 
         Pool pool = Pool(msg.sender);
-        bool success = asset.approve(address(pool), _amountRequested);
+        bool success = asset.approve(address(pool), _amount);
 
-        if(success)
+        if (success)
         {
-            pool.blendedPoolDeposit(_amountRequested);
-            emit RegPoolRequested(msg.sender, _amountRequested);
+            emit RegPoolRequested(msg.sender, _amount);
+            pool.blendedPoolDeposit(_amount);
         }
+    }
+
+    function borrow(address _to, uint256 _amount) public override nonReentrant {
+        super.borrow(_to, _amount);
+    }
+
+    function repay(uint256 _amount) public override nonReentrant {
+        super.repay(_amount);
     }
 
     /// @notice Only pool can call

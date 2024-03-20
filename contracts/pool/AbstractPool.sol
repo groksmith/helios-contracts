@@ -130,7 +130,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Repay asset without minimal threshold or getting LP in return
     /// @param _amount amount to be repaid
     function repay(uint256 _amount) public virtual notZero(_amount) onlyAdmin {
-        require(_amount <= principalOut, "P:REPAID_MORE_THAN_BORROWED");
+        require(_amount <= principalOut, "P:CANT_REPAY_MORE_THAN_BORROWED");
         require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
 
         principalOut -= _amount;

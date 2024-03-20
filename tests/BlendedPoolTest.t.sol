@@ -249,7 +249,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         asset.approve(address(blendedPool), user2Deposit);
         blendedPool.repay(user2Deposit);
 
-        vm.expectRevert("P:REPAID_MORE_THAN_BORROWED");
+        vm.expectRevert("P:CANT_REPAY_MORE_THAN_BORROWED");
         blendedPool.repay(1);
         vm.stopPrank();
     }

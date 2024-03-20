@@ -354,7 +354,7 @@ contract RegPoolTest is FixtureContract {
         assertEq(regPool1.principalOut(), 0);
 
         // Repay more than borrow
-        vm.expectRevert(bytes("P:REPAID_MORE_THAN_BORROWED"));
+        vm.expectRevert(bytes("P:CANT_REPAY_MORE_THAN_BORROWED"));
         regPool1.repay(10);
 
         // Repay with insufficient balance

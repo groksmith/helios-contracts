@@ -76,7 +76,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         _emitBalanceUpdatedEvent();
         emit Deposit(holder, _amount);
 
-        _transferAssetsFrom(holder, _amount);
+        _depositAssetsFrom(holder, _amount);
     }
 
     /// @notice withdraws the caller's assets
@@ -135,7 +135,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
         principalOut -= _amount;
 
-        _transferAssetsFrom(msg.sender, _amount);
+        _depositAssetsFrom(msg.sender, _amount);
     }
 
     /// @notice Repay and distribute yields
@@ -149,7 +149,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
             yields[holder] += _calculateYield(holder, _amount);
         }
 
-        _transferYieldsFrom(msg.sender, _amount);
+        _depositYieldsFrom(msg.sender, _amount);
     }
 
     /*
@@ -236,7 +236,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Transfer Pool assets from given `_from` address
     /// @param _from sender's address
     /// @param _value amount to be received
-    function _transferAssetsFrom(address _from, uint256 _value) internal {
+    function _depositAssetsFrom(address _from, uint256 _value) internal {
         principalBalanceAmount += _value;
         asset.safeTransferFrom(_from, address(this), _value);
     }
@@ -249,10 +249,10 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
         require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
     }
 
-    /// @notice Transfers yield assets from given `_from` address
+    /// @notice Deposit yield assets from given `_from` address
     /// @param _from sender's address
     /// @param _value amount to be received
-    function _transferYieldsFrom(address _from, uint256 _value) internal {
+    function _depositYieldsFrom(address _from, uint256 _value) internal {
         yieldBalanceAmount += _value;
         asset.safeTransferFrom(_from, address(this), _value);
     }

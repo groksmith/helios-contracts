@@ -12,3 +12,16 @@ typechain
 typechain-types
 coverage
 coverage.json
+
+cache_forge
+out
+abi
+coverage_report
+lcov.info
+
+broadcast
+
+crytic-export
+
+tests-results
+output

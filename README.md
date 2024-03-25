@@ -1,9 +1,19 @@
-# Sample Hardhat Project
+# Helios Contracts Forge Project
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```
+## Prerequisites 
+
+Install Just
+https://github.com/casey/just
+
+Install Foundry
+https://book.getfoundry.sh/getting-started/installation
+
+Install LCOV
+https://formulae.brew.sh/formula/lcov
+
+Install Slither
+```pip3 install slither-analyzer --user```
+
+## Contracts build, test and metrics
+
+```just --list``` for list of commands 

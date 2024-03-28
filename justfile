@@ -18,7 +18,7 @@ POOL_FACTORY_LIBRARY := env_var_or_default("POOL_FACTORY_LIBRARY", "")
 POOL := env_var_or_default("POOL", "")
 BLENDED_POOL := env_var_or_default("BLENDED_POOL", "")
 HELIOS_USD := env_var_or_default("HELIOS_USD", "")
-USDT := env_var_or_default("USDT", "")
+USDC := env_var_or_default("USDC", "")
 
 _default:
   just --list
@@ -27,6 +27,29 @@ _default:
 start_time := `date +%s`
 _timer:
     @echo "Task executed in $(($(date +%s) - {{ start_time }})) seconds"
+
+verify-prod: && _timer
+    forge verify-contract {{ HELIOS_GLOBALS }} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
+        --constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_OWNER }}` \
+        --verifier-url {{ VERIFIER_URL }} --watch
+
+    forge verify-contract {{ POOL_FACTORY }} ./contracts/pool/PoolFactory.sol:PoolFactory \
+        --constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_GLOBALS }}` \
+        --verifier-url {{ VERIFIER_URL }} --watch \
+        --libraries ./contracts/library/PoolFactoryLibrary.sol:PoolFactoryLibrary:{{ POOL_FACTORY_LIBRARY }} \
+        --libraries ./contracts/library/BlendedPoolFactoryLibrary.sol:BlendedPoolFactoryLibrary:{{ BLENDED_POOL_FACTORY_LIBRARY }}
+
+    forge verify-contract {{ HELIOS_USD }} ./contracts/token/HeliosUSD.sol:HeliosUSD \
+        --constructor-args `cast abi-encode "constructor(address initialOwner)" {{ HELIOS_OWNER }}` \
+        --verifier-url {{ VERIFIER_URL }} --watch
+
+    forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
+        --constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDC }} 7776000 100000000` \
+        --verifier-url {{ VERIFIER_URL }} --watch
+
+#    forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
+#        --constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDC }} 86400 1000000000000000000 100000000000000000000` \
+#        --verifier-url {{ VERIFIER_URL }} --watch
 
 clean-all: && _timer
 	forge clean
@@ -63,7 +86,7 @@ generate-abi: && _timer
 deploy-all: && _timer
 	forge script ./script/DeployScript.s.sol:DeployScript --rpc-url {{ RPC_URL }} --broadcast -vvvv
 
-verify-all: && _timer
+verify-test: && _timer
 	forge verify-contract {{ HELIOS_GLOBALS }} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
 		--constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_OWNER }}` \
 		--verifier-url {{ VERIFIER_URL }} --watch
@@ -74,8 +97,7 @@ verify-all: && _timer
 		--libraries ./contracts/library/PoolFactoryLibrary.sol:PoolFactoryLibrary:{{ POOL_FACTORY_LIBRARY }} \
 		--libraries ./contracts/library/BlendedPoolFactoryLibrary.sol:BlendedPoolFactoryLibrary:{{ BLENDED_POOL_FACTORY_LIBRARY }}
 
-	#SKIP IN PROD
-	forge verify-contract {{ USDT }} ./tests/mocks/MockTokenERC20.sol:MockTokenERC20 \
+	forge verify-contract {{ USDC }} ./tests/mocks/MockTokenERC20.sol:MockTokenERC20 \
 		--constructor-args `cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
@@ -84,11 +106,11 @@ verify-all: && _timer
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDT }} 86400 1000000000000000000` \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDC }} 86400 1000000000000000000` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDT }} 86400 1000000000000000000 100000000000000000000` \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDC }} 86400 1000000000000000000 100000000000000000000` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 initialize-all: && _timer

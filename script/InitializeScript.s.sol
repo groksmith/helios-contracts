@@ -12,20 +12,20 @@ contract InitializeScript is Script {
 
         address heliosGlobalsAddress = vm.envAddress("HELIOS_GLOBALS");
         address poolFactoryAddress = vm.envAddress("POOL_FACTORY");
-        address usdtAddress = vm.envAddress("USDT");
         address heliosUsdAddress = vm.envAddress("HELIOS_USD");
+        address usdcAddress = vm.envAddress("USDC");
 
         vm.startBroadcast(deployerPrivateKey);
 
         HeliosGlobals heliosGlobals = HeliosGlobals(heliosGlobalsAddress);
         heliosGlobals.setPoolFactory(poolFactoryAddress);
-        heliosGlobals.setAsset(usdtAddress, true);
         heliosGlobals.setAsset(heliosUsdAddress, true);
+        heliosGlobals.setAsset(usdcAddress, true);
 
         PoolFactory poolFactory = PoolFactory(poolFactoryAddress);
-        address blendedPoolAddress = poolFactory.createBlendedPool(usdtAddress, 86400, 1e18);
-
+        address blendedPoolAddress = poolFactory.createBlendedPool(usdcAddress, 7776000, 100000000);
         console.log("BlendedPool address: %s", blendedPoolAddress);
+
         vm.stopBroadcast();
     }
 }

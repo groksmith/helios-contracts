@@ -8,11 +8,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract HeliosUSD is ERC20, ERC20Burnable, Ownable {
     constructor(address initialOwner)
-    ERC20("HeliosUSD", "HUSD")
+    ERC20("Helios USD", "HUSD")
     Ownable(initialOwner)
     {}
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
+    }
+
+    function decimals() public view override returns (uint8) {
+        return 6;
     }
 }

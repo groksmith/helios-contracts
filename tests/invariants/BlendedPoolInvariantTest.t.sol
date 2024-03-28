@@ -29,7 +29,7 @@ contract BlendedPoolInvariantTest is Test {
         // Setup contracts
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
         poolFactory = new PoolFactory(address(heliosGlobals));
-        assetElevated = new MockTokenERC20("USDT", "USDT");
+        assetElevated = new MockTokenERC20("USDC", "USDC");
         asset = ERC20(assetElevated);
 
         // Setup variables

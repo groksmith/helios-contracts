@@ -26,7 +26,7 @@ abstract contract FixtureContract is Test {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
         heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
-        assetElevated = new MockTokenERC20("USDT", "USDT");
+        assetElevated = new MockTokenERC20("USDC", "USDC");
         asset = ERC20(assetElevated);
 
         assetElevated.mint(OWNER_ADDRESS, 1000000);

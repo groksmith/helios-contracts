@@ -17,8 +17,14 @@ contract Pool is AbstractPool {
 
     event PoolStateChanged(State state);
 
-    constructor(address _asset, uint256 _lockupPeriod, uint256 _minInvestmentAmount, uint256 _investmentPoolSize)
-    AbstractPool(_asset, NAME, SYMBOL) {
+    constructor(
+        address _asset,
+        uint256 _lockupPeriod,
+        uint256 _minInvestmentAmount,
+        uint256 _investmentPoolSize,
+        string memory _tokenName,
+        string memory _tokenSymbol)
+    AbstractPool(_asset, _tokenName, _tokenSymbol) {
         poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, _investmentPoolSize);
 
         poolState = State.Active;

@@ -16,11 +16,15 @@ contract PoolFactoryTest is Test, FixtureContract {
         assertEq(heliosGlobals.protocolPaused(), false);
 
         poolFactory.createPool(
-            "1",
-            address(asset),
-            100000,
-            100,
-            1000
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         heliosGlobals.setProtocolPause(true);
@@ -30,15 +34,27 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         vm.expectRevert(bytes("P:PROTO_PAUSED"));
         poolFactory.createPool(
-            "2",
-            address(asset),
-            100000,
-            100,
-            1000
+            {
+                _poolId: "2",
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         vm.expectRevert(bytes("P:PROTO_PAUSED"));
-        poolFactory.createBlendedPool(address(asset), 100000, 100);
+        poolFactory.createBlendedPool(
+            {
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
+        );
 
         vm.stopPrank();
     }
@@ -47,20 +63,28 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         poolFactory.createPool(
-            "1",
-            address(asset),
-            100000,
-            100,
-            1000
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         vm.expectRevert(bytes("PF:POOL_ID_ALREADY_EXISTS"));
         poolFactory.createPool(
-            "1",
-            address(asset),
-            100000,
-            100,
-            1000
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         vm.stopPrank();
@@ -71,7 +95,15 @@ contract PoolFactoryTest is Test, FixtureContract {
 
         // Already created in parent FixtureContract
         vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
-        poolFactory.createBlendedPool(address(asset), 100000, 100);
+        poolFactory.createBlendedPool(
+            {
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
+        );
 
         vm.stopPrank();
     }
@@ -86,16 +118,20 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         address poolAddress = poolFactory.createPool(
-            poolId,
-            address(asset),
-            lockupPeriod,
-            minInvestmentAmount,
-            investmentPoolSize
+            {
+                _poolId: poolId,
+                _asset: address(asset),
+                _lockupPeriod: lockupPeriod,
+                _minInvestmentAmount: minInvestmentAmount,
+                _investmentPoolSize: investmentPoolSize,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         vm.assume(randomAddress != poolAddress);
         vm.assume(randomAddress != address(regPool1));
-        
+
         assertEq(poolFactory.isValidPool(poolAddress), true);
         assertEq(poolFactory.isValidPool(randomAddress), false);
 

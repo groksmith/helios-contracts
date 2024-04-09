@@ -13,6 +13,9 @@ import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract BlendedPoolInvariantTest is Test {
+    string public constant NAME = "Helios Pool TKN";
+    string public constant SYMBOL = "HLS-P";
+
     BlendedPoolTestHandler private handler;
     BlendedPool private blendedPool;
 
@@ -37,9 +40,13 @@ contract BlendedPoolInvariantTest is Test {
         heliosGlobals.setPoolFactory(address(poolFactory));
 
         address blendedPoolAddress = poolFactory.createBlendedPool(
-            address(asset),
-            300,
-            0 // Setting minInvestmentAmount to 0 for testing if this can create larger issues
+            {
+                _asset: address(asset),
+                _lockupPeriod: 300,
+                _minInvestmentAmount: 0,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         blendedPool = BlendedPool(blendedPoolAddress);

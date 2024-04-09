@@ -18,9 +18,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using PoolLibrary for PoolLibrary.DepositsStorage;
 
-    string public constant NAME = "Helios Pool TKN";
-    string public constant SYMBOL = "HLS-P";
-
     IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
 

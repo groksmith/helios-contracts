@@ -14,6 +14,8 @@ contract InitializeScript is Script {
         address poolFactoryAddress = vm.envAddress("POOL_FACTORY");
         address heliosUsdAddress = vm.envAddress("HELIOS_USD");
         address usdcAddress = vm.envAddress("USDC");
+        string memory tokenName = vm.envString("NAME");
+        string memory tokenSymbol = vm.envString("SYMBOL");
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -23,7 +25,16 @@ contract InitializeScript is Script {
         heliosGlobals.setAsset(usdcAddress, true);
 
         PoolFactory poolFactory = PoolFactory(poolFactoryAddress);
-        address blendedPoolAddress = poolFactory.createBlendedPool(usdcAddress, 7776000, 100000000);
+        address blendedPoolAddress = poolFactory.createBlendedPool(
+            {
+                _asset: usdcAddress,
+                _lockupPeriod: 7776000,
+                _minInvestmentAmount: 100000000,
+                _tokenName: tokenName,
+                _tokenSymbol: tokenSymbol
+            }
+        );
+
         console.log("BlendedPool address: %s", blendedPoolAddress);
 
         vm.stopBroadcast();

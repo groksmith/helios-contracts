@@ -10,8 +10,13 @@ import {Pool} from "./Pool.sol";
 contract BlendedPool is AbstractPool {
     event RegPoolRequested(address indexed regPool, uint256 amount);
 
-    constructor(address _asset, uint256 _lockupPeriod, uint256 _minInvestmentAmount)
-    AbstractPool(_asset, NAME, SYMBOL) {
+    constructor(
+        address _asset,
+        uint256 _lockupPeriod,
+        uint256 _minInvestmentAmount,
+        string memory _tokenName,
+        string memory _tokenSymbol)
+    AbstractPool(_asset, _tokenName, _tokenSymbol) {
         poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, type(uint256).max);
     }
 

@@ -372,11 +372,15 @@ contract RegPoolTest is FixtureContract {
 
         _maxPoolSize = bound(_maxPoolSize, 1, type(uint256).max - 1);
         address poolAddress = poolFactory.createPool(
-            "1",
-            address(asset),
-            1000,
-            0,
-            _maxPoolSize
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 1000,
+                _minInvestmentAmount: 0,
+                _investmentPoolSize: _maxPoolSize,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         Pool pool = Pool(poolAddress);

@@ -433,7 +433,18 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         // Create pool
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
-        address poolAddress = poolFactory.createPool("1", address(asset), 1000, 100, 1000);
+        address poolAddress = poolFactory.createPool(
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 1000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
+        );
+
         Pool pool = Pool(poolAddress);
         vm.stopPrank();
 

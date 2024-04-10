@@ -9,17 +9,15 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
+import {PoolErrors} from "./PoolErrors.sol";
 
 /// @title Base contract for Blended and Regional pools
 /// @author Tigran Arakelyan
 /// @dev Should be inherited
-abstract contract AbstractPool is ERC20, ReentrancyGuard {
+abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     using SafeERC20 for IERC20;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using PoolLibrary for PoolLibrary.DepositsStorage;
-
-    string public constant NAME = "Helios Pool TKN";
-    string public constant SYMBOL = "HLS-P";
 
     IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
@@ -50,10 +48,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
     ERC20(_tokenName, _tokenSymbol) {
-        require(_asset != address(0), "P:ZERO_LIQ_ASSET");
+        if (_asset == address(0)) revert ZeroLiquidityAsset();
 
         poolFactory = IPoolFactory(msg.sender);
-        require(poolFactory.globals().isValidAsset(_asset), "P:INVALID_LIQ_ASSET");
+
+        if (poolFactory.globals().isValidAsset(_asset) == false)
+            revert InvalidLiquidityAsset();
 
         asset = IERC20(_asset);
     }
@@ -65,7 +65,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount to deposit
     function deposit(uint256 _amount) public virtual {
-        require(_amount >= poolInfo.minInvestmentAmount, "P:DEP_AMT_BELOW_MIN");
+        if (_amount < poolInfo.minInvestmentAmount) revert DepositAmountBelowMin();
 
         address holder = msg.sender;
 
@@ -91,8 +91,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield() external virtual nonReentrant whenProtocolNotPaused returns (bool) {
-        require(yields[msg.sender] > 0, "P:ZERO_YIELD");
-        require(yieldBalanceAmount >= yields[msg.sender], "P:INSUFFICIENT_FUNDS");
+        if (yields[msg.sender] == 0) revert ZeroYield();
+        if (yieldBalanceAmount < yields[msg.sender]) revert InsufficientFunds();
 
         uint256 callerYields = yields[msg.sender];
         yields[msg.sender] = 0;
@@ -122,7 +122,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _to address for borrow funds
     /// @param _amount amount to be borrowed
     function borrow(address _to, uint256 _amount) public virtual notZero(_amount) onlyAdmin {
-        require(principalBalanceAmount >= _amount, "P:BORROWED_MORE_THAN_DEPOSITED");
+        if (principalBalanceAmount < _amount) revert BorrowedMoreThanDeposited();
         principalOut += _amount;
         _transferAssets(_to, _amount);
     }
@@ -130,8 +130,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Repay asset without minimal threshold or getting LP in return
     /// @param _amount amount to be repaid
     function repay(uint256 _amount) public virtual notZero(_amount) onlyAdmin {
-        require(_amount <= principalOut, "P:CANT_REPAY_MORE_THAN_BORROWED");
-        require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
+        if (_amount > principalOut) revert CantRepayMoreThanBorrowed();
+        if (asset.balanceOf(msg.sender) < _amount) revert NotEnoughBalance();
 
         principalOut -= _amount;
 
@@ -141,7 +141,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @notice Repay and distribute yields
     /// @param _amount amount to be repaid
     function repayYield(uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
-        require(asset.balanceOf(msg.sender) >= _amount, "P:NOT_ENOUGH_BALANCE");
+        if (asset.balanceOf(msg.sender) < _amount) revert NotEnoughBalance();
 
         uint256 count = depositsStorage.getHoldersCount();
         for (uint256 i = 0; i < count; i++) {
@@ -157,13 +157,13 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     */
 
     function transfer(address to, uint amount) public override returns (bool) {
-        require(amount <= unlockedToWithdraw(msg.sender), "P:TOKENS_LOCKED");
+        if (amount > unlockedToWithdraw(msg.sender)) revert TokensLocked();
         depositsStorage.addHolder(to);
         return super.transfer(to, amount);
     }
 
     function transferFrom(address from, address to, uint amount) public override returns (bool) {
-        require(amount <= unlockedToWithdraw(from), "P:TOKENS_LOCKED");
+        if (amount > unlockedToWithdraw(from)) revert TokensLocked();
         depositsStorage.addHolder(to);
         return super.transferFrom(from, to, amount);
     }
@@ -230,7 +230,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _value amount to be transferred
     function _transferAssets(address _to, uint256 _value) internal {
         principalBalanceAmount -= _value;
-        require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
+        if (asset.transfer(_to, _value) == false) revert TransferFailed();
     }
 
     /// @notice Transfer Pool assets from given `_from` address
@@ -246,7 +246,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
     /// @param _value amount to be transferred
     function _transferYields(address _to, uint256 _value) internal {
         yieldBalanceAmount -= _value;
-        require(asset.transfer(_to, _value), "P:TRANSFER_FAILED");
+        if (asset.transfer(_to, _value) == false) revert TransferFailed();
     }
 
     /// @notice Deposit yield assets from given `_from` address
@@ -268,19 +268,19 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard {
 
     /// @notice Checks that the protocol is not in a paused state
     modifier notZero(uint256 _value) {
-        require(_value > 0, "P:INVALID_VALUE");
+        if (_value == 0) revert InvalidValue();
         _;
     }
 
     /// @notice Checks that the protocol is not in a paused state
     modifier whenProtocolNotPaused() {
-        require(!poolFactory.globals().protocolPaused(), "P:PROTO_PAUSED");
+        if (poolFactory.globals().protocolPaused()) revert Paused();
         _;
     }
 
     /// @notice Checks that the admin call
     modifier onlyAdmin() {
-        require(poolFactory.globals().isAdmin(msg.sender), "PF:NOT_ADMIN");
+        if (poolFactory.globals().isAdmin(msg.sender) == false) revert NotAdmin();
         _;
     }
 }

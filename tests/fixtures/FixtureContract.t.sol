@@ -7,8 +7,12 @@ import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {Pool} from "../../contracts/pool/Pool.sol";
+import {PoolErrors} from "../../contracts/pool/PoolErrors.sol";
 
 abstract contract FixtureContract is Test {
+    string public constant NAME = "Helios Pool TKN";
+    string public constant SYMBOL = "HLS-P";
+
     address public constant OWNER_ADDRESS = 0x8A867fcC5a4d1FBbf7c1A9D6e5306b78511fDDDe;
     address public constant USER_ADDRESS = 0x4F8fF72C3A17B571D4a1671d5ddFbcf48187FBCa;
 
@@ -38,11 +42,15 @@ abstract contract FixtureContract is Test {
         heliosGlobals.setPoolFactory(address(poolFactory));
 
         address poolAddress = poolFactory.createPool(
-            "reg pool",
-            address(asset),
-            1000,
-            100,
-            100000
+            {
+                _poolId: "RegPool",
+                _asset: address(asset),
+                _lockupPeriod: 1000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 100000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         regPool1 = Pool(poolAddress);
@@ -50,9 +58,13 @@ abstract contract FixtureContract is Test {
         assertEq(regPool1.decimals(), asset.decimals());
 
         address blendedPoolAddress = poolFactory.createBlendedPool(
-            address(asset),
-            300,
-            100
+            {
+                _asset: address(asset),
+                _lockupPeriod: 300,
+                _minInvestmentAmount: 100,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         blendedPool = BlendedPool(blendedPoolAddress);

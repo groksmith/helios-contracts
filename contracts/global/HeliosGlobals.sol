@@ -4,11 +4,12 @@ pragma solidity ^0.8.20;
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
+import {HeliosGlobalsErrors} from "./HeliosGlobalsErrors.sol";
 
 /// @title HeliosGlobals contract
 /// @author Tigran Arakelyan
 /// @notice Maintains a central source of parameters and allowLists for the Helios protocol.
-contract HeliosGlobals is AccessControl, IHeliosGlobals {
+contract HeliosGlobals is AccessControl, IHeliosGlobals, HeliosGlobalsErrors {
     bool public override protocolPaused; // Switch to pause the functionality of the entire protocol.
     address public override poolFactory; // Mapping of valid Pool Factories
     mapping(address => bool) public override isValidAsset; // Mapping of valid Assets
@@ -36,7 +37,7 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
 
     /// @notice Sets the valid PoolFactory instance. Only the Admin can call this function
     function setPoolFactory(address _poolFactory) external onlyAdmin {
-        require(_poolFactory != address(0), "HG:ZERO_POOL_FACTORY");
+        if (_poolFactory == address(0)) revert ZeroPoolFactory();
 
         poolFactory = _poolFactory;
         emit PoolFactorySet(_poolFactory);
@@ -44,14 +45,14 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals {
 
     /// @notice Sets the validity of an asset for Pools. Only the Admin can call this function
     function setAsset(address _asset, bool _valid) external onlyAdmin {
-        require(_asset != address(0), "HG:ZERO_ASSET");
+        if (_asset == address(0)) revert ZeroAsset();
         isValidAsset[_asset] = _valid;
         emit AssetSet(_asset, IERC20Metadata(_asset).decimals(), IERC20Metadata(_asset).symbol(), _valid);
     }
 
     /// @notice Restricted to members of the admin role.
     modifier onlyAdmin() {
-        require(isAdmin(msg.sender), "HG:NOT_ADMIN");
+        if (isAdmin(msg.sender) == false) revert NotAdmin();
         _;
     }
 }

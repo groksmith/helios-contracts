@@ -3,8 +3,9 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
 import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
+import {PoolErrors} from "../../contracts/pool/PoolErrors.sol";
 
-contract PoolFactoryTest is Test, FixtureContract {
+contract PoolFactoryTest is Test, FixtureContract, PoolErrors {
     function setUp() public {
         fixture();
     }
@@ -16,11 +17,15 @@ contract PoolFactoryTest is Test, FixtureContract {
         assertEq(heliosGlobals.protocolPaused(), false);
 
         poolFactory.createPool(
-            "1",
-            address(asset),
-            100000,
-            100,
-            1000
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         heliosGlobals.setProtocolPause(true);
@@ -28,17 +33,29 @@ contract PoolFactoryTest is Test, FixtureContract {
         //Asserts if after pausing contract paused
         assertEq(heliosGlobals.protocolPaused(), true);
 
-        vm.expectRevert(bytes("P:PROTO_PAUSED"));
+        vm.expectRevert(Paused.selector);
         poolFactory.createPool(
-            "2",
-            address(asset),
-            100000,
-            100,
-            1000
+            {
+                _poolId: "2",
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
-        vm.expectRevert(bytes("P:PROTO_PAUSED"));
-        poolFactory.createBlendedPool(address(asset), 100000, 100);
+        vm.expectRevert(Paused.selector);
+        poolFactory.createBlendedPool(
+            {
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
+        );
 
         vm.stopPrank();
     }
@@ -47,20 +64,28 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         poolFactory.createPool(
-            "1",
-            address(asset),
-            100000,
-            100,
-            1000
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
-        vm.expectRevert(bytes("PF:POOL_ID_ALREADY_EXISTS"));
+        vm.expectRevert(PoolIdAlreadyExists.selector);
         poolFactory.createPool(
-            "1",
-            address(asset),
-            100000,
-            100,
-            1000
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         vm.stopPrank();
@@ -70,8 +95,16 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         // Already created in parent FixtureContract
-        vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
-        poolFactory.createBlendedPool(address(asset), 100000, 100);
+        vm.expectRevert(BlendedPoolAlreadyCreated.selector);
+        poolFactory.createBlendedPool(
+            {
+                _asset: address(asset),
+                _lockupPeriod: 100000,
+                _minInvestmentAmount: 100,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
+        );
 
         vm.stopPrank();
     }
@@ -86,16 +119,20 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         address poolAddress = poolFactory.createPool(
-            poolId,
-            address(asset),
-            lockupPeriod,
-            minInvestmentAmount,
-            investmentPoolSize
+            {
+                _poolId: poolId,
+                _asset: address(asset),
+                _lockupPeriod: lockupPeriod,
+                _minInvestmentAmount: minInvestmentAmount,
+                _investmentPoolSize: investmentPoolSize,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
         );
 
         vm.assume(randomAddress != poolAddress);
         vm.assume(randomAddress != address(regPool1));
-        
+
         assertEq(poolFactory.isValidPool(poolAddress), true);
         assertEq(poolFactory.isValidPool(randomAddress), false);
 

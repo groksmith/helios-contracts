@@ -2,8 +2,9 @@ pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
 import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
+import {HeliosGlobalsErrors} from "../../contracts/global/HeliosGlobalsErrors.sol";
 
-contract HeliosGlobalsTest is Test, FixtureContract {
+contract HeliosGlobalsTest is Test, FixtureContract, HeliosGlobalsErrors {
     event ProtocolPaused(bool pause);
     event GlobalAdminSet(address indexed newGlobalAdmin);
     event PoolFactorySet(address indexed poolFactory);
@@ -44,7 +45,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         assertEq(heliosGlobals.protocolPaused(), false);
 
         //Sets contract paused
-        vm.expectRevert(bytes("HG:NOT_ADMIN"));
+        vm.expectRevert(NotAdmin.selector);
         heliosGlobals.setProtocolPause(true);
 
         //Asserts if after pausing contract it is not paused
@@ -69,7 +70,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
 
     function test_when_set_pool_factory_zero() public {
         vm.startPrank(OWNER_ADDRESS);
-        vm.expectRevert(bytes("HG:ZERO_POOL_FACTORY"));
+        vm.expectRevert(ZeroPoolFactory.selector);
         heliosGlobals.setPoolFactory(address(0));
         vm.stopPrank();
     }
@@ -78,7 +79,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(user);
         address poolFactoryAddress = address(poolFactory);
-        vm.expectRevert(bytes("HG:NOT_ADMIN"));
+        vm.expectRevert(NotAdmin.selector);
         heliosGlobals.setPoolFactory(poolFactoryAddress);
         vm.stopPrank();
     }
@@ -96,7 +97,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
 
     function test_when_set_asset_zero() public {
         vm.startPrank(OWNER_ADDRESS);
-        vm.expectRevert(bytes("HG:ZERO_ASSET"));
+        vm.expectRevert(ZeroAsset.selector);
         heliosGlobals.setAsset(address(0), true);
         vm.stopPrank();
     }
@@ -106,7 +107,7 @@ contract HeliosGlobalsTest is Test, FixtureContract {
         vm.startPrank(user);
 
         address assetAddress = address(asset);
-        vm.expectRevert(bytes("HG:NOT_ADMIN"));
+        vm.expectRevert(NotAdmin.selector);
         heliosGlobals.setAsset(assetAddress, true);
 
         vm.stopPrank();

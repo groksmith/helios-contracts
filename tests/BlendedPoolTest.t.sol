@@ -11,8 +11,9 @@ import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
 import {BlendedPool} from "../contracts/pool/BlendedPool.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
+import {PoolErrors} from "../contracts/pool/PoolErrors.sol";
 
-contract BlendedPoolTest is Test, FixtureContract {
+contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
     function setUp() public {
         fixture();
     }
@@ -72,10 +73,10 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.startPrank(user);
 
         uint256 depositAmountBelowMin = 1;
-        vm.expectRevert("P:DEP_AMT_BELOW_MIN");
+        vm.expectRevert(DepositAmountBelowMin.selector);
         blendedPool.deposit(depositAmountBelowMin);
 
-        vm.expectRevert("P:INVALID_VALUE");
+        vm.expectRevert(InvalidValue.selector);
         blendedPool.deposit(0);
         vm.stopPrank();
     }
@@ -110,13 +111,13 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.deposit(depositAmount);
 
         //attempt to withdraw too early fails
-        vm.expectRevert("BP:TOKENS_LOCKED");
+        vm.expectRevert(TokensLocked.selector);
         blendedPool.withdraw(depositAmount);
 
         vm.warp(blendedPool.getPoolInfo().lockupPeriod + 1);
 
         //attempt to withdraw more than deposited
-        vm.expectRevert("BP:INSUFFICIENT_FUNDS");
+        vm.expectRevert(InsufficientFunds.selector);
         blendedPool.withdraw(depositAmount + 1);
 
         vm.stopPrank();
@@ -127,7 +128,7 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         vm.startPrank(user);
         //attempt to withdraw when not enough assets in pool
-        vm.expectRevert("BP:NOT_ENOUGH_ASSETS");
+        vm.expectRevert(NotEnoughAssets.selector);
         blendedPool.withdraw(depositAmount);
         vm.stopPrank();
     }
@@ -139,15 +140,15 @@ contract BlendedPoolTest is Test, FixtureContract {
         vm.prank(OWNER_ADDRESS);
         regPool1.close();
 
-        vm.expectRevert(bytes("P:NOT_POOL"));
+        vm.expectRevert(NotPool.selector);
         blendedPool.requestAssets(10);
 
         vm.startPrank(address(regPool1));
 
-        vm.expectRevert(bytes("P:INVALID_VALUE"));
+        vm.expectRevert(InvalidValue.selector);
         blendedPool.requestAssets(0);
 
-        vm.expectRevert(bytes("BP:NOT_ENOUGH_ASSETS"));
+        vm.expectRevert(NotEnoughAssets.selector);
         blendedPool.requestAssets(100);
 
         vm.stopPrank();
@@ -198,7 +199,7 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.borrow(OWNER_ADDRESS, user1Deposit);
         blendedPool.borrow(OWNER_ADDRESS, user2Deposit);
 
-        vm.expectRevert("P:BORROWED_MORE_THAN_DEPOSITED");
+        vm.expectRevert(BorrowedMoreThanDeposited.selector);
         blendedPool.borrow(OWNER_ADDRESS, 1);
         vm.stopPrank();
     }
@@ -242,14 +243,14 @@ contract BlendedPoolTest is Test, FixtureContract {
         blendedPool.repay(user1Deposit);
 
         burnAllAssets(OWNER_ADDRESS);
-        vm.expectRevert("P:NOT_ENOUGH_BALANCE");
+        vm.expectRevert(NotEnoughBalance.selector);
         blendedPool.repay(user2Deposit);
 
         mintAsset(OWNER_ADDRESS, user2Deposit);
         asset.approve(address(blendedPool), user2Deposit);
         blendedPool.repay(user2Deposit);
 
-        vm.expectRevert("P:CANT_REPAY_MORE_THAN_BORROWED");
+        vm.expectRevert(CantRepayMoreThanBorrowed.selector);
         blendedPool.repay(1);
         vm.stopPrank();
     }
@@ -412,18 +413,18 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         //a non-pool-admin address shouldn't be able to call repayYield()
         vm.prank(user);
-        vm.expectRevert("PF:NOT_ADMIN");
+        vm.expectRevert(NotAdmin.selector);
         blendedPool.repayYield(1000);
 
         // Cannot repay zero yield
         vm.prank(OWNER_ADDRESS);
-        vm.expectRevert("P:INVALID_VALUE");
+        vm.expectRevert(InvalidValue.selector);
         blendedPool.repayYield(0);
 
         uint256 adminBalance = asset.balanceOf(OWNER_ADDRESS);
 
         vm.prank(OWNER_ADDRESS);
-        vm.expectRevert("P:NOT_ENOUGH_BALANCE");
+        vm.expectRevert(NotEnoughBalance.selector);
         blendedPool.repayYield(adminBalance + 1);
     }
 
@@ -433,7 +434,18 @@ contract BlendedPoolTest is Test, FixtureContract {
 
         // Create pool
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
-        address poolAddress = poolFactory.createPool("1", address(asset), 1000, 100, 1000);
+        address poolAddress = poolFactory.createPool(
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 1000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
+        );
+
         Pool pool = Pool(poolAddress);
         vm.stopPrank();
 

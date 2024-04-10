@@ -7,10 +7,10 @@ import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
 import {PoolLibrary} from "../contracts/library/PoolLibrary.sol";
-
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
+import {PoolErrors} from "../contracts/pool/PoolErrors.sol";
 
-contract RegPoolTest is FixtureContract {
+contract RegPoolTest is FixtureContract, PoolErrors {
     event PendingWithdrawal(address indexed investor, uint256 amount);
 
     function setUp() public {
@@ -76,10 +76,10 @@ contract RegPoolTest is FixtureContract {
         createInvestorAndMintAsset(user1, depositAmountMax + 1);
         asset.approve(address(regPool1), depositAmountMax + 1);
 
-        vm.expectRevert("P:DEP_AMT_BELOW_MIN");
+        vm.expectRevert(DepositAmountBelowMin.selector);
         regPool1.deposit(depositAmountBelowMin);
 
-        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
+        vm.expectRevert(MaxPoolSizeReached.selector);
         regPool1.deposit(depositAmountMax + 1);
 
         regPool1.deposit(depositAmountMax);
@@ -88,7 +88,7 @@ contract RegPoolTest is FixtureContract {
         vm.startPrank(user2);
         createInvestorAndMintAsset(user2, depositAmountMax + 1);
         asset.approve(address(regPool1), depositAmountMax + 1);
-        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
+        vm.expectRevert(MaxPoolSizeReached.selector);
         regPool1.deposit(1);
 
         vm.startPrank(OWNER_ADDRESS);
@@ -96,7 +96,7 @@ contract RegPoolTest is FixtureContract {
         vm.stopPrank();
 
         vm.startPrank(user1);
-        vm.expectRevert("P:BAD_STATE");
+        vm.expectRevert(BadState.selector);
         regPool1.deposit(1);
 
         vm.stopPrank();
@@ -248,14 +248,14 @@ contract RegPoolTest is FixtureContract {
 
         regPool1.deposit(amountBounded);
 
-        vm.expectRevert("P:TOKENS_LOCKED");
+        vm.expectRevert(TokensLocked.selector);
         regPool1.withdraw(amountBounded);
 
         vm.warp(currentTime + 1000);
 
         regPool1.withdraw(amountBounded);
 
-        vm.expectRevert("P:INSUFFICIENT_FUNDS");
+        vm.expectRevert(InsufficientFunds.selector);
         regPool1.withdraw(amountBounded);
 
         vm.stopPrank();
@@ -310,7 +310,7 @@ contract RegPoolTest is FixtureContract {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
         regPool1.close();
 
-        vm.expectRevert(bytes("P:INVALID_VALUE"));
+        vm.expectRevert(InvalidValue.selector);
         regPool1.borrow(OWNER_ADDRESS, 0);
 
         regPool1.borrow(OWNER_ADDRESS, depositAmount - 10);
@@ -354,13 +354,13 @@ contract RegPoolTest is FixtureContract {
         assertEq(regPool1.principalOut(), 0);
 
         // Repay more than borrow
-        vm.expectRevert(bytes("P:CANT_REPAY_MORE_THAN_BORROWED"));
+        vm.expectRevert(CantRepayMoreThanBorrowed.selector);
         regPool1.repay(10);
 
         // Repay with insufficient balance
         regPool1.borrow(OWNER_ADDRESS, 10);
         burnAllAssets(OWNER_ADDRESS);
-        vm.expectRevert(bytes("P:NOT_ENOUGH_BALANCE"));
+        vm.expectRevert(NotEnoughBalance.selector);
         regPool1.repay(10);
 
         vm.stopPrank();
@@ -386,7 +386,7 @@ contract RegPoolTest is FixtureContract {
         Pool pool = Pool(poolAddress);
 
         asset.approve(poolAddress, 1000);
-        vm.expectRevert("P:MAX_POOL_SIZE_REACHED");
+        vm.expectRevert(MaxPoolSizeReached.selector);
         pool.deposit(_maxPoolSize + 1);
         vm.stopPrank();
     }
@@ -416,14 +416,14 @@ contract RegPoolTest is FixtureContract {
         vm.prank(user1);
 
         // No yield yet
-        vm.expectRevert("P:ZERO_YIELD");
+        vm.expectRevert(ZeroYield.selector);
         regPool1.withdrawYield();
 
-        vm.expectRevert("PF:NOT_ADMIN");
+        vm.expectRevert(NotAdmin.selector);
         regPool1.repayYield(yieldGenerated);
 
         vm.startPrank(OWNER_ADDRESS);
-        vm.expectRevert("P:INVALID_VALUE");
+        vm.expectRevert(InvalidValue.selector);
         regPool1.repayYield(0);
 
         regPool1.close();
@@ -487,7 +487,7 @@ contract RegPoolTest is FixtureContract {
 
         assertEq(regPool1.getHolderByIndex(1), user2);
 
-        vm.expectRevert("PL:INVALID_INDEX");
+        vm.expectRevert(InvalidIndex.selector);
         regPool1.getHolderByIndex(3);
     }
 
@@ -510,14 +510,14 @@ contract RegPoolTest is FixtureContract {
         vm.startPrank(user1);
         createInvestorAndMintAsset(user1, depositAmount);
         asset.approve(address(regPool1), depositAmount);
-        vm.expectRevert("P:BAD_STATE");
+        vm.expectRevert(BadState.selector);
         regPool1.deposit(depositAmount);
         vm.stopPrank();
 
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
         // Cannot close again
-        vm.expectRevert("P:BAD_STATE");
+        vm.expectRevert(BadState.selector);
         regPool1.close();
     }
 
@@ -545,7 +545,7 @@ contract RegPoolTest is FixtureContract {
         asset.approve(address(regPool1), amountBounded1);
         regPool1.deposit(amountBounded1);
 
-        vm.expectRevert("P:TOKENS_LOCKED");
+        vm.expectRevert(TokensLocked.selector);
         regPool1.transfer(newHolder, amountBounded1);
 
         vm.warp(lockTime1);
@@ -595,7 +595,7 @@ contract RegPoolTest is FixtureContract {
         asset.approve(address(regPool1), amountBounded1);
         regPool1.deposit(amountBounded1);
 
-        vm.expectRevert("P:TOKENS_LOCKED");
+        vm.expectRevert(TokensLocked.selector);
         regPool1.transferFrom(holder, newHolder, amountBounded1);
 
         vm.warp(lockTime1);

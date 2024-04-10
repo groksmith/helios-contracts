@@ -4,8 +4,9 @@ import "forge-std/Test.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
 import {PoolLibrary} from "../../contracts/library/PoolLibrary.sol";
+import {PoolLibraryErrors} from "../../contracts/library/PoolLibraryErrors.sol";
 
-contract PoolLibraryTest is Test, FixtureContract {
+contract PoolLibraryTest is Test, FixtureContract, PoolLibraryErrors {
     using EnumerableSet for EnumerableSet.AddressSet;
     using PoolLibrary for PoolLibrary.DepositsStorage;
 
@@ -41,7 +42,7 @@ contract PoolLibraryTest is Test, FixtureContract {
         vm.assume(holder2 != address(0));
         vm.assume(holder1 != holder2);
 
-        vm.expectRevert(bytes("PL:INVALID_INDEX"));
+        vm.expectRevert(InvalidIndex.selector);
         depositsStorage.getHolderByIndex(0);
 
         uint256 lockTime = block.timestamp + 1000;
@@ -56,7 +57,7 @@ contract PoolLibraryTest is Test, FixtureContract {
         depositsStorage.addDeposit(holder2, 200, lockTime);
         assertEq(depositsStorage.getHolderByIndex(1), holder2);
 
-        vm.expectRevert(bytes("PL:INVALID_INDEX"));
+        vm.expectRevert(InvalidIndex.selector);
         depositsStorage.getHolderByIndex(2);
     }
 
@@ -99,15 +100,15 @@ contract PoolLibraryTest is Test, FixtureContract {
         assertEq(depositsStorage.lockedDeposits[anotherHolder].length, 1);
 
         // Try add 0 holder
-        vm.expectRevert(bytes("PL:INVALID_HOLDER"));
+        vm.expectRevert(InvalidHolder.selector);
         depositsStorage.addDeposit(address(0), amountBounded, lockTime);
 
         // Try add 0 deposit
-        vm.expectRevert(bytes("PL:ZERO_AMOUNT"));
+        vm.expectRevert(ZeroAmount.selector);
         depositsStorage.addDeposit(holder, 0, lockTime);
 
         // Try add wrong lockTime
-        vm.expectRevert(bytes("PL:WRONG_UNLOCK_TIME"));
+        vm.expectRevert(WrongUnlockTime.selector);
         depositsStorage.addDeposit(holder, amountBounded, block.timestamp - 1);
     }
 
@@ -138,7 +139,7 @@ contract PoolLibraryTest is Test, FixtureContract {
         assertEq(depositsStorage.lockedDepositsAmount(holder), 0);
 
         // Try add wrong lockTime
-        vm.expectRevert(bytes("PL:INVALID_HOLDER"));
+        vm.expectRevert(InvalidHolder.selector);
         depositsStorage.lockedDepositsAmount(address(0));
     }
 

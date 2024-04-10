@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {PoolLibraryErrors} from "./PoolLibraryErrors.sol";
 
 /// @title PoolLibrary
 /// @author Tigran Arakelyan
@@ -38,7 +39,7 @@ library PoolLibrary {
 
     /// @notice Get the holder address by index
     function getHolderByIndex(DepositsStorage storage self, uint256 _index) internal view returns (address) {
-        require(_index < self.holders.length(), "PL:INVALID_INDEX");
+        if (_index >= self.holders.length()) revert PoolLibraryErrors.InvalidIndex();
         return self.holders.at(_index);
     }
 
@@ -49,9 +50,9 @@ library PoolLibrary {
     /// @notice Add a deposit for a holder
     /// @dev Add the holder to holders AddressSet, then push deposit to lockedDeposits array
     function addDeposit(DepositsStorage storage self, address _holder, uint256 _amount, uint256 _unlockTime) internal {
-        require(_holder != address(0), "PL:INVALID_HOLDER");
-        require(_amount > 0, "PL:ZERO_AMOUNT");
-        require(_unlockTime > block.timestamp, "PL:WRONG_UNLOCK_TIME");
+        if (_holder == address(0)) revert PoolLibraryErrors.InvalidHolder();
+        if (_amount == 0) revert PoolLibraryErrors.ZeroAmount();
+        if (_unlockTime <= block.timestamp) revert PoolLibraryErrors.WrongUnlockTime();
 
         self.holders.add(_holder);
 
@@ -67,14 +68,14 @@ library PoolLibrary {
     /// @notice Add new holder
     /// @dev Add the holder to holders AddressSet. Used for transfer tokens
     function addHolder(DepositsStorage storage self, address _holder) internal {
-        require(_holder != address(0), "PL:INVALID_HOLDER");
+        if (_holder == address(0)) revert PoolLibraryErrors.InvalidHolder();
 
         self.holders.add(_holder);
     }
 
     /// @notice Get locked deposit amount for a specific holder
     function lockedDepositsAmount(DepositsStorage storage self, address _holder) internal view returns (uint256) {
-        require(self.holders.contains(_holder), "PL:INVALID_HOLDER");
+        if (self.holders.contains(_holder) == false) revert PoolLibraryErrors.InvalidHolder();
 
         uint256 lockedAmount = 0;
 

@@ -8,10 +8,11 @@ import {BlendedPoolFactoryLibrary} from "../library/BlendedPoolFactoryLibrary.so
 
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
+import {PoolErrors} from "./PoolErrors.sol";
 
 /// @title Factory for Pool creation
 /// @author Tigran Arakelyan
-contract PoolFactory is IPoolFactory, ReentrancyGuard {
+contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
     IHeliosGlobals public immutable override globals; // A HeliosGlobals instance
 
     address public blendedPool; // Address of Blended Pool
@@ -67,7 +68,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
         string memory _tokenName,
         string memory _tokenSymbol)
     external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address blendedPoolAddress) {
-        require(blendedPool == address(0), "PF:BLENDED_POOL_ALREADY_CREATED");
+        if (blendedPool != address(0)) revert BlendedPoolAlreadyCreated();
 
         blendedPoolAddress = BlendedPoolFactoryLibrary.createBlendedPool(
             _asset,
@@ -77,7 +78,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
             _tokenSymbol
         );
 
-        require(blendedPoolAddress != address(0), "PF:BLENDED_POOL_NOT_CREATED");
+        if (blendedPoolAddress == address(0)) revert BlendedPoolNotCreated();
         blendedPool = blendedPoolAddress;
 
         emit BlendedPoolCreated(_asset, blendedPoolAddress, msg.sender);
@@ -86,7 +87,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
     /// @notice Checks that the mapping key is valid (unique)
     /// @dev Only for external systems compatibility
     function _isMappingKeyValid(string calldata _key) internal view {
-        require(pools[_key] == address(0), "PF:POOL_ID_ALREADY_EXISTS");
+        if (pools[_key] != address(0)) revert PoolIdAlreadyExists();
     }
 
     /// @notice Whitelist pools created here
@@ -102,13 +103,13 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard {
 
     /// @notice Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {
-        require(globals.isAdmin(msg.sender), "PF:NOT_ADMIN");
+        if (globals.isAdmin(msg.sender) == false) revert NotAdmin();
         _;
     }
 
     /// @notice Checks that the protocol is not in a paused state
     modifier whenProtocolNotPaused() {
-        require(!globals.protocolPaused(), "P:PROTO_PAUSED");
+        if (globals.protocolPaused()) revert Paused();
         _;
     }
 }

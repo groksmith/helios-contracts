@@ -34,8 +34,7 @@ contract Pool is AbstractPool {
     /// @notice the caller becomes an investor. For this to work the caller must set the allowance for this pool's address
     /// @param _amount the amount of assets to deposit
     function deposit(uint256 _amount) public override whenProtocolNotPaused nonReentrant inState(State.Active) {
-        require(totalSupply() + _amount <= poolInfo.investmentPoolSize, "P:MAX_POOL_SIZE_REACHED");
-
+        if (totalSupply() + _amount > poolInfo.investmentPoolSize) revert MaxPoolSizeReached();
         super.deposit(_amount);
     }
 
@@ -49,8 +48,8 @@ contract Pool is AbstractPool {
     /// @notice withdraws the caller's assets
     /// @param _amount the amount of assets to be withdrawn
     function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
-        require(balanceOf(msg.sender) >= _amount, "P:INSUFFICIENT_FUNDS");
-        require(unlockedToWithdraw(msg.sender) >= _amount, "P:TOKENS_LOCKED");
+        if (balanceOf(msg.sender) < _amount) revert InsufficientFunds();
+        if (unlockedToWithdraw(msg.sender) < _amount) revert TokensLocked();
 
         if (principalBalanceAmount < _amount) {
             uint256 insufficientAmount = _amount - principalBalanceAmount;
@@ -119,13 +118,13 @@ contract Pool is AbstractPool {
 
     /// @notice Check if pool in given state
     modifier inState(State _state) {
-        require(poolState == _state, "P:BAD_STATE");
+        if (poolState != _state) revert BadState();
         _;
     }
 
     /// @notice Check if blended pool calling
     modifier onlyBlendedPool() {
-        require(poolFactory.getBlendedPool() == msg.sender, "P:NOT_BP");
+        if (poolFactory.getBlendedPool() != msg.sender) revert NotBlendedPool();
         _;
     }
 }

@@ -3,8 +3,9 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 import {FixtureContract} from "../fixtures/FixtureContract.t.sol";
 import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
+import {PoolErrors} from "../../contracts/pool/PoolErrors.sol";
 
-contract PoolFactoryTest is Test, FixtureContract {
+contract PoolFactoryTest is Test, FixtureContract, PoolErrors {
     function setUp() public {
         fixture();
     }
@@ -32,7 +33,7 @@ contract PoolFactoryTest is Test, FixtureContract {
         //Asserts if after pausing contract paused
         assertEq(heliosGlobals.protocolPaused(), true);
 
-        vm.expectRevert(bytes("P:PROTO_PAUSED"));
+        vm.expectRevert(Paused.selector);
         poolFactory.createPool(
             {
                 _poolId: "2",
@@ -45,7 +46,7 @@ contract PoolFactoryTest is Test, FixtureContract {
             }
         );
 
-        vm.expectRevert(bytes("P:PROTO_PAUSED"));
+        vm.expectRevert(Paused.selector);
         poolFactory.createBlendedPool(
             {
                 _asset: address(asset),
@@ -74,7 +75,7 @@ contract PoolFactoryTest is Test, FixtureContract {
             }
         );
 
-        vm.expectRevert(bytes("PF:POOL_ID_ALREADY_EXISTS"));
+        vm.expectRevert(PoolIdAlreadyExists.selector);
         poolFactory.createPool(
             {
                 _poolId: "1",
@@ -94,7 +95,7 @@ contract PoolFactoryTest is Test, FixtureContract {
         vm.startPrank(OWNER_ADDRESS);
 
         // Already created in parent FixtureContract
-        vm.expectRevert(bytes("PF:BLENDED_POOL_ALREADY_CREATED"));
+        vm.expectRevert(BlendedPoolAlreadyCreated.selector);
         poolFactory.createBlendedPool(
             {
                 _asset: address(asset),

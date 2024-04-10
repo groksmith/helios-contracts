@@ -19,6 +19,8 @@ POOL := env_var_or_default("POOL", "")
 BLENDED_POOL := env_var_or_default("BLENDED_POOL", "")
 HELIOS_USD := env_var_or_default("HELIOS_USD", "")
 USDC := env_var_or_default("USDC", "")
+NAME := env_var_or_default("NAME", "")
+SYMBOL := env_var_or_default("SYMBOL", "")
 
 _default:
   just --list
@@ -44,7 +46,7 @@ verify-prod: && _timer
         --verifier-url {{ VERIFIER_URL }} --watch
 
     forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
-        --constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDC }} 7776000 100000000` \
+        --constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDC }} 7776000 100000000 {{ NAME }} {{ SYMBOL }}` \
         --verifier-url {{ VERIFIER_URL }} --watch
 
 #    forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
@@ -106,11 +108,11 @@ verify-test: && _timer
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDC }} 86400 1000000000000000000` \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDC }} 86400 1000000000000000000  {{ NAME }} {{ SYMBOL }}` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDC }} 86400 1000000000000000000 100000000000000000000` \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDC }} 86400 1000000000000000000 100000000000000000000  {{ NAME }} {{ SYMBOL }}` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 initialize-all: && _timer

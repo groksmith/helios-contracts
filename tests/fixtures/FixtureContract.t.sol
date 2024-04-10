@@ -7,6 +7,7 @@ import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {Pool} from "../../contracts/pool/Pool.sol";
+import {PoolErrors} from "../../contracts/pool/PoolErrors.sol";
 
 abstract contract FixtureContract is Test {
     string public constant NAME = "Helios Pool TKN";

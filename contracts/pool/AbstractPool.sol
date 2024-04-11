@@ -40,20 +40,17 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     EnumerableMap.AddressToUintMap internal pendingWithdrawals;
 
     event Deposit(address indexed investor, uint256 amount);
-    event Withdrawal(address indexed investor, uint256 amount);
+    event Withdrawal(address indexed investor, address indexed receiver, uint256 amount);
     event PendingWithdrawal(address indexed investor, uint256 amount);
     event PendingWithdrawalConcluded(address indexed investor, uint256 amount);
-    event YieldWithdrawn(address indexed recipient, uint256 amount);
+    event YieldWithdrawn(address indexed investor, address indexed receiver, uint256 amount);
     event BalanceUpdated(address indexed pool, address indexed token, uint256 balance);
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
     ERC20(_tokenName, _tokenSymbol) {
-        if (_asset == address(0)) revert ZeroLiquidityAsset();
-
         poolFactory = IPoolFactory(msg.sender);
 
-        if (poolFactory.globals().isValidAsset(_asset) == false)
-            revert InvalidLiquidityAsset();
+        if (poolFactory.globals().isValidAsset(_asset) == false) revert InvalidLiquidityAsset();
 
         asset = IERC20(_asset);
     }
@@ -73,7 +70,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
 
         _mint(holder, _amount);
 
-        _emitBalanceUpdatedEvent();
+        emit BalanceUpdated(address(this), address(this), totalBalance());
         emit Deposit(holder, _amount);
 
         _depositAssetsFrom(holder, _amount);
@@ -81,7 +78,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
 
     /// @notice withdraws the caller's assets
     /// @param _amount to be withdrawn
-    function withdraw(uint256 _amount) public virtual;
+    function withdraw(address _receiver, uint256 _amount) public virtual;
 
     /// @notice check how much funds already unlocked
     /// @param _holder to be checked
@@ -90,16 +87,16 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     }
 
     /// @notice Used to transfer the investor's yields to him
-    function withdrawYield() external virtual nonReentrant whenProtocolNotPaused returns (bool) {
+    function withdrawYield(address _receiver) external virtual nonReentrant whenProtocolNotPaused returns (bool) {
         if (yields[msg.sender] == 0) revert ZeroYield();
         if (yieldBalanceAmount < yields[msg.sender]) revert InsufficientFunds();
 
         uint256 callerYields = yields[msg.sender];
         yields[msg.sender] = 0;
 
-        emit YieldWithdrawn(msg.sender, callerYields);
+        emit YieldWithdrawn(msg.sender, _receiver, callerYields);
 
-        _transferYields(msg.sender, callerYields);
+        _transferYields(_receiver, callerYields);
         return true;
     }
 
@@ -255,11 +252,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     function _depositYieldsFrom(address _from, uint256 _value) internal {
         yieldBalanceAmount += _value;
         asset.safeTransferFrom(_from, address(this), _value);
-    }
-
-    /// @notice Emits a `BalanceUpdated` event for Pool
-    function _emitBalanceUpdatedEvent() internal {
-        emit BalanceUpdated(address(this), address(this), totalBalance());
     }
 
     /*

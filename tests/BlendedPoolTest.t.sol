@@ -94,7 +94,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
 
         // withdraw
         vm.warp(blendedPool.getPoolInfo().lockupPeriod + 1);
-        blendedPool.withdraw(depositAmount);
+        blendedPool.withdraw(user, depositAmount);
 
         vm.stopPrank();
     }
@@ -112,13 +112,13 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
 
         //attempt to withdraw too early fails
         vm.expectRevert(TokensLocked.selector);
-        blendedPool.withdraw(depositAmount);
+        blendedPool.withdraw(user, depositAmount);
 
         vm.warp(blendedPool.getPoolInfo().lockupPeriod + 1);
 
         //attempt to withdraw more than deposited
         vm.expectRevert(InsufficientFunds.selector);
-        blendedPool.withdraw(depositAmount + 1);
+        blendedPool.withdraw(user, depositAmount + 1);
 
         vm.stopPrank();
 
@@ -129,7 +129,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         vm.startPrank(user);
         //attempt to withdraw when not enough assets in pool
         vm.expectRevert(NotEnoughAssets.selector);
-        blendedPool.withdraw(depositAmount);
+        blendedPool.withdraw(user, depositAmount);
         vm.stopPrank();
     }
 
@@ -295,13 +295,13 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         // Withdraw yield for user1
         uint256 user1BalanceBefore = asset.balanceOf(user1);
         vm.prank(user1);
-        blendedPool.withdrawYield();
+        blendedPool.withdrawYield(user1);
         assertEq(asset.balanceOf(user1) - user1BalanceBefore, 90);
 
         // Withdraw yield for user2
         uint256 user2BalanceBefore = asset.balanceOf(user2);
         vm.prank(user2);
-        blendedPool.withdrawYield();
+        blendedPool.withdrawYield(user2);
         assertEq(asset.balanceOf(user2) - user2BalanceBefore, 909);
 
         assertApproxEqAbs(blendedPool.yieldBalanceAmount(), 0, 1, "wrong yield balance");
@@ -381,14 +381,14 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         if (blendedPool.yields(user1) > 0)
         {
             vm.prank(user1);
-            blendedPool.withdrawYield();
+            blendedPool.withdrawYield(user1);
         }
 
         // withdraw yield 2
         if (blendedPool.yields(user2) > 0)
         {
             vm.prank(user2);
-            blendedPool.withdrawYield();
+            blendedPool.withdrawYield(user2);
         }
 
         assertApproxEqAbs(blendedPool.yieldBalanceAmount(), 0, 1);
@@ -471,6 +471,57 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
 
         //now let's withdraw. The blended pool will help
         vm.startPrank(user);
-        pool.withdraw(500);
+        pool.withdraw(user, 500);
+    }
+
+    /// @notice Test complete scenario of subsiding regular pool with blended pool
+    function test_deposit_reg_pool_with_blended_pool(address user) external {
+        createInvestorAndMintAsset(user, 1000);
+
+        // Create pool
+        vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
+        address poolAddress = poolFactory.createPool(
+            {
+                _poolId: "1",
+                _asset: address(asset),
+                _lockupPeriod: 1000,
+                _minInvestmentAmount: 100,
+                _investmentPoolSize: 1000,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
+        );
+
+        Pool pool = Pool(poolAddress);
+
+        // Deposit to Blended Pool
+        mintAsset(OWNER_ADDRESS, 500);
+        asset.approve(address(blendedPool), 500);
+        blendedPool.deposit(500);
+
+        // Deposit from Blended Pool to regional pool
+        blendedPool.depositToPool(poolAddress, 500);
+        assertEq(blendedPool.principalBalanceAmount(), 0);
+        assertEq(pool.principalBalanceAmount(), 500);
+
+        vm.warp(block.timestamp + 1001);
+
+        uint256 yieldGenerated = 100;
+        mintAsset(OWNER_ADDRESS, yieldGenerated);
+        asset.approve(address(pool), yieldGenerated);
+        pool.repayYield(yieldGenerated);
+
+        // Withdraw from regional pool to blended pool
+        blendedPool.withdrawYieldFromPool(address(pool));
+        assertEq(blendedPool.principalBalanceAmount(), 100);
+        assertEq(pool.principalBalanceAmount(), 500);
+
+
+        // Withdraw from regional pool to blended pool
+        blendedPool.withdrawFromPool(address(pool), 500);
+        assertEq(blendedPool.principalBalanceAmount(), 600);
+        assertEq(pool.principalBalanceAmount(), 0);
+
+        vm.stopPrank();
     }
 }

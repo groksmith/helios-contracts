@@ -70,7 +70,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         unlocked = bound(amount, 1, unlocked);
 
         vm.prank(user);
-        blendedPool.withdraw(unlocked);
+        blendedPool.withdraw(user, unlocked);
 
         totalWithdrawn += amount;
     }
@@ -86,7 +86,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         if (user_current_yield == 0) return;
 
         vm.prank(user);
-        if (blendedPool.withdrawYield()) {
+        if (blendedPool.withdrawYield(user)) {
             // withdrawn
             totalYieldAccrued -= user_current_yield;
             totalYieldWithdrawn += user_current_yield;

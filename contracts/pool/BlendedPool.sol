@@ -28,17 +28,25 @@ contract BlendedPool is AbstractPool {
 
     /// @notice withdraws the caller's liquidity assets
     /// @param _amount to be withdrawn
-    function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
+    function withdraw(address _receiver, uint256 _amount) public override nonReentrant whenProtocolNotPaused {
         if (balanceOf(msg.sender) < _amount) revert InsufficientFunds();
         if (unlockedToWithdraw(msg.sender) < _amount) revert TokensLocked();
         if (principalBalanceAmount < _amount) revert NotEnoughAssets();
 
         _burn(msg.sender, _amount);
 
-        _emitBalanceUpdatedEvent();
-        emit Withdrawal(msg.sender, _amount);
+        emit BalanceUpdated(address(this), address(this), totalBalance());
+        emit Withdrawal(msg.sender, _receiver, _amount);
 
-        _transferAssets(msg.sender, _amount);
+        _transferAssets(_receiver, _amount);
+    }
+
+    function borrow(address _to, uint256 _amount) public override nonReentrant {
+        super.borrow(_to, _amount);
+    }
+
+    function repay(uint256 _amount) public override nonReentrant {
+        super.repay(_amount);
     }
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets
@@ -52,16 +60,33 @@ contract BlendedPool is AbstractPool {
         if (success)
         {
             emit RegPoolRequested(msg.sender, _amount);
+            principalBalanceAmount -= _amount;
             pool.blendedPoolDeposit(_amount);
         }
     }
 
-    function borrow(address _to, uint256 _amount) public override nonReentrant {
-        super.borrow(_to, _amount);
+    function depositToPool(address _poolAddress, uint256 _amount) public onlyAdmin nonReentrant whenProtocolNotPaused {
+        if (principalBalanceAmount < _amount) revert NotEnoughAssets();
+
+        Pool pool = Pool(_poolAddress);
+        bool success = asset.approve(_poolAddress, _amount);
+        if (success)
+        {
+            principalBalanceAmount -= _amount;
+            pool.deposit(_amount);
+        }
     }
 
-    function repay(uint256 _amount) public override nonReentrant {
-        super.repay(_amount);
+    function withdrawFromPool(address _poolAddress, uint256 _amount) public onlyAdmin nonReentrant whenProtocolNotPaused {
+        Pool pool = Pool(_poolAddress);
+        principalBalanceAmount += _amount;
+        pool.withdraw(address(this), _amount);
+    }
+
+    function withdrawYieldFromPool(address _poolAddress) public onlyAdmin nonReentrant whenProtocolNotPaused {
+        Pool pool = Pool(_poolAddress);
+        principalBalanceAmount += pool.yields(address(this));
+        pool.withdrawYield(address(this));
     }
 
     /// @notice Only pool can call

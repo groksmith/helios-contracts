@@ -32,6 +32,8 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
     /// @param _lockupPeriod locking time for deposit's withdrawal
     /// @param _minInvestmentAmount minimal amount of asset needed to deposit
     /// @param _investmentPoolSize pool max capacity for deposits
+    /// @param _tokenName token name
+    /// @param _tokenSymbol token symbol
     function createPool(
         string calldata _poolId,
         address _asset,
@@ -61,6 +63,8 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
     /// @param _asset address of asset of pool
     /// @param _lockupPeriod locking time for deposit's withdrawal
     /// @param _minInvestmentAmount minimal amount of asset needed to deposit
+    /// @param _tokenName token name
+    /// @param _tokenSymbol token symbol
     function createBlendedPool(
         address _asset,
         uint256 _lockupPeriod,

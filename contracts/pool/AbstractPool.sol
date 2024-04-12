@@ -78,7 +78,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
 
     /// @notice withdraws the caller's assets
     /// @param _amount to be withdrawn
-    function withdraw(address _receiver, uint256 _amount) public virtual;
+    function withdraw(address _beneficiary, uint256 _amount) public virtual;
 
     /// @notice check how much funds already unlocked
     /// @param _holder to be checked
@@ -87,16 +87,16 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     }
 
     /// @notice Used to transfer the investor's yields to him
-    function withdrawYield(address _receiver) external virtual nonReentrant whenProtocolNotPaused returns (bool) {
+    function withdrawYield(address _beneficiary) external virtual nonReentrant whenProtocolNotPaused returns (bool) {
         if (yields[msg.sender] == 0) revert ZeroYield();
         if (yieldBalanceAmount < yields[msg.sender]) revert InsufficientFunds();
 
         uint256 callerYields = yields[msg.sender];
         yields[msg.sender] = 0;
 
-        emit YieldWithdrawn(msg.sender, _receiver, callerYields);
+        emit YieldWithdrawn(msg.sender, _beneficiary, callerYields);
 
-        _transferYields(_receiver, callerYields);
+        _transferYields(_beneficiary, callerYields);
         return true;
     }
 

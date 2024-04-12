@@ -8,5 +8,4 @@ abstract contract PoolLibraryErrors {
     error InvalidHolder();
     error ZeroAmount();
     error WrongUnlockTime();
-
 }

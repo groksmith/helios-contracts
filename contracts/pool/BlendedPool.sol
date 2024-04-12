@@ -28,7 +28,7 @@ contract BlendedPool is AbstractPool {
 
     /// @notice withdraws the caller's liquidity assets
     /// @param _amount to be withdrawn
-    function withdraw(address _receiver, uint256 _amount) public override nonReentrant whenProtocolNotPaused {
+    function withdraw(address _beneficiary, uint256 _amount) public override nonReentrant whenProtocolNotPaused {
         if (balanceOf(msg.sender) < _amount) revert InsufficientFunds();
         if (unlockedToWithdraw(msg.sender) < _amount) revert TokensLocked();
         if (principalBalanceAmount < _amount) revert NotEnoughAssets();
@@ -36,9 +36,9 @@ contract BlendedPool is AbstractPool {
         _burn(msg.sender, _amount);
 
         emit BalanceUpdated(address(this), address(this), totalBalance());
-        emit Withdrawal(msg.sender, _receiver, _amount);
+        emit Withdrawal(msg.sender, _beneficiary, _amount);
 
-        _transferAssets(_receiver, _amount);
+        _transferAssets(_beneficiary, _amount);
     }
 
     function borrow(address _to, uint256 _amount) public override nonReentrant {

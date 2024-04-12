@@ -39,7 +39,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         assertEq(blendedPool.balanceOf(user1), 0);
         assertEq(blendedPool.balanceOf(user2), 0);
         assertEq(blendedPool.totalBalance(), 0);
-        assertEq(blendedPool.totalDeposited(), 0);
+        assertEq(blendedPool.totalInvested(), 0);
         vm.expectRevert();
         blendedPool.getPendingWithdrawalAmount(user1);
 
@@ -52,7 +52,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
 
         assertEq(blendedPool.balanceOf(user1), user1Deposit, "wrong LP balance for user1");
         assertEq(blendedPool.totalBalance(), user1Deposit, "wrong LA balance after user1 deposit");
-        assertEq(blendedPool.totalDeposited(), user1Deposit, "wrong totalDeposit after user1 deposit");
+        assertEq(blendedPool.totalInvested(), user1Deposit, "wrong totalDeposit after user1 deposit");
         vm.stopPrank();
 
         // user2
@@ -64,7 +64,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
 
         assertEq(blendedPool.balanceOf(user2), user2Deposit, "wrong user2 LP balance");
         assertEq(blendedPool.totalBalance(), user1Deposit + user2Deposit, "wrong totalLA after user2");
-        assertEq(blendedPool.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
+        assertEq(blendedPool.totalInvested(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
         vm.stopPrank();
     }
 

@@ -31,7 +31,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         asset = ERC20(assetElevated);
     }
 
-    uint256 public totalDeposited;
+    uint256 public totalInvested;
     uint256 public totalWithdrawn;
     uint256 public totalYieldAccrued;
     uint256 public totalYieldWithdrawn;
@@ -55,7 +55,7 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(user);
         blendedPool.deposit(amount);
 
-        totalDeposited += amount;
+        totalInvested += amount;
     }
 
     /// Withdraw deposit for a user

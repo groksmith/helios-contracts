@@ -68,7 +68,7 @@ contract BlendedPoolInvariantTest is Test {
     //  + total repaid
     //  - total borrowed
     function invariant_pool_balance_equals_tracked_deposits() external {
-        uint256 inBalance = handler.totalDeposited() + handler.totalRepaid();
+        uint256 inBalance = handler.totalInvested() + handler.totalRepaid();
         uint256 outBalance = handler.totalBorrowed() + handler.totalWithdrawn() + handler.totalYieldWithdrawn();
         uint256 blendedPoolTotalAssets = asset.balanceOf(address(blendedPool));
 
@@ -82,15 +82,15 @@ contract BlendedPoolInvariantTest is Test {
 
     // Test that the total of all deposits is equal to the pool's totalSupply
     function invariant_totalSupply_equals_tracked_deposits() public {
-        assertEq(blendedPool.totalSupply(), handler.totalDeposited() - handler.totalWithdrawn());
+        assertEq(blendedPool.totalSupply(), handler.totalInvested() - handler.totalWithdrawn());
     }
 
-    // Test that the total of all deposits is equal to the pool's totalDeposited storage variable
+    // Test that the total of all deposits is equal to the pool's totalInvested storage variable
     function invariant_totalDeposited_equals_tracked_deposits() public {
-        assertGe(blendedPool.totalDeposited(), handler.totalDeposited());
+        assertGe(blendedPool.totalInvested(), handler.totalInvested());
     }
 
-    // Test that the total of all deposits is equal to the pool's totalDeposited storage variable
+    // Test that the total of all deposits is equal to the pool's totalInvested storage variable
     function invariant_totalBalance_equals_to_sum_of_rewardBalanceAmount_and_principalBalanceAmount() public {
         assertGe(blendedPool.totalBalance(), blendedPool.principalBalanceAmount() + blendedPool.yieldBalanceAmount());
     }

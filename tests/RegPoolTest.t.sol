@@ -38,7 +38,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
 
         //testing initial condition i.e. zeroes
         assertEq(regPool1.balanceOf(user1), 0);
-        assertEq(regPool1.totalDeposited(), 0);
+        assertEq(regPool1.totalInvested(), 0);
         assertEq(regPool1.getHoldersCount(), 0, "wrong holder number");
 
         asset.approve(address(regPool1), user1Deposit);
@@ -48,7 +48,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         assertEq(regPool1.balanceOf(user1), user1Deposit, "wrong LP balance for user1");
 
         //pool's total minted should also be user1Deposit
-        assertEq(regPool1.totalDeposited(), user1Deposit, "wrong totalDeposit after user1 deposit");
+        assertEq(regPool1.totalInvested(), user1Deposit, "wrong totalDeposit after user1 deposit");
         vm.stopPrank();
 
         //now let's test for user2
@@ -61,7 +61,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         assertEq(regPool1.balanceOf(user2), user2Deposit, "wrong user2 LP balance");
 
         //pool's total minted should also be user1Deposit
-        assertEq(regPool1.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
+        assertEq(regPool1.totalInvested(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
         assertEq(regPool1.getHoldersCount(), 2, "wrong holder number");
 
         vm.stopPrank();

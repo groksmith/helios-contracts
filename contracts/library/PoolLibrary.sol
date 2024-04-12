@@ -47,7 +47,7 @@ library PoolLibrary {
      * Deposit helpers
      */
 
-    /// @notice Add a deposit for a holder
+    /// @notice Add an investment for a holder
     /// @dev Add the holder to holders AddressSet, then push Investment to investmentRounds array
     function addInvestment(Investments storage self, address _holder, uint256 _amount, uint256 _unlockTime) internal {
         if (_holder == address(0)) revert PoolLibraryErrors.InvalidHolder();
@@ -73,8 +73,8 @@ library PoolLibrary {
         self.holders.add(_holder);
     }
 
-    /// @notice Get locked deposit amount for a specific holder
-    function lockedInvestedAmount(Investments storage self, address _holder) internal view returns (uint256) {
+    /// @notice Get locked investment amount for a specific holder
+    function lockedInvestmentAmount(Investments storage self, address _holder) internal view returns (uint256) {
         if (self.holders.contains(_holder) == false) revert PoolLibraryErrors.InvalidHolder();
 
         uint256 lockedAmount = 0;

@@ -83,7 +83,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     /// @notice check how much funds already unlocked
     /// @param _holder to be checked
     function unlockedToWithdraw(address _holder) public view returns (uint256) {
-        return balanceOf(_holder) - investments.lockedInvestedAmount(_holder);
+        return balanceOf(_holder) - investments.lockedInvestmentAmount(_holder);
     }
 
     /// @notice Used to transfer the investor's yields to him

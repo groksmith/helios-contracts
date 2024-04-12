@@ -127,26 +127,26 @@ contract PoolLibraryTest is Test, FixtureContract, PoolLibraryErrors {
         expectOverflow(holder, amountBounded1);
 
         investments.addInvestment(holder, amountBounded1, lockTime1);
-        assertEq(investments.lockedInvestedAmount(holder), amountBounded1);
+        assertEq(investments.lockedInvestmentAmount(holder), amountBounded1);
 
         investments.addInvestment(holder, amountBounded2, lockTime2);
-        assertEq(investments.lockedInvestedAmount(holder), amountBounded1 + amountBounded2);
+        assertEq(investments.lockedInvestmentAmount(holder), amountBounded1 + amountBounded2);
 
         vm.warp(lockTime1 + 5);
-        assertEq(investments.lockedInvestedAmount(holder), amountBounded2);
+        assertEq(investments.lockedInvestmentAmount(holder), amountBounded2);
 
         vm.warp(lockTime2 + 5);
-        assertEq(investments.lockedInvestedAmount(holder), 0);
+        assertEq(investments.lockedInvestmentAmount(holder), 0);
 
         // Try add wrong lockTime
         vm.expectRevert(InvalidHolder.selector);
-        investments.lockedInvestedAmount(address(0));
+        investments.lockedInvestmentAmount(address(0));
     }
 
     function expectOverflow(address holder, uint256 amount) public {
         if (investments.holderExists(holder))
         {
-            if (type(uint256).max - investments.lockedInvestedAmount(holder) < amount)
+            if (type(uint256).max - investments.lockedInvestmentAmount(holder) < amount)
             {
                 vm.expectRevert(stdError.arithmeticError);
             }

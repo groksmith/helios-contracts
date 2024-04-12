@@ -141,15 +141,15 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         regPool1.close();
 
         vm.expectRevert(NotPool.selector);
-        blendedPool.requestAssets(10);
+        blendedPool.depositToClosedPool(10);
 
         vm.startPrank(address(regPool1));
 
         vm.expectRevert(InvalidValue.selector);
-        blendedPool.requestAssets(0);
+        blendedPool.depositToClosedPool(0);
 
         vm.expectRevert(NotEnoughAssets.selector);
-        blendedPool.requestAssets(100);
+        blendedPool.depositToClosedPool(100);
 
         vm.stopPrank();
 
@@ -160,7 +160,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         vm.stopPrank();
 
         vm.startPrank(address(regPool1));
-        blendedPool.requestAssets(100);
+        blendedPool.depositToClosedPool(100);
         vm.stopPrank();
     }
 
@@ -500,7 +500,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         blendedPool.deposit(500);
 
         // Deposit from Blended Pool to regional pool
-        blendedPool.depositToPool(poolAddress, 500);
+        blendedPool.depositToOpenPool(poolAddress, 500);
         assertEq(blendedPool.principalBalanceAmount(), 0);
         assertEq(pool.principalBalanceAmount(), 500);
 

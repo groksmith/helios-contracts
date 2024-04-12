@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {AbstractPool} from "./AbstractPool.sol";
 import {PoolLibrary} from "../library/PoolLibrary.sol";
 import {Pool} from "./Pool.sol";
@@ -8,7 +9,11 @@ import {Pool} from "./Pool.sol";
 /// @title Blended Pool implementation
 /// @author Tigran Arakelyan
 contract BlendedPool is AbstractPool {
-    event RegPoolRequested(address indexed regPool, uint256 amount);
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    event RegPoolDeposited(address indexed regPool, uint256 amount);
+
+    EnumerableSet.AddressSet private pools;
 
     constructor(
         address _asset,
@@ -51,7 +56,7 @@ contract BlendedPool is AbstractPool {
 
     /// @notice Only called by a RegPool when it doesn't have enough Assets
     /// @param _amount the amount requested for compensation
-    function requestAssets(uint256 _amount) external notZero(_amount) nonReentrant onlyPool {
+    function depositToClosedPool(uint256 _amount) external notZero(_amount) nonReentrant onlyPool {
         if (principalBalanceAmount < _amount) revert NotEnoughAssets();
 
         Pool pool = Pool(msg.sender);
@@ -59,20 +64,23 @@ contract BlendedPool is AbstractPool {
 
         if (success)
         {
-            emit RegPoolRequested(msg.sender, _amount);
+            pools.add(address(pool));
             principalBalanceAmount -= _amount;
+            emit RegPoolDeposited(msg.sender, _amount);
             pool.blendedPoolDeposit(_amount);
         }
     }
 
-    function depositToPool(address _poolAddress, uint256 _amount) public onlyAdmin nonReentrant whenProtocolNotPaused {
+    function depositToOpenPool(address _poolAddress, uint256 _amount) public onlyAdmin nonReentrant whenProtocolNotPaused {
         if (principalBalanceAmount < _amount) revert NotEnoughAssets();
 
         Pool pool = Pool(_poolAddress);
         bool success = asset.approve(_poolAddress, _amount);
         if (success)
         {
+            pools.add(address(pool));
             principalBalanceAmount -= _amount;
+            emit RegPoolDeposited(address(pool), _amount);
             pool.deposit(_amount);
         }
     }

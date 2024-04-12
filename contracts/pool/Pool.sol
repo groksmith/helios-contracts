@@ -74,7 +74,7 @@ contract Pool is AbstractPool {
 
                 // Borrow liquidity from Blended Pool to Regional Pool
                 // Return back to Blended Pool equal amount of Regional Pool's tokens (so now Blended Pool act as investor for Regional Pool)
-                blendedPool.requestAssets(insufficientAmount);
+                blendedPool.depositToClosedPool(insufficientAmount);
 
                 // Now we have liquidity
             } else {

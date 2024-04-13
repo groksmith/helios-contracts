@@ -97,7 +97,11 @@ contract BlendedPool is AbstractPool {
         pool.withdrawYield(address(this));
     }
 
-    /// @notice Only pool can call
+    function investedPools() public view returns (address[] memory){
+        return pools.values();
+    }
+
+/// @notice Only pool can call
     modifier onlyPool() {
         if (poolFactory.isValidPool(msg.sender) == false) revert NotPool();
         _;

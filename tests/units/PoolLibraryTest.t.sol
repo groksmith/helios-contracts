@@ -29,7 +29,7 @@ contract PoolLibraryTest is Test, FixtureContract, PoolLibraryErrors {
             vm.assume(investments.holderExists(holders[i]) == false);
             index++;
 
-            // Add deposits
+            // Add Investment
             investments.addInvestment(holders[i], amountBounded, block.timestamp + 1000);
             assertEq(investments.holderExists(holders[i]), true);
 
@@ -47,7 +47,7 @@ contract PoolLibraryTest is Test, FixtureContract, PoolLibraryErrors {
 
         uint256 lockTime = block.timestamp + 1000;
 
-        // Add deposits
+        // Add Investments
         investments.addInvestment(holder1, 100, lockTime);
         assertEq(investments.getHolderByIndex(0), holder1);
 
@@ -76,7 +76,7 @@ contract PoolLibraryTest is Test, FixtureContract, PoolLibraryErrors {
         // check for overflow
         expectOverflow(holder, amountBounded);
 
-        // Add deposit for user
+        // Add Investment for user
         investments.addInvestment(holder, amountBounded, lockTime);
 
         assertEq(investments.getHoldersCount(), 1);
@@ -85,12 +85,12 @@ contract PoolLibraryTest is Test, FixtureContract, PoolLibraryErrors {
         // check for overflow
         expectOverflow(holder, amountBounded);
 
-        // Add another deposit for user
+        // Add another Investment for user
         investments.addInvestment(holder, amountBounded, lockTime);
         assertEq(investments.getHoldersCount(), 1);
         assertEq(investments.investmentRounds[holder].length, 2);
 
-        // Add deposit for anotherUser
+        // Add Investment for anotherUser
         assertEq(investments.investmentRounds[anotherHolder].length, 0);
 
         // check for overflow
@@ -103,7 +103,7 @@ contract PoolLibraryTest is Test, FixtureContract, PoolLibraryErrors {
         vm.expectRevert(InvalidHolder.selector);
         investments.addInvestment(address(0), amountBounded, lockTime);
 
-        // Try add 0 deposit
+        // Try add 0 Investment
         vm.expectRevert(ZeroAmount.selector);
         investments.addInvestment(holder, 0, lockTime);
 
@@ -112,7 +112,7 @@ contract PoolLibraryTest is Test, FixtureContract, PoolLibraryErrors {
         investments.addInvestment(holder, amountBounded, block.timestamp - 1);
     }
 
-    function testFuzz_locked_deposits_amount(address holder, address anotherHolder, uint256 amount1, uint256 amount2) public {
+    function testFuzz_locked_invested_amount(address holder, address anotherHolder, uint256 amount1, uint256 amount2) public {
         vm.assume(holder != address(0));
         vm.assume(anotherHolder != address(0));
         vm.assume(anotherHolder != holder);

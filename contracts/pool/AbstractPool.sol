@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -17,6 +18,7 @@ import {PoolErrors} from "./PoolErrors.sol";
 abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     using SafeERC20 for IERC20;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
+    using EnumerableSet for EnumerableSet.AddressSet;
     using PoolLibrary for PoolLibrary.Investments;
 
     IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
@@ -178,6 +180,11 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     /// @notice Get holders Count
     function getHoldersCount() external view returns (uint256) {
         return investments.getHoldersCount();
+    }
+
+    /// @notice Get holders
+    function getHolders() external view returns (address[] memory) {
+        return investments.holders.values();
     }
 
     /// @notice Get the amount of assets in the pool

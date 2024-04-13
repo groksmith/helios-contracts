@@ -97,7 +97,7 @@ contract BlendedPool is AbstractPool {
         pool.withdrawYield(address(this));
     }
 
-    function investedPools() public view returns (address[] memory){
+    function investedPools() public view returns (address[] memory) {
         return pools.values();
     }
 

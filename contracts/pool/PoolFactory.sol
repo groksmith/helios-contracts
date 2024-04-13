@@ -86,7 +86,6 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
             _tokenSymbol
         );
 
-        if (blendedPoolAddress == address(0)) revert BlendedPoolNotCreated();
         blendedPool = blendedPoolAddress;
 
         emit BlendedPoolCreated(_asset, blendedPoolAddress, msg.sender);

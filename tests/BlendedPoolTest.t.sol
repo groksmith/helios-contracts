@@ -492,6 +492,8 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
             }
         );
 
+        assertEq(blendedPool.investedPools().length, 0);
+
         Pool pool = Pool(poolAddress);
 
         // Deposit to Blended Pool
@@ -503,6 +505,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         blendedPool.depositToOpenPool(poolAddress, 500);
         assertEq(blendedPool.principalBalanceAmount(), 0);
         assertEq(pool.principalBalanceAmount(), 500);
+        assertEq(blendedPool.investedPools().length, 1);
 
         vm.warp(block.timestamp + 1001);
 

@@ -5,7 +5,6 @@ import "forge-std/console.sol";
 
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
-import {PoolLibrary} from "../../contracts/library/PoolLibrary.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 
 import {BlendedPoolTestHandler} from "./BlendedPoolTestHandler.t.sol";

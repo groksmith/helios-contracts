@@ -6,7 +6,6 @@ import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
 import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
-import {PoolLibrary} from "../contracts/library/PoolLibrary.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
 import {PoolErrors} from "../contracts/pool/PoolErrors.sol";
 

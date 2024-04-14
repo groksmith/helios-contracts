@@ -3,36 +3,17 @@ pragma solidity ^0.8.20;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
-import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
-import {PoolLibrary} from "../library/PoolLibrary.sol";
-import {PoolErrors} from "./PoolErrors.sol";
+import {PoolVestingPeriod} from "./PoolVestingPeriod.sol";
 
 /// @title Base contract for Blended and Regional pools
 /// @author Tigran Arakelyan
 /// @dev Should be inherited
-abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
+abstract contract AbstractPool is PoolVestingPeriod {
     using SafeERC20 for IERC20;
+
     using EnumerableMap for EnumerableMap.AddressToUintMap;
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using PoolLibrary for PoolLibrary.Investments;
-
-    IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
-    IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
-
-    PoolLibrary.Investments private investments;
-
-    struct PoolInfo {
-        uint256 lockupPeriod;
-        uint256 minInvestmentAmount;
-        uint256 investmentPoolSize;
-    }
-
-    PoolInfo public poolInfo;
 
     uint256 public principalBalanceAmount;
     uint256 public yieldBalanceAmount;
@@ -49,13 +30,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     event BalanceUpdated(address indexed pool, address indexed token, uint256 balance);
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
-    ERC20(_tokenName, _tokenSymbol) {
-        poolFactory = IPoolFactory(msg.sender);
-
-        if (poolFactory.globals().isValidAsset(_asset) == false) revert InvalidLiquidityAsset();
-
-        asset = IERC20(_asset);
-    }
+    PoolVestingPeriod(_asset, _tokenName, _tokenSymbol) {}
 
     /*
     Investor flow
@@ -68,7 +43,7 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
 
         address holder = msg.sender;
 
-        investments.addInvestment(holder, _amount, block.timestamp + poolInfo.lockupPeriod);
+        _addInvestment(holder, _amount, block.timestamp + poolInfo.lockupPeriod);
 
         _mint(holder, _amount);
 
@@ -81,12 +56,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     /// @notice withdraws the caller's assets
     /// @param _amount to be withdrawn
     function withdraw(address _beneficiary, uint256 _amount) public virtual;
-
-    /// @notice check how much funds already unlocked
-    /// @param _holder to be checked
-    function unlockedToWithdraw(address _holder) public view returns (uint256) {
-        return balanceOf(_holder) - investments.lockedInvestmentAmount(_holder);
-    }
 
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield(address _beneficiary) external virtual nonReentrant whenProtocolNotPaused returns (bool) {
@@ -138,9 +107,9 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     function repayYield(uint256 _amount) public virtual notZero(_amount) nonReentrant onlyAdmin {
         if (asset.balanceOf(msg.sender) < _amount) revert NotEnoughBalance();
 
-        uint256 count = investments.getHoldersCount();
+        uint256 count = getHoldersCount();
         for (uint256 i = 0; i < count; i++) {
-            address holder = investments.getHolderByIndex(i);
+            address holder = getHolderByIndex(i);
             yields[holder] += _calculateYield(holder, _amount);
         }
 
@@ -148,60 +117,8 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     }
 
     /*
-    ERC20 overrides
-    */
-
-    function transfer(address to, uint amount) public override returns (bool) {
-        if (amount > unlockedToWithdraw(msg.sender)) revert TokensLocked();
-        investments.addHolder(to);
-        return super.transfer(to, amount);
-    }
-
-    function transferFrom(address from, address to, uint amount) public override returns (bool) {
-        if (amount > unlockedToWithdraw(from)) revert TokensLocked();
-        investments.addHolder(to);
-        return super.transferFrom(from, to, amount);
-    }
-
-    /*
     Helpers
     */
-
-    /// @notice Get Deposit Holder's address
-    /// @param _index index for holder
-    function getHolderByIndex(uint256 _index) external view returns (address) {
-        return investments.getHolderByIndex(_index);
-    }
-
-    /// @notice Get holders Count
-    function getHoldersCount() external view returns (uint256) {
-        return investments.getHoldersCount();
-    }
-
-    /// @notice Get holders
-    function getHolders() external view returns (address[] memory) {
-        return investments.holders.values();
-    }
-
-    /// @notice Get the amount of assets in the pool
-    function totalBalance() public view returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
-
-    /// @notice Get asset's decimals
-    function decimals() public view override returns (uint8) {
-        return ERC20(address(asset)).decimals();
-    }
-
-    /// @notice Get pool general info
-    function getPoolInfo() public view returns (PoolInfo memory) {
-        return poolInfo;
-    }
-
-    /// @notice Get historical total deposited
-    function totalInvested() external view returns (uint256) {
-        return investments.totalInvested;
-    }
 
     /// @notice Get pending withdrawal for holder total deposited
     /// @param _holder address of holder
@@ -230,13 +147,6 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
 
         _transferYields(_beneficiary, callerYields);
         return true;
-    }
-
-    /// @notice Calculate yield for specific holder
-    /// @param _holder address of holder
-    /// @param _amount to be shared proportionally
-    function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256) {
-        return (_amount * balanceOf(_holder)) / totalSupply();
     }
 
     /// @notice Transfers Pool assets to given `_to` address
@@ -269,27 +179,5 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     function _depositYieldsFrom(address _from, uint256 _value) internal {
         yieldBalanceAmount += _value;
         asset.safeTransferFrom(_from, address(this), _value);
-    }
-
-    /*
-    Modifiers
-    */
-
-    /// @notice Checks that the protocol is not in a paused state
-    modifier notZero(uint256 _value) {
-        if (_value == 0) revert InvalidValue();
-        _;
-    }
-
-    /// @notice Checks that the protocol is not in a paused state
-    modifier whenProtocolNotPaused() {
-        if (poolFactory.globals().protocolPaused()) revert Paused();
-        _;
-    }
-
-    /// @notice Checks that the admin call
-    modifier onlyAdmin() {
-        if (poolFactory.globals().isAdmin(msg.sender) == false) revert NotAdmin();
-        _;
     }
 }

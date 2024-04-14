@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {AbstractPool} from "./AbstractPool.sol";
-import {PoolLibrary} from "../library/PoolLibrary.sol";
 import {Pool} from "./Pool.sol";
 
 /// @title Blended Pool implementation
@@ -33,9 +32,8 @@ contract BlendedPool is AbstractPool {
 
     /// @notice withdraws the caller's liquidity assets
     /// @param _amount to be withdrawn
-    function withdraw(address _beneficiary, uint256 _amount) public override nonReentrant whenProtocolNotPaused {
+    function withdraw(address _beneficiary, uint256 _amount) public override unlocked(msg.sender) nonReentrant whenProtocolNotPaused {
         if (balanceOf(msg.sender) < _amount) revert InsufficientFunds();
-        if (unlockedToWithdraw(msg.sender) < _amount) revert TokensLocked();
         if (principalBalanceAmount < _amount) revert NotEnoughAssets();
 
         _burn(msg.sender, _amount);

@@ -5,7 +5,6 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 
 import {AbstractPool} from "./AbstractPool.sol";
 import {BlendedPool} from "./BlendedPool.sol";
-import {PoolLibrary} from "../library/PoolLibrary.sol";
 
 /// @title Regional Pool implementation
 /// @author Tigran Arakelyan
@@ -47,9 +46,8 @@ contract Pool is AbstractPool {
 
     /// @notice withdraws the caller's assets
     /// @param _amount the amount of assets to be withdrawn
-    function withdraw(address _beneficiary, uint256 _amount) public override nonReentrant whenProtocolNotPaused {
+    function withdraw(address _beneficiary, uint256 _amount) public override unlocked(msg.sender) nonReentrant whenProtocolNotPaused {
         if (balanceOf(msg.sender) < _amount) revert InsufficientFunds();
-        if (unlockedToWithdraw(msg.sender) < _amount) revert TokensLocked();
 
         if (principalBalanceAmount < _amount) {
             uint256 insufficientAmount = _amount - principalBalanceAmount;

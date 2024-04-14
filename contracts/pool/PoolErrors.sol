@@ -17,7 +17,6 @@ abstract contract PoolErrors {
     error CantRepayMoreThanBorrowed();
     error NotEnoughBalance();
     error TransferFailed();
-    error InvalidIndex();
     error NotEnoughAssets();
     error MaxPoolSizeReached();
     error BadState();
@@ -25,4 +24,8 @@ abstract contract PoolErrors {
     error BlendedPoolNotCreated();
     error PoolIdAlreadyExists();
     error NotBlendedPool();
+    error InvalidIndex();
+    error InvalidHolder();
+    error ZeroAmount();
+    error WrongUnlockTime();
 }

@@ -101,7 +101,7 @@ contract BlendedPool is AbstractPool {
         return pools.values();
     }
 
-/// @notice Only pool can call
+    /// @notice Only pool can call
     modifier onlyPool() {
         if (poolFactory.isValidPool(msg.sender) == false) revert NotPool();
         _;

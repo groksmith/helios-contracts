@@ -90,16 +90,12 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
 
     /// @notice Used to transfer the investor's yields to him
     function withdrawYield(address _beneficiary) external virtual nonReentrant whenProtocolNotPaused returns (bool) {
-        if (yields[msg.sender] == 0) revert ZeroYield();
-        if (yieldBalanceAmount < yields[msg.sender]) revert InsufficientFunds();
+        return _withdrawYield(msg.sender, _beneficiary);
+    }
 
-        uint256 callerYields = yields[msg.sender];
-        yields[msg.sender] = 0;
-
-        emit YieldWithdrawn(msg.sender, _beneficiary, callerYields);
-
-        _transferYields(_beneficiary, callerYields);
-        return true;
+    /// @notice Used to transfer the investor's yields to reinvest
+    function withdrawYield(address _holder, address _beneficiary) external virtual onlyAdmin nonReentrant whenProtocolNotPaused returns (bool) {
+        return _withdrawYield(_holder, _beneficiary);
     }
 
     /// @notice Admin function used for unhappy path after withdrawal failure
@@ -221,6 +217,20 @@ abstract contract AbstractPool is ERC20, ReentrancyGuard, PoolErrors {
     /*
     Internals
     */
+
+    /// @notice Used to transfer the investor's yields to beneficiary address
+    function _withdrawYield(address _holder, address _beneficiary) internal returns (bool) {
+        if (yields[_holder] == 0) revert ZeroYield();
+        if (yieldBalanceAmount < yields[_holder]) revert InsufficientFunds();
+
+        uint256 callerYields = yields[_holder];
+        yields[_holder] = 0;
+
+        emit YieldWithdrawn(_holder, _beneficiary, callerYields);
+
+        _transferYields(_beneficiary, callerYields);
+        return true;
+    }
 
     /// @notice Calculate yield for specific holder
     /// @param _holder address of holder

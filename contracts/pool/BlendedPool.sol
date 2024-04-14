@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {AbstractPool} from "./AbstractPool.sol";
 import {Pool} from "./Pool.sol";
+import {PoolYieldDistribution} from "./base/PoolYieldDistribution.sol";
 
 /// @title Blended Pool implementation
 /// @author Tigran Arakelyan
-contract BlendedPool is AbstractPool {
+contract BlendedPool is PoolYieldDistribution {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     event RegPoolDeposited(address indexed regPool, uint256 amount);
@@ -20,7 +20,7 @@ contract BlendedPool is AbstractPool {
         uint256 _minInvestmentAmount,
         string memory _tokenName,
         string memory _tokenSymbol)
-    AbstractPool(_asset, _tokenName, _tokenSymbol) {
+    PoolYieldDistribution(_asset, _tokenName, _tokenSymbol) {
         poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, type(uint256).max);
     }
 

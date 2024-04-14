@@ -5,8 +5,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
-import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
+
+import {IPoolFactory} from "../../interfaces/IPoolFactory.sol";
 import {PoolErrors} from "./PoolErrors.sol";
 
 /// @title Base Pool contract

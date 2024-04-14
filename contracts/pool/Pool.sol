@@ -3,12 +3,12 @@ pragma solidity ^0.8.20;
 
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
-import {AbstractPool} from "./AbstractPool.sol";
+import {PoolYieldDistribution} from "./base/PoolYieldDistribution.sol";
 import {BlendedPool} from "./BlendedPool.sol";
 
 /// @title Regional Pool implementation
 /// @author Tigran Arakelyan
-contract Pool is AbstractPool {
+contract Pool is PoolYieldDistribution {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     enum State {Active, Closed/*, Deactivated*/}
@@ -23,7 +23,7 @@ contract Pool is AbstractPool {
         uint256 _investmentPoolSize,
         string memory _tokenName,
         string memory _tokenSymbol)
-    AbstractPool(_asset, _tokenName, _tokenSymbol) {
+    PoolYieldDistribution(_asset, _tokenName, _tokenSymbol) {
         poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, _investmentPoolSize);
 
         poolState = State.Active;

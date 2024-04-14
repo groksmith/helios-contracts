@@ -9,7 +9,7 @@ import {BlendedPoolFactoryLibrary} from "../library/BlendedPoolFactoryLibrary.so
 
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
-import {PoolErrors} from "./PoolErrors.sol";
+import {PoolErrors} from "./base/PoolErrors.sol";
 
 /// @title Factory for Pool creation
 /// @author Tigran Arakelyan

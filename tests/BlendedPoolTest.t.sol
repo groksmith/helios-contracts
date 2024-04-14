@@ -7,11 +7,10 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 
 import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
-import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
 import {BlendedPool} from "../contracts/pool/BlendedPool.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
-import {PoolErrors} from "../contracts/pool/PoolErrors.sol";
+import {PoolErrors} from "../contracts/pool/base/PoolErrors.sol";
 
 contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
     function setUp() public {

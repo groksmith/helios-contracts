@@ -104,7 +104,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
 
     /// @notice Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {
-        if (globals.isAdmin(msg.sender) == false) revert NotAdmin();
+        if (!globals.isAdmin(msg.sender)) revert NotAdmin();
         _;
     }
 

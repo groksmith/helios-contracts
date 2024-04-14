@@ -52,7 +52,7 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals, HeliosGlobalsErrors {
 
     /// @notice Restricted to members of the admin role.
     modifier onlyAdmin() {
-        if (isAdmin(msg.sender) == false) revert NotAdmin();
+        if (!isAdmin(msg.sender)) revert NotAdmin();
         _;
     }
 }

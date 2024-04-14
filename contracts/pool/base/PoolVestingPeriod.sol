@@ -91,7 +91,7 @@ abstract contract PoolVestingPeriod is PoolBase {
 
     /// @notice Get lock status of a specific holder
     function _tokensUnlocked(address _holder) internal view returns (bool) {
-        if (holdersToUnlockTime.contains(_holder) == false) revert InvalidHolder();
+        if (!holdersToUnlockTime.contains(_holder)) revert InvalidHolder();
 
         return holdersToUnlockTime.get(_holder) < block.timestamp;
     }
@@ -102,7 +102,7 @@ abstract contract PoolVestingPeriod is PoolBase {
 
     /// @notice Check if tokens unlocked
     modifier unlocked(address _holder) {
-        if (_tokensUnlocked(_holder) == false) revert TokensLocked();
+        if (!_tokensUnlocked(_holder)) revert TokensLocked();
         _;
     }
 }

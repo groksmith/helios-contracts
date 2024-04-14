@@ -68,7 +68,7 @@ abstract contract PoolYieldDistribution is PoolFunds {
     /// @param _value amount to be transferred
     function _transferYields(address _to, uint256 _value) internal {
         yieldBalanceAmount -= _value;
-        if (asset.transfer(_to, _value) == false) revert TransferFailed();
+        if (!asset.transfer(_to, _value)) revert TransferFailed();
     }
 
     /// @notice Deposit yield assets from given `_from` address

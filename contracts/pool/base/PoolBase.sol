@@ -31,7 +31,7 @@ abstract contract PoolBase is ERC20, ReentrancyGuard, PoolErrors {
     ERC20(_tokenName, _tokenSymbol) {
         poolFactory = IPoolFactory(msg.sender);
 
-        if (poolFactory.globals().isValidAsset(_asset) == false) revert InvalidLiquidityAsset();
+        if (!poolFactory.globals().isValidAsset(_asset)) revert InvalidLiquidityAsset();
 
         asset = IERC20(_asset);
     }
@@ -80,7 +80,7 @@ abstract contract PoolBase is ERC20, ReentrancyGuard, PoolErrors {
 
     /// @notice Checks that the admin call
     modifier onlyAdmin() {
-        if (poolFactory.globals().isAdmin(msg.sender) == false) revert NotAdmin();
+        if (!poolFactory.globals().isAdmin(msg.sender)) revert NotAdmin();
         _;
     }
 }

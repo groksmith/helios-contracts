@@ -101,7 +101,7 @@ contract BlendedPool is PoolYieldDistribution {
 
     /// @notice Only pool can call
     modifier onlyPool() {
-        if (poolFactory.isValidPool(msg.sender) == false) revert NotPool();
+        if (!poolFactory.isValidPool(msg.sender)) revert NotPool();
         _;
     }
 }

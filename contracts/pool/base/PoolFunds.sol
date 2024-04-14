@@ -113,7 +113,7 @@ abstract contract PoolFunds is PoolVestingPeriod {
     /// @param _value amount to be transferred
     function _transferAssets(address _to, uint256 _value) internal {
         principalBalanceAmount -= _value;
-        if (asset.transfer(_to, _value) == false) revert TransferFailed();
+        if (!asset.transfer(_to, _value)) revert TransferFailed();
     }
 
     /// @notice Transfer Pool assets from given `_from` address

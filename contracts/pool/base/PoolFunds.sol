@@ -24,7 +24,6 @@ abstract contract PoolFunds is PoolVestingPeriod {
     event Withdrawal(address indexed investor, address indexed receiver, uint256 amount);
     event PendingWithdrawal(address indexed investor, uint256 amount);
     event PendingWithdrawalConcluded(address indexed investor, uint256 amount);
-    event BalanceUpdated(address indexed pool, address indexed token, uint256 balance);
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
     PoolVestingPeriod(_asset, _tokenName, _tokenSymbol) {}
@@ -40,11 +39,10 @@ abstract contract PoolFunds is PoolVestingPeriod {
 
         address holder = msg.sender;
 
-        _addInvestment(holder, _amount, block.timestamp + poolInfo.lockupPeriod);
+        _updateUnlockDate(holder, _amount);
 
         _mint(holder, _amount);
 
-        emit BalanceUpdated(address(this), address(this), totalBalance());
         emit Deposit(holder, _amount);
 
         _depositAssetsFrom(holder, _amount);

@@ -38,7 +38,6 @@ contract BlendedPool is PoolYieldDistribution {
 
         _burn(msg.sender, _amount);
 
-        emit BalanceUpdated(address(this), address(this), totalBalance());
         emit Withdrawal(msg.sender, _beneficiary, _amount);
 
         _transferAssets(_beneficiary, _amount);

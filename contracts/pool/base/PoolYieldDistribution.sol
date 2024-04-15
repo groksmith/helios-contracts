@@ -49,6 +49,13 @@ abstract contract PoolYieldDistribution is PoolFunds {
     Internals
     */
 
+    /// @notice Calculate yield for specific holder
+    /// @param _holder address of holder
+    /// @param _amount to be shared proportionally
+    function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256) {
+        return (_amount * balanceOf(_holder)) / totalSupply();
+    }
+
     /// @notice Used to transfer the investor's yields to beneficiary address
     function _withdrawYield(address _holder, address _beneficiary) internal returns (bool) {
         if (yields[_holder] == 0) revert ZeroYield();

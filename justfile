@@ -130,7 +130,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-single: && _timer
-	forge test -vvvvv --match-contract HeliosUSDTest
+	forge test -vvvvv --match-contract RegPoolTest
 
 test-gas: && _timer
     forge test --gas-report

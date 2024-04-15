@@ -39,6 +39,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         assertEq(blendedPool.balanceOf(user2), 0);
         assertEq(blendedPool.totalBalance(), 0);
         assertEq(blendedPool.totalInvested(), 0);
+
         vm.expectRevert();
         blendedPool.getPendingWithdrawalAmount(user1);
 

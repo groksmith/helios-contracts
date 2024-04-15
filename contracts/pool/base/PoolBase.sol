@@ -17,7 +17,6 @@ abstract contract PoolBase is ERC20, ReentrancyGuard, PoolErrors {
 
     IERC20 public immutable asset; // The asset deposited by Lenders into the Pool
     IPoolFactory public immutable poolFactory; // The Pool factory that deployed this Pool
-    uint256 public totalInvested;
 
     struct PoolInfo {
         uint256 lockupPeriod;
@@ -26,6 +25,7 @@ abstract contract PoolBase is ERC20, ReentrancyGuard, PoolErrors {
     }
 
     PoolInfo public poolInfo;
+    uint256 public totalInvested;
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
     ERC20(_tokenName, _tokenSymbol) {
@@ -52,21 +52,10 @@ abstract contract PoolBase is ERC20, ReentrancyGuard, PoolErrors {
     }
 
     /*
-    Internals
-    */
-
-    /// @notice Calculate yield for specific holder
-    /// @param _holder address of holder
-    /// @param _amount to be shared proportionally
-    function _calculateYield(address _holder, uint256 _amount) internal view virtual returns (uint256) {
-        return (_amount * balanceOf(_holder)) / totalSupply();
-    }
-
-    /*
     Modifiers
     */
 
-    /// @notice Checks that the protocol is not in a paused state
+    /// @notice Checks that value is not zero
     modifier notZero(uint256 _value) {
         if (_value == 0) revert InvalidValue();
         _;

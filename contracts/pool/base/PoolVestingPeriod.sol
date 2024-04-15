@@ -20,12 +20,12 @@ abstract contract PoolVestingPeriod is PoolBase {
     */
 
     function transfer(address to, uint amount) public override returns (bool) {
-        // TODO: transfer lock
+        _updateHolder(msg.sender, to);
         return super.transfer(to, amount);
     }
 
     function transferFrom(address from, address to, uint amount) public override returns (bool) {
-        // TODO: transfer lock
+        _updateHolder(msg.sender, to);
         return super.transferFrom(from, to, amount);
     }
 
@@ -51,8 +51,14 @@ abstract contract PoolVestingPeriod is PoolBase {
     /// @notice Get the holder address by index
     function getHolderByIndex(uint256 _index) public view returns (address) {
         if (_index >= holdersToUnlockTime.length()) revert InvalidIndex();
-        (address key, uint256 value) = holdersToUnlockTime.at(_index);
+        (address key,) = holdersToUnlockTime.at(_index);
         return key;
+    }
+
+    /// @notice Get the holder address by index
+    function getHoldersUnlockDate(address _holder) public view returns (uint256) {
+        if (!holdersToUnlockTime.contains(_holder)) revert InvalidHolder();
+        return holdersToUnlockTime.get(_holder);
     }
 
     /// @notice check how much funds already unlocked
@@ -61,39 +67,45 @@ abstract contract PoolVestingPeriod is PoolBase {
         return _tokensUnlocked(_holder) == true ? balanceOf(_holder) : 0;
     }
 
-    /// @notice Add an investment for a holder
+    /// @notice Update lockup period for a holder
     /// @dev Add the holder to holders AddressMap
-    function _addInvestment(address _holder, uint256 _amount, uint256 _unlockTime) internal {
+    function _updateUnlockDate(address _holder, uint256 _amount) internal {
         if (_holder == address(0)) revert InvalidHolder();
         if (_amount == 0) revert ZeroAmount();
-        if (_unlockTime <= block.timestamp) revert WrongUnlockTime();
 
-        holdersToUnlockTime.set(_holder, _unlockTime);
+        uint256 lockupPeriod = block.timestamp + poolInfo.lockupPeriod;
+
+        if (holdersToUnlockTime.contains(_holder)) {
+            uint256 prevDate = holdersToUnlockTime.get(_holder);
+            uint256 balance = balanceOf(_holder);
+
+            lockupPeriod = (balance + _amount) > 0
+                ? prevDate + (lockupPeriod - prevDate) * (_amount / (balance + _amount))
+                : prevDate;
+        }
+
+        holdersToUnlockTime.set(_holder, lockupPeriod);
 
         totalInvested += _amount;
     }
 
-    //    function updateDepositDate(
-//        mapping(address => uint256) storage depositDate,
-//        uint256 balance,
-//        uint256 amount,
-//        address account
-//    ) internal {
-//        uint256 prevDate = depositDate[account];
-//
-//        uint256 newDate = (balance + amount) > 0
-//            ? prevDate.add(block.timestamp.sub(prevDate).mul(amount).div(balance + amount))
-//            : prevDate;
-//
-//        depositDate[account] = newDate;
-//        emit DepositDateUpdated(account, newDate);
-//    }
+    /// @notice Update lockup period for a holder
+    /// @dev Add the holder to holders AddressMap
+    function _updateHolder(address _oldHolder, address _newHolder) internal {
+        if (_oldHolder == address(0)) revert InvalidHolder();
+        if (_newHolder == address(0)) revert InvalidHolder();
+
+        if (holdersToUnlockTime.contains(_oldHolder)) {
+            uint256 lockupPeriod = holdersToUnlockTime.get(_oldHolder);
+            holdersToUnlockTime.set(_oldHolder, lockupPeriod);
+        }
+    }
 
     /// @notice Get lock status of a specific holder
     function _tokensUnlocked(address _holder) internal view returns (bool) {
         if (!holdersToUnlockTime.contains(_holder)) revert InvalidHolder();
 
-        return holdersToUnlockTime.get(_holder) < block.timestamp;
+        return holdersToUnlockTime.get(_holder) <= block.timestamp;
     }
 
     /*

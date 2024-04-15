@@ -39,7 +39,7 @@ abstract contract PoolFunds is PoolVestingPeriod {
 
         address holder = msg.sender;
 
-        _updateUnlockDate(holder, _amount);
+        _updateEffectiveDepositDate(holder, _amount);
 
         _mint(holder, _amount);
 

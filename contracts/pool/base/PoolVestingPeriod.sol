@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "forge-std/console.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {PoolBase} from "./PoolBase.sol";
 
@@ -10,7 +11,7 @@ import {PoolBase} from "./PoolBase.sol";
 abstract contract PoolVestingPeriod is PoolBase {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
-    EnumerableMap.AddressToUintMap private holdersToUnlockTime;
+    EnumerableMap.AddressToUintMap private holdersToEffectiveDepositDate;
 
     constructor(address _asset, string memory _tokenName, string memory _tokenSymbol)
     PoolBase(_asset, _tokenName, _tokenSymbol) {}
@@ -35,30 +36,30 @@ abstract contract PoolVestingPeriod is PoolBase {
 
     /// @notice Get the count of holders
     function getHoldersCount() public view returns (uint256) {
-        return holdersToUnlockTime.length();
+        return holdersToEffectiveDepositDate.length();
     }
 
     /// @notice Get holders
     function getHolders() public view returns (address[] memory) {
-        return holdersToUnlockTime.keys();
+        return holdersToEffectiveDepositDate.keys();
     }
 
     /// @notice Return true if holder exists
     function holderExists(address _holder) public view returns (bool) {
-        return holdersToUnlockTime.contains(_holder);
+        return holdersToEffectiveDepositDate.contains(_holder);
     }
 
     /// @notice Get the holder address by index
     function getHolderByIndex(uint256 _index) public view returns (address) {
-        if (_index >= holdersToUnlockTime.length()) revert InvalidIndex();
-        (address key,) = holdersToUnlockTime.at(_index);
+        if (_index >= holdersToEffectiveDepositDate.length()) revert InvalidIndex();
+        (address key,) = holdersToEffectiveDepositDate.at(_index);
         return key;
     }
 
     /// @notice Get the holder address by index
-    function getHoldersUnlockDate(address _holder) public view returns (uint256) {
-        if (!holdersToUnlockTime.contains(_holder)) revert InvalidHolder();
-        return holdersToUnlockTime.get(_holder);
+    function getHolderUnlockDate(address _holder) public view returns (uint256) {
+        if (!holdersToEffectiveDepositDate.contains(_holder)) revert InvalidHolder();
+        return holdersToEffectiveDepositDate.get(_holder) + poolInfo.lockupPeriod;
     }
 
     /// @notice check how much funds already unlocked
@@ -69,22 +70,22 @@ abstract contract PoolVestingPeriod is PoolBase {
 
     /// @notice Update lockup period for a holder
     /// @dev Add the holder to holders AddressMap
-    function _updateUnlockDate(address _holder, uint256 _amount) internal {
+    function _updateEffectiveDepositDate(address _holder, uint256 _amount) internal {
         if (_holder == address(0)) revert InvalidHolder();
         if (_amount == 0) revert ZeroAmount();
 
-        uint256 lockupPeriod = block.timestamp + poolInfo.lockupPeriod;
+        uint256 effectiveDepositDate = block.timestamp;
 
-        if (holdersToUnlockTime.contains(_holder)) {
-            uint256 prevDate = holdersToUnlockTime.get(_holder);
+        if (holdersToEffectiveDepositDate.contains(_holder)) {
+            uint256 prevEffectiveDepositDate = holdersToEffectiveDepositDate.get(_holder);
             uint256 balance = balanceOf(_holder);
 
-            lockupPeriod = (balance + _amount) > 0
-                ? prevDate + (lockupPeriod - prevDate) * (_amount / (balance + _amount))
-                : prevDate;
+            effectiveDepositDate = (balance + _amount) > 0
+                ? prevEffectiveDepositDate + (((block.timestamp - prevEffectiveDepositDate) * (_amount)) / (balance + _amount))
+                : prevEffectiveDepositDate;
         }
 
-        holdersToUnlockTime.set(_holder, lockupPeriod);
+        holdersToEffectiveDepositDate.set(_holder, effectiveDepositDate);
 
         totalInvested += _amount;
     }
@@ -95,17 +96,17 @@ abstract contract PoolVestingPeriod is PoolBase {
         if (_oldHolder == address(0)) revert InvalidHolder();
         if (_newHolder == address(0)) revert InvalidHolder();
 
-        if (holdersToUnlockTime.contains(_oldHolder)) {
-            uint256 lockupPeriod = holdersToUnlockTime.get(_oldHolder);
-            holdersToUnlockTime.set(_oldHolder, lockupPeriod);
+        if (holdersToEffectiveDepositDate.contains(_oldHolder)) {
+            uint256 lockupPeriod = holdersToEffectiveDepositDate.get(_oldHolder);
+            holdersToEffectiveDepositDate.set(_oldHolder, lockupPeriod);
         }
     }
 
     /// @notice Get lock status of a specific holder
     function _tokensUnlocked(address _holder) internal view returns (bool) {
-        if (!holdersToUnlockTime.contains(_holder)) revert InvalidHolder();
+        if (!holdersToEffectiveDepositDate.contains(_holder)) revert InvalidHolder();
 
-        return holdersToUnlockTime.get(_holder) <= block.timestamp;
+        return holdersToEffectiveDepositDate.get(_holder) + poolInfo.lockupPeriod <= block.timestamp;
     }
 
     /*

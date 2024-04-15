@@ -484,6 +484,57 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         regPool1.getHolderByIndex(3);
     }
 
+    /// @notice Test get holders
+    function test_get_holders(address user1, address user2) external {
+        vm.assume(user1 != user2);
+
+        user1 = createInvestorAndMintAsset(user1, 1000);
+        user2 = createInvestorAndMintAsset(user2, 1000);
+
+        //firstly the users need to deposit before withdrawing
+        uint256 user1Deposit = 100;
+        vm.startPrank(user1);
+        asset.approve(address(regPool1), user1Deposit);
+        regPool1.deposit(user1Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.getHolders().length, 1);
+
+        uint256 user2Deposit = 900;
+        vm.startPrank(user2);
+        asset.approve(address(regPool1), user2Deposit);
+        regPool1.deposit(user2Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.getHolders().length, 2);
+    }
+
+    /// @notice Test get holders
+    function test_get_holder_exists(address user1, address user2) external {
+        vm.assume(user1 != user2);
+
+        user1 = createInvestorAndMintAsset(user1, 1000);
+        user2 = createInvestorAndMintAsset(user2, 1000);
+
+        //firstly the users need to deposit before withdrawing
+        uint256 user1Deposit = 100;
+        vm.startPrank(user1);
+        asset.approve(address(regPool1), user1Deposit);
+        regPool1.deposit(user1Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.holderExists(user1), true);
+        assertEq(regPool1.holderExists(user2), false);
+
+        uint256 user2Deposit = 900;
+        vm.startPrank(user2);
+        asset.approve(address(regPool1), user2Deposit);
+        regPool1.deposit(user2Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.holderExists(user2), true);
+    }
+
     /// @notice Test attempt to change states
     function test_pool_close(address user1) external {
         uint256 depositAmount = 100000;
@@ -530,23 +581,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
             regPool1.getPoolInfo().minInvestmentAmount,
             regPool1.getPoolInfo().investmentPoolSize / 4);
 
-        uint256 lockTime1 = block.timestamp + 1000;
-        uint256 lockTime2 = lockTime1 + 6000;
-
         vm.startPrank(holder);
-        mintAsset(holder, amountBounded1);
-        asset.approve(address(regPool1), amountBounded1);
-        regPool1.deposit(amountBounded1);
-
-        vm.expectRevert(TokensLocked.selector);
-        regPool1.transfer(newHolder, amountBounded1);
-
-        vm.warp(lockTime1);
-        mintAsset(holder, amountBounded2);
-        asset.approve(address(regPool1), amountBounded2);
-        regPool1.deposit(amountBounded2);
-
-        vm.warp(lockTime2);
         mintAsset(holder, amountBounded1);
         asset.approve(address(regPool1), amountBounded1);
         regPool1.deposit(amountBounded1);
@@ -554,7 +589,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         uint256 holderTokensAmountBefore = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
 
-        regPool1.transfer(newHolder, amountBounded1 + amountBounded2);
+        regPool1.transfer(newHolder, amountBounded1);
 
         uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);
@@ -562,56 +597,52 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         assertEq(
             holderTokensAmountBefore - holderTokensAmountAfter,
             newHolderTokensAmountAfter - newHolderTokensAmountBefore);
+
+        vm.warp(regPool1.getPoolInfo().lockupPeriod + 1);
+
+        assertEq(regPool1.unlockedToWithdraw(newHolder), amountBounded1);
     }
 
-//    /// @notice Test attempt transfer tokens
-//    function testFuzz_pool_deposit_transferFrom(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
-//        vm.assume(holder != address(0));
-//        vm.assume(newHolder != address(0));
-//        vm.assume(newHolder != holder);
-//
-//        uint256 amountBounded1 = bound(
-//            amount1,
-//            regPool1.getPoolInfo().minInvestmentAmount,
-//            regPool1.getPoolInfo().investmentPoolSize / 4);
-//
-//        uint256 amountBounded2 = bound(
-//            amount2,
-//            regPool1.getPoolInfo().minInvestmentAmount,
-//            regPool1.getPoolInfo().investmentPoolSize / 4);
-//
-//        uint256 lockTime1 = block.timestamp + 1000;
-//        uint256 lockTime2 = lockTime1 + 6000;
-//
-//        vm.startPrank(holder);
-//        mintAsset(holder, amountBounded1);
-//        asset.approve(address(regPool1), amountBounded1);
-//        regPool1.deposit(amountBounded1);
-//
-//        vm.expectRevert(TokensLocked.selector);
-//        regPool1.transferFrom(holder, newHolder, amountBounded1);
-//
-//        vm.warp(lockTime1);
-//        mintAsset(holder, amountBounded2);
-//        asset.approve(address(regPool1), amountBounded2);
-//        regPool1.deposit(amountBounded2);
-//
-//        vm.warp(lockTime2);
-//        mintAsset(holder, amountBounded1);
-//        asset.approve(address(regPool1), amountBounded1);
-//        regPool1.deposit(amountBounded1);
-//
-//        uint256 holderTokensAmountBefore = regPool1.balanceOf(holder);
-//        uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
-//
-//        regPool1.approve(address(holder), amountBounded1 + amountBounded2);
-//        regPool1.transferFrom(holder, newHolder, amountBounded1 + amountBounded2);
-//
-//        uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
-//        uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);
-//
-//        assertEq(
-//            holderTokensAmountBefore - holderTokensAmountAfter,
-//            newHolderTokensAmountAfter - newHolderTokensAmountBefore);
-//    }
+    /// @notice Test attempt transfer tokens
+    function testFuzz_pool_deposit_transferFrom(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
+        vm.assume(holder != address(0));
+        vm.assume(newHolder != address(0));
+        vm.assume(newHolder != holder);
+
+        uint256 amountBounded1 = bound(
+            amount1,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 4);
+
+        uint256 amountBounded2 = bound(
+            amount2,
+            regPool1.getPoolInfo().minInvestmentAmount,
+            regPool1.getPoolInfo().investmentPoolSize / 4);
+
+        vm.startPrank(holder);
+        mintAsset(holder, amountBounded1);
+        asset.approve(address(regPool1), amountBounded1);
+        regPool1.deposit(amountBounded1);
+
+        uint256 holderTokensAmountBefore = regPool1.balanceOf(holder);
+        uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
+
+        regPool1.approve(address(holder), amountBounded1 + amountBounded2);
+
+        vm.expectRevert(InvalidHolder.selector);
+        regPool1.transferFrom(holder, address(0), amountBounded1);
+
+        regPool1.transferFrom(holder, newHolder, amountBounded1);
+
+        uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
+        uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);
+
+        assertEq(
+            holderTokensAmountBefore - holderTokensAmountAfter,
+            newHolderTokensAmountAfter - newHolderTokensAmountBefore);
+
+        vm.warp(regPool1.getPoolInfo().lockupPeriod + 1);
+
+        assertEq(regPool1.unlockedToWithdraw(newHolder), amountBounded1);
+    }
 }

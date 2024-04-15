@@ -130,7 +130,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-single: && _timer
-	forge test -vvvvv --match-test testFuzz_unlocked_to_withdraw
+	forge test -vvvvv --match-test testFuzz_pool_deposit_transfer
 
 test-gas: && _timer
     forge test --gas-report

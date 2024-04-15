@@ -98,7 +98,7 @@ abstract contract PoolVestingPeriod is PoolBase {
 
         if (holdersToEffectiveDepositDate.contains(_oldHolder)) {
             uint256 lockupPeriod = holdersToEffectiveDepositDate.get(_oldHolder);
-            holdersToEffectiveDepositDate.set(_oldHolder, lockupPeriod);
+            holdersToEffectiveDepositDate.set(_newHolder, lockupPeriod);
         }
     }
 

@@ -77,9 +77,16 @@ contract Pool is PoolYieldDistribution {
                 // Now we have liquidity
             } else {
                 // Ok, going to manual flow
-                (, uint256 currentValue) = pendingWithdrawals.tryGet(msg.sender);
-                uint256 updatedValue = currentValue + _amount;
-                pendingWithdrawals.set(msg.sender, updatedValue);
+                (bool exists, uint256 currentValue) = pendingWithdrawals.tryGet(msg.sender);
+                if (exists)
+                {
+                    uint256 updatedValue = currentValue + _amount;
+                    pendingWithdrawals.set(msg.sender, updatedValue);
+                }
+                else
+                {
+                    pendingWithdrawals.set(msg.sender, _amount);
+                }
 
                 emit PendingWithdrawal(msg.sender, _amount);
                 return;

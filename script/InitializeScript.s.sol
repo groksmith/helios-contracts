@@ -28,7 +28,7 @@ contract InitializeScript is Script {
         address blendedPoolAddress = poolFactory.createBlendedPool(
             {
                 _asset: usdcAddress,
-                _lockupPeriod: 7776000,
+                _lockupPeriod: 86400,
                 _minInvestmentAmount: 100000000,
                 _tokenName: tokenName,
                 _tokenSymbol: tokenSymbol

@@ -131,10 +131,13 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
 
         uint256 pendingWithdrawalAmount = blendedPool.getPendingWithdrawalAmount(user);
 
-        vm.prank(OWNER_ADDRESS);
-        blendedPool.concludePendingWithdrawal(user);
+        if (pendingWithdrawalAmount > 0)
+        {
+            vm.prank(OWNER_ADDRESS);
+            blendedPool.concludePendingWithdrawal(user);
 
-        totalWithdrawn += pendingWithdrawalAmount;
+            totalWithdrawn += pendingWithdrawalAmount;
+        }
     }
 
     /// Borrow money from the deposits

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+
 import {PoolBase} from "./PoolBase.sol";
 
-/// @title Base contract for Pool with Vesting period
+/// @title Base contract for Pool with vesting period
 /// @author Tigran Arakelyan
 /// @dev Should be inherited
 abstract contract PoolVestingPeriod is PoolBase {

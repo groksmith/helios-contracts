@@ -108,11 +108,11 @@ verify-test: && _timer
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256)" {{ USDC }} 86400 1000000000000000000  {{ NAME }} {{ SYMBOL }}` \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, string memory _name, string memory _symbol)" {{ USDC }} 86400 100000000  '{{ NAME }}' '{{ SYMBOL }}'` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDC }} 86400 1000000000000000000 100000000000000000000  {{ NAME }} {{ SYMBOL }}` \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256, string memory _name, string memory _symbol)" {{ USDC }} 86400 100000000 100000000  {{ NAME }} {{ SYMBOL }}` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 initialize-all: && _timer
@@ -130,7 +130,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-single: && _timer
-	forge test -vvvvv --match-test testFuzz_pool_deposit_transfer
+	forge test -vvvvv --match-contract PoolVestingPeriodTest
 
 test-gas: && _timer
     forge test --gas-report

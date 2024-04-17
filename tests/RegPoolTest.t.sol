@@ -566,18 +566,13 @@ contract RegPoolTest is FixtureContract, PoolErrors {
     }
 
     /// @notice Test attempt transfer tokens
-    function testFuzz_pool_deposit_transfer(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
+    function testFuzz_pool_deposit_transfer(address holder, address newHolder, uint256 amount1) external {
         vm.assume(holder != address(0));
         vm.assume(newHolder != address(0));
         vm.assume(newHolder != holder);
 
         uint256 amountBounded1 = bound(
             amount1,
-            regPool1.getPoolInfo().minInvestmentAmount,
-            regPool1.getPoolInfo().investmentPoolSize / 4);
-
-        uint256 amountBounded2 = bound(
-            amount2,
             regPool1.getPoolInfo().minInvestmentAmount,
             regPool1.getPoolInfo().investmentPoolSize / 4);
 

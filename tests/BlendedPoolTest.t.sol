@@ -40,8 +40,7 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         assertEq(blendedPool.totalBalance(), 0);
         assertEq(blendedPool.totalInvested(), 0);
 
-        vm.expectRevert();
-        blendedPool.getPendingWithdrawalAmount(user1);
+        assertEq(blendedPool.getPendingWithdrawalAmount(user1), 0);
 
         // user1
         vm.startPrank(user1);
@@ -518,7 +517,6 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         blendedPool.withdrawYieldFromPool(address(pool));
         assertEq(blendedPool.principalBalanceAmount(), 100);
         assertEq(pool.principalBalanceAmount(), 500);
-
 
         // Withdraw from regional pool to blended pool
         blendedPool.withdrawFromPool(address(pool), 500);

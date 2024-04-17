@@ -94,7 +94,8 @@ abstract contract PoolFunds is PoolVestingPeriod {
     /// @notice Get pending withdrawal for holder total deposited
     /// @param _holder address of holder
     function getPendingWithdrawalAmount(address _holder) external view returns (uint256) {
-        return pendingWithdrawals.get(_holder);
+        (bool found, uint256 amount) = pendingWithdrawals.tryGet(_holder);
+        return found ? amount : 0;
     }
 
     /// @notice Get pending withdrawal for holder total deposited

@@ -21,12 +21,12 @@ abstract contract PoolVestingPeriod is PoolBase {
     */
 
     function transfer(address to, uint amount) public override returns (bool) {
-        _updateHolder(msg.sender, to);
+        _updateHolder(msg.sender, to, amount);
         return super.transfer(to, amount);
     }
 
     function transferFrom(address from, address to, uint amount) public override returns (bool) {
-        _updateHolder(msg.sender, to);
+        _updateHolder(msg.sender, to, amount);
         return super.transferFrom(from, to, amount);
     }
 
@@ -78,11 +78,13 @@ abstract contract PoolVestingPeriod is PoolBase {
 
         if (holdersToEffectiveDepositDate.contains(_holder)) {
             uint256 prevEffectiveDepositDate = holdersToEffectiveDepositDate.get(_holder);
-            uint256 balance = balanceOf(_holder);
 
-            effectiveDepositDate = (balance + _amount) > 0
-                ? prevEffectiveDepositDate + (((block.timestamp - prevEffectiveDepositDate) * (_amount)) / (balance + _amount))
-                : prevEffectiveDepositDate;
+            effectiveDepositDate = _calculateEffectiveDepositDate(
+                _amount,
+                block.timestamp,
+                balanceOf(_holder),
+                prevEffectiveDepositDate
+            );
         }
 
         holdersToEffectiveDepositDate.set(_holder, effectiveDepositDate);
@@ -92,14 +94,46 @@ abstract contract PoolVestingPeriod is PoolBase {
 
     /// @notice Update lockup period for a holder
     /// @dev Add the holder to holders AddressMap
-    function _updateHolder(address _oldHolder, address _newHolder) internal {
-        if (_oldHolder == address(0)) revert InvalidHolder();
-        if (_newHolder == address(0)) revert InvalidHolder();
+    function _updateHolder(address _from, address _to, uint256 _amount) internal {
+        if (_from == address(0)) revert InvalidHolder();
+        if (_to == address(0)) revert InvalidHolder();
 
-        if (holdersToEffectiveDepositDate.contains(_oldHolder)) {
-            uint256 lockupPeriod = holdersToEffectiveDepositDate.get(_oldHolder);
-            holdersToEffectiveDepositDate.set(_newHolder, lockupPeriod);
+        if (holdersToEffectiveDepositDate.contains(_from)) {
+            uint256 effectiveDepositDateFrom = holdersToEffectiveDepositDate.get(_from);
+
+            if (holdersToEffectiveDepositDate.contains(_to)) {
+                uint256 effectiveDepositDateTo = holdersToEffectiveDepositDate.get(_to);
+                uint256 initialBalance = balanceOf(_to);
+                uint256 effectiveDepositDate = _calculateEffectiveDepositDate(
+                    _amount,
+                    effectiveDepositDateFrom,
+                    initialBalance,
+                    effectiveDepositDateTo
+                );
+
+                holdersToEffectiveDepositDate.set(_to, effectiveDepositDate);
+            }
+            else
+            {
+                holdersToEffectiveDepositDate.set(_to, effectiveDepositDateFrom);
+            }
         }
+    }
+
+    function _calculateEffectiveDepositDate(
+        uint256 _amountFrom,
+        uint256 _effectiveDepositDateFrom,
+        uint256 _amountTo,
+        uint256 _effectiveDepositDateTo) internal pure returns (uint256){
+
+        if (_amountTo == 0)
+        {
+            return _effectiveDepositDateFrom;
+        }
+
+        uint256 impactRate = _amountFrom / _amountTo;
+
+        return _effectiveDepositDateTo + ((impactRate / (impactRate + 1)) * (_effectiveDepositDateFrom - _effectiveDepositDateTo));
     }
 
     /// @notice Get lock status of a specific holder

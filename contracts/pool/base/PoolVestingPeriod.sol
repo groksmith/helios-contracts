@@ -68,6 +68,22 @@ abstract contract PoolVestingPeriod is PoolBase {
         return _tokensUnlocked(_holder) == true ? balanceOf(_holder) : 0;
     }
 
+    function calculateEffectiveDepositDate(
+        uint256 _amountFrom,
+        uint256 _effectiveDepositDateFrom,
+        uint256 _amountTo,
+        uint256 _effectiveDepositDateTo) public pure returns (uint256) {
+
+        if (_amountTo == 0)
+        {
+            return _effectiveDepositDateFrom;
+        }
+
+        uint256 impactRate = _amountFrom / _amountTo;
+
+        return _effectiveDepositDateTo + ((impactRate / (impactRate + 1)) * (_effectiveDepositDateFrom - _effectiveDepositDateTo));
+    }
+
     /// @notice Update lockup period for a holder
     /// @dev Add the holder to holders AddressMap
     function _updateEffectiveDepositDate(address _holder, uint256 _amount) internal {
@@ -79,7 +95,7 @@ abstract contract PoolVestingPeriod is PoolBase {
         if (holdersToEffectiveDepositDate.contains(_holder)) {
             uint256 prevEffectiveDepositDate = holdersToEffectiveDepositDate.get(_holder);
 
-            effectiveDepositDate = _calculateEffectiveDepositDate(
+            effectiveDepositDate = calculateEffectiveDepositDate(
                 _amount,
                 block.timestamp,
                 balanceOf(_holder),
@@ -104,7 +120,7 @@ abstract contract PoolVestingPeriod is PoolBase {
             if (holdersToEffectiveDepositDate.contains(_to)) {
                 uint256 effectiveDepositDateTo = holdersToEffectiveDepositDate.get(_to);
                 uint256 initialBalance = balanceOf(_to);
-                uint256 effectiveDepositDate = _calculateEffectiveDepositDate(
+                uint256 effectiveDepositDate = calculateEffectiveDepositDate(
                     _amount,
                     effectiveDepositDateFrom,
                     initialBalance,
@@ -118,22 +134,6 @@ abstract contract PoolVestingPeriod is PoolBase {
                 holdersToEffectiveDepositDate.set(_to, effectiveDepositDateFrom);
             }
         }
-    }
-
-    function _calculateEffectiveDepositDate(
-        uint256 _amountFrom,
-        uint256 _effectiveDepositDateFrom,
-        uint256 _amountTo,
-        uint256 _effectiveDepositDateTo) internal pure returns (uint256){
-
-        if (_amountTo == 0)
-        {
-            return _effectiveDepositDateFrom;
-        }
-
-        uint256 impactRate = _amountFrom / _amountTo;
-
-        return _effectiveDepositDateTo + ((impactRate / (impactRate + 1)) * (_effectiveDepositDateFrom - _effectiveDepositDateTo));
     }
 
     /// @notice Get lock status of a specific holder

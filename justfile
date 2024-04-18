@@ -130,7 +130,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-single: && _timer
-	forge test -vvvvv --match-contract PoolVestingPeriodTest
+	forge test -vvvvv --match-test test_holder_exists
 
 test-gas: && _timer
     forge test --gas-report

@@ -2,6 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
+
 
 import {PoolBase} from "./PoolBase.sol";
 
@@ -9,6 +12,9 @@ import {PoolBase} from "./PoolBase.sol";
 /// @author Tigran Arakelyan
 /// @dev Should be inherited
 abstract contract PoolVestingPeriod is PoolBase {
+    using Math for uint256;
+    using SignedMath for int256;
+
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     EnumerableMap.AddressToUintMap private holdersToEffectiveDepositDate;
@@ -69,19 +75,27 @@ abstract contract PoolVestingPeriod is PoolBase {
     }
 
     function calculateEffectiveDepositDate(
-        uint256 _amountFrom,
-        uint256 _effectiveDepositDateFrom,
-        uint256 _amountTo,
-        uint256 _effectiveDepositDateTo) public pure returns (uint256) {
+        uint256 _amount,
+        uint256 _depositDateOfAmount,
+        uint256 _balance,
+        uint256 _depositDateOfBalance)
+    public pure returns (uint256) {
+        if (_balance == 0) return _depositDateOfAmount;
+        if (_amount == 0) return _depositDateOfBalance;
 
-        if (_amountTo == 0)
+        uint256 PRECISION = 1e3;
+        uint256 rate = _amount.mulDiv(PRECISION, _balance);
+        int256 dateDiff = int256(_depositDateOfBalance) - int256(_depositDateOfAmount);
+        uint256 dateDiffModule = dateDiff.abs();
+
+        if (_depositDateOfBalance >= _depositDateOfAmount)
         {
-            return _effectiveDepositDateFrom;
+            return _depositDateOfBalance + rate.mulDiv(dateDiffModule, PRECISION);
         }
-
-        uint256 impactRate = _amountFrom / _amountTo;
-
-        return _effectiveDepositDateTo + ((impactRate / (impactRate + 1)) * (_effectiveDepositDateFrom - _effectiveDepositDateTo));
+        else
+        {
+            return _depositDateOfBalance - rate.mulDiv(dateDiffModule, PRECISION);
+        }
     }
 
     /// @notice Update lockup period for a holder

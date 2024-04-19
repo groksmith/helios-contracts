@@ -314,4 +314,15 @@ contract PoolVestingPeriodTest is Test, FixtureContract, PoolErrors {
 
         assertEq(poolVestingPeriod.unlockedToWithdraw(user), depositAmount);
     }
+
+    function test_calculate_effective_deposit_date() public {
+
+        uint80 amountFrom = 100;
+        uint256 dateFrom = 1200000;
+        uint80 amountTo = 100;
+        uint256 dateTo = 1000000;
+
+        uint256 effectiveDate = poolVestingPeriod.calculateEffectiveDepositDate(amountFrom, dateFrom, amountTo, dateTo);
+        console.log("rate: %s ", effectiveDate);
+    }
 }

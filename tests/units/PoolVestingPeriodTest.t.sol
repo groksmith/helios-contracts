@@ -116,7 +116,47 @@ contract PoolVestingPeriodTest is Test, FixtureContract, PoolErrors {
         assertEq(poolVestingPeriod.getHolderUnlockDate(user), poolVestingPeriod.getHolderUnlockDate(user2));
     }
 
-    function test_transfer_from() public {
+    function test_transfer_already_owned(address user, address user2, uint256 amount) public {
+        vm.assume(user != user2);
+        vm.assume(user != address(0));
+        vm.assume(user != address(poolVestingPeriod));
+        vm.assume(user2 != address(0));
+        vm.assume(user2 != address(poolVestingPeriod));
+
+        // mint
+        uint256 depositAmount = bound(amount, poolVestingPeriod.getPoolInfo().minInvestmentAmount, type(uint80).max);
+
+        // deposit 1
+        vm.startPrank(user2);
+        mintAsset(user2, depositAmount);
+        assertEq(asset.balanceOf(user2), depositAmount);
+
+        asset.approve(address(poolVestingPeriod), depositAmount);
+        poolVestingPeriod.deposit(user2, depositAmount);
+        vm.stopPrank();
+
+        // warp
+        vm.warp(poolVestingPeriod.getHolderUnlockDate(user2) + 1);
+
+        // deposit 2
+        vm.startPrank(user);
+        mintAsset(user, depositAmount);
+        assertEq(asset.balanceOf(user), depositAmount);
+        asset.approve(address(poolVestingPeriod), depositAmount);
+        poolVestingPeriod.deposit(user, depositAmount);
+
+        assertEq(poolVestingPeriod.balanceOf(user), depositAmount);
+        assertEq(poolVestingPeriod.balanceOf(user2), depositAmount);
+
+        // transfer
+        poolVestingPeriod.transfer(user2, depositAmount);
+        vm.stopPrank();
+
+        assertEq(poolVestingPeriod.balanceOf(user2), depositAmount * 2);
+        assertEq(poolVestingPeriod.unlockedToWithdraw(user), 0);
+        assertEq(poolVestingPeriod.unlockedToWithdraw(user2), 0);
+
+        assertGe(poolVestingPeriod.getHolderUnlockDate(user), poolVestingPeriod.getHolderUnlockDate(user2));
     }
 
     function test_get_holders_count(address user, address user2, uint256 amount) public {
@@ -315,14 +355,17 @@ contract PoolVestingPeriodTest is Test, FixtureContract, PoolErrors {
         assertEq(poolVestingPeriod.unlockedToWithdraw(user), depositAmount);
     }
 
-    function test_calculate_effective_deposit_date() public {
-
-        uint80 amountFrom = 100;
-        uint256 dateFrom = 1200000;
-        uint80 amountTo = 100;
-        uint256 dateTo = 1000000;
-
+    function test_calculate_effective_deposit_date(uint80 amountFrom, uint80 dateFrom, uint80 amountTo, uint80 dateTo) public {
         uint256 effectiveDate = poolVestingPeriod.calculateEffectiveDepositDate(amountFrom, dateFrom, amountTo, dateTo);
-        console.log("rate: %s ", effectiveDate);
+        if (dateFrom > dateTo)
+        {
+            assertGe(effectiveDate, dateTo);
+            assertLe(effectiveDate, dateFrom);
+        }
+        else
+        {
+            assertLe(effectiveDate, dateTo);
+            assertGe(effectiveDate, dateFrom);
+        }
     }
 }

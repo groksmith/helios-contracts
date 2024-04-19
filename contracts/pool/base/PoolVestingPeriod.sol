@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 
@@ -14,6 +15,9 @@ import {PoolBase} from "./PoolBase.sol";
 abstract contract PoolVestingPeriod is PoolBase {
     using Math for uint256;
     using SignedMath for int256;
+
+    using SafeCast for int256;
+    using SafeCast for uint256;
 
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
@@ -74,6 +78,12 @@ abstract contract PoolVestingPeriod is PoolBase {
         return _tokensUnlocked(_holder) == true ? balanceOf(_holder) : 0;
     }
 
+    /// @dev Updates the effective deposit date based on how much new capital has been added.
+    ///      If more capital is added, the deposit date moves closer to added deposit date.
+    /// @param _amount to be added to existing balance
+    /// @param _depositDateOfAmount deposit date of amount
+    /// @param _balance current balance
+    /// @param _depositDateOfBalance current deposit date
     function calculateEffectiveDepositDate(
         uint256 _amount,
         uint256 _depositDateOfAmount,
@@ -83,18 +93,16 @@ abstract contract PoolVestingPeriod is PoolBase {
         if (_balance == 0) return _depositDateOfAmount;
         if (_amount == 0) return _depositDateOfBalance;
 
-        uint256 PRECISION = 1e3;
-        uint256 rate = _amount.mulDiv(PRECISION, _balance);
-        int256 dateDiff = int256(_depositDateOfBalance) - int256(_depositDateOfAmount);
+        int256 dateDiff = _depositDateOfAmount.toInt256() - _depositDateOfBalance.toInt256();
         uint256 dateDiffModule = dateDiff.abs();
 
-        if (_depositDateOfBalance >= _depositDateOfAmount)
+        if (_depositDateOfAmount >= _depositDateOfBalance)
         {
-            return _depositDateOfBalance + rate.mulDiv(dateDiffModule, PRECISION);
+            return _depositDateOfBalance + ((_amount * dateDiffModule) / (_amount + _balance));
         }
         else
         {
-            return _depositDateOfBalance - rate.mulDiv(dateDiffModule, PRECISION);
+            return _depositDateOfBalance - ((_amount * dateDiffModule) / (_amount + _balance));
         }
     }
 

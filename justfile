@@ -12,6 +12,7 @@ RPC_URL := env_var_or_default("RPC_URL", "")
 VERIFIER_URL := env_var_or_default("VERIFIER_URL", "")
 HELIOS_OWNER := env_var_or_default("HELIOS_OWNER", "")
 HELIOS_GLOBALS := env_var_or_default("HELIOS_GLOBALS", "")
+MULTI_SIG_WALLET:= env_var_or_default("MULTI_SIG_WALLET", "")
 POOL_FACTORY := env_var_or_default("POOL_FACTORY", "")
 BLENDED_POOL_FACTORY_LIBRARY := env_var_or_default("BLENDED_POOL_FACTORY_LIBRARY", "")
 POOL_FACTORY_LIBRARY := env_var_or_default("POOL_FACTORY_LIBRARY", "")
@@ -98,10 +99,6 @@ verify-test: && _timer
 		--verifier-url {{ VERIFIER_URL }} --watch \
 		--libraries ./contracts/library/PoolFactoryLibrary.sol:PoolFactoryLibrary:{{ POOL_FACTORY_LIBRARY }} \
 		--libraries ./contracts/library/BlendedPoolFactoryLibrary.sol:BlendedPoolFactoryLibrary:{{ BLENDED_POOL_FACTORY_LIBRARY }}
-
-	forge verify-contract {{ USDC }} ./tests/mocks/MockTokenERC20.sol:MockTokenERC20 \
-		--constructor-args `cast abi-encode "constructor(string memory _name, string memory _symbol)" mUSDC mUSDC` \
-		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ HELIOS_USD }} ./contracts/token/HeliosUSD.sol:HeliosUSD \
 		--constructor-args `cast abi-encode "constructor(address initialOwner)" {{ HELIOS_OWNER }}` \

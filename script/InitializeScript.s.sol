@@ -13,6 +13,7 @@ contract InitializeScript is Script {
         address heliosGlobalsAddress = vm.envAddress("HELIOS_GLOBALS");
         address poolFactoryAddress = vm.envAddress("POOL_FACTORY");
         address heliosUsdAddress = vm.envAddress("HELIOS_USD");
+        address multiSigWalletAddress = vm.envAddress("MULTI_SIG_WALLET");
         address usdcAddress = vm.envAddress("USDC");
         string memory tokenName = vm.envString("NAME");
         string memory tokenSymbol = vm.envString("SYMBOL");
@@ -23,6 +24,7 @@ contract InitializeScript is Script {
         heliosGlobals.setPoolFactory(poolFactoryAddress);
         heliosGlobals.setAsset(heliosUsdAddress, true);
         heliosGlobals.setAsset(usdcAddress, true);
+        heliosGlobals.setMultiSigAdmin(multiSigWalletAddress);
 
         PoolFactory poolFactory = PoolFactory(poolFactoryAddress);
         address blendedPoolAddress = poolFactory.createBlendedPool(

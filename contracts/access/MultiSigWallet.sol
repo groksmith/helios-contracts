@@ -1,8 +1,9 @@
 pragma solidity ^0.8.20;
 
 contract MultiSigWallet {
-
     error NotOwner();
+    error NotExists();
+    error NotWallet();
     error NotValidRequirement();
     error ZeroAddress();
     error NotUniqueOwner();
@@ -26,7 +27,7 @@ contract MultiSigWallet {
 
     address[] public owners;
     mapping(address => bool) public isOwner;
-    uint public numConfirmationsRequired;
+    uint public required;
 
     struct Transaction {
         address to;
@@ -40,6 +41,100 @@ contract MultiSigWallet {
     mapping(uint => mapping(address => bool)) public isConfirmed;
 
     Transaction[] public transactions;
+
+    constructor(address[] memory _owners, uint _required) validRequirement (_owners.length, _required) {
+        for (uint i = 0; i < _owners.length; i++) {
+            address owner = _owners[i];
+
+            if (owner == address(0)) revert ZeroAddress();
+            if (isOwner[owner]) revert NotUniqueOwner();
+
+            isOwner[owner] = true;
+            owners.push(owner);
+        }
+
+        required = _required;
+    }
+
+    receive() payable external {
+        emit Deposit(msg.sender, msg.value, address(this).balance);
+    }
+
+    function submitTransaction(address _to, uint _value, bytes memory _data) public onlyOwner {
+        uint txIndex = transactions.length;
+
+        transactions.push(Transaction({
+            to: _to,
+            value: _value,
+            data: _data,
+            executed: false,
+            numConfirmations: 0
+        }));
+
+        emit SubmitTransaction(msg.sender, txIndex, _to, _value, _data);
+    }
+
+    function confirmTransaction(uint _txIndex)
+    public onlyOwner txExists(_txIndex) notExecuted(_txIndex) notConfirmed(_txIndex) {
+        Transaction storage transaction = transactions[_txIndex];
+        transaction.numConfirmations += 1;
+        isConfirmed[_txIndex][msg.sender] = true;
+
+        emit ConfirmTransaction(msg.sender, _txIndex);
+    }
+
+    function executeTransaction(uint _txIndex)
+    public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
+        Transaction storage transaction = transactions[_txIndex];
+
+        if (transaction.numConfirmations < required) revert TransactionNotConfirmed();
+
+        transaction.executed = true;
+
+        (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
+        if (!success) revert TransactionFailed();
+
+
+        emit ExecuteTransaction(msg.sender, _txIndex);
+    }
+
+    function revokeConfirmation(uint _txIndex)
+    public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
+        Transaction storage transaction = transactions[_txIndex];
+
+        if (!isConfirmed[_txIndex][msg.sender]) revert TransactionNotConfirmed();
+
+        transaction.numConfirmations -= 1;
+        isConfirmed[_txIndex][msg.sender] = false;
+
+        emit RevokeConfirmation(msg.sender, _txIndex);
+    }
+
+    function getOwners() public view returns (address[] memory) {
+        return owners;
+    }
+
+    function getTransactionCount() public view returns (uint) {
+        return transactions.length;
+    }
+
+    function getTransaction(uint _txIndex) public view
+    returns (address to, uint value, bytes memory data, bool executed, uint numConfirmations) {
+        Transaction storage transaction = transactions[_txIndex];
+
+        return (
+            transaction.to,
+            transaction.value,
+            transaction.data,
+            transaction.executed,
+            transaction.numConfirmations
+        );
+    }
+
+    modifier onlyWallet() {
+        if (msg.sender != address(this)) revert NotWallet();
+        _;
+    }
 
     modifier onlyOwner() {
         if (!isOwner[msg.sender]) revert NotOwner();
@@ -61,100 +156,9 @@ contract MultiSigWallet {
         _;
     }
 
-    constructor(address[] memory _owners, uint _numConfirmationsRequired) {
-        if (_owners.length == 0) revert NotValidRequirement();
-        if (_numConfirmationsRequired == 0 && _numConfirmationsRequired >= _owners.length) revert NotValidRequirement();
-
-        for (uint i = 0; i < _owners.length; i++) {
-            address owner = _owners[i];
-
-            if (owner == address(0)) revert ZeroAddress();
-            if (isOwner[owner]) revert NotUniqueOwner();
-
-            isOwner[owner] = true;
-            owners.push(owner);
-        }
-
-        numConfirmationsRequired = _numConfirmationsRequired;
-    }
-
-    receive() payable external {
-        emit Deposit(msg.sender, msg.value, address(this).balance);
-    }
-
-    function submitTransaction(address _to, uint _value, bytes memory _data) public onlyOwner
-    {
-        uint txIndex = transactions.length;
-
-        transactions.push(Transaction({
-            to: _to,
-            value: _value,
-            data: _data,
-            executed: false,
-            numConfirmations: 0
-        }));
-
-        emit SubmitTransaction(msg.sender, txIndex, _to, _value, _data);
-    }
-
-    function confirmTransaction(uint _txIndex)
-    public onlyOwner txExists(_txIndex) notExecuted(_txIndex) notConfirmed(_txIndex)
-    {
-        Transaction storage transaction = transactions[_txIndex];
-        transaction.numConfirmations += 1;
-        isConfirmed[_txIndex][msg.sender] = true;
-
-        emit ConfirmTransaction(msg.sender, _txIndex);
-    }
-
-    function executeTransaction(uint _txIndex)
-    public onlyOwner txExists(_txIndex) notExecuted(_txIndex)
-    {
-        Transaction storage transaction = transactions[_txIndex];
-
-        if (transaction.numConfirmations < numConfirmationsRequired) revert TransactionNotConfirmed();
-
-        transaction.executed = true;
-
-        (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
-        if (!success) revert TransactionFailed();
-
-
-        emit ExecuteTransaction(msg.sender, _txIndex);
-    }
-
-    function revokeConfirmation(uint _txIndex)
-    public onlyOwner txExists(_txIndex) notExecuted(_txIndex)
-    {
-        Transaction storage transaction = transactions[_txIndex];
-
-        if (!isConfirmed[_txIndex][msg.sender]) revert TransactionNotConfirmed();
-
-        transaction.numConfirmations -= 1;
-        isConfirmed[_txIndex][msg.sender] = false;
-
-        emit RevokeConfirmation(msg.sender, _txIndex);
-    }
-
-    function getOwners() public view returns (address[] memory) {
-        return owners;
-    }
-
-    function getTransactionCount() public view returns (uint) {
-        return transactions.length;
-    }
-
-    function getTransaction(uint _txIndex) public view
-    returns (address to, uint value, bytes memory data, bool executed, uint numConfirmations)
-    {
-        Transaction storage transaction = transactions[_txIndex];
-
-        return (
-            transaction.to,
-            transaction.value,
-            transaction.data,
-            transaction.executed,
-            transaction.numConfirmations
-        );
+    modifier validRequirement(uint _ownerCount, uint _required) {
+        if (_required > _ownerCount || _required == 0 || _ownerCount == 0)
+            revert NotValidRequirement();
+        _;
     }
 }

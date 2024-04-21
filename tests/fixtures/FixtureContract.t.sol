@@ -37,6 +37,7 @@ abstract contract FixtureContract is Test {
         assetElevated.mint(USER_ADDRESS, 1000);
 
         heliosGlobals.setAsset(address(asset), true);
+        heliosGlobals.setMultiSigAdmin(OWNER_ADDRESS);
 
         poolFactory = new PoolFactory(address(heliosGlobals));
         heliosGlobals.setPoolFactory(address(poolFactory));

@@ -6,6 +6,7 @@ pragma solidity ^0.8.20;
 abstract contract PoolErrors {
     error InvalidLiquidityAsset();
     error NotAdmin();
+    error NotMultiSigAdmin();
     error NotPool();
     error Paused();
     error InvalidValue();

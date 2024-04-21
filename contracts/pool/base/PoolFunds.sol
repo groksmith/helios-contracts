@@ -71,7 +71,7 @@ abstract contract PoolFunds is PoolVestingPeriod {
     /// @notice Borrow the pool's money for investment
     /// @param _to address for borrow funds
     /// @param _amount amount to be borrowed
-    function borrow(address _to, uint256 _amount) public virtual notZero(_amount) onlyAdmin {
+    function borrow(address _to, uint256 _amount) public virtual notZero(_amount) onlyMultiSigAdmin {
         if (principalBalanceAmount < _amount) revert BorrowedMoreThanDeposited();
         principalOut += _amount;
         _transferAssets(_to, _amount);

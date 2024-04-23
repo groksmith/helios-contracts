@@ -30,12 +30,12 @@ abstract contract PoolVestingPeriod is PoolBase {
     ERC20 overrides
     */
 
-    function transfer(address to, uint amount) public override returns (bool) {
+    function transfer(address to, uint amount) whenProtocolNotPaused public override returns (bool) {
         _updateHolder(msg.sender, to, amount);
         return super.transfer(to, amount);
     }
 
-    function transferFrom(address from, address to, uint amount) public override returns (bool) {
+    function transferFrom(address from, address to, uint amount) whenProtocolNotPaused public override returns (bool) {
         _updateHolder(msg.sender, to, amount);
         return super.transferFrom(from, to, amount);
     }
@@ -50,7 +50,7 @@ abstract contract PoolVestingPeriod is PoolBase {
     }
 
     /// @notice Get holders
-    function getHolders() public view returns (address[] memory) {
+    function getHolders() external view returns (address[] memory) {
         return holdersToEffectiveDepositDate.keys();
     }
 

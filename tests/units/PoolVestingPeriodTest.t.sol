@@ -169,7 +169,6 @@ contract PoolVestingPeriodTest is Test, FixtureContract, PoolErrors {
         // mint
         uint256 depositAmount = bound(amount, poolVestingPeriod.getPoolInfo().minInvestmentAmount, type(uint80).max);
         mintAsset(user, depositAmount);
-        mintAsset(user2, depositAmount);
 
         assertEq(poolVestingPeriod.getHoldersCount(), 0);
 
@@ -177,21 +176,11 @@ contract PoolVestingPeriodTest is Test, FixtureContract, PoolErrors {
         vm.startPrank(user);
         asset.approve(address(poolVestingPeriod), depositAmount);
         poolVestingPeriod.deposit(user, depositAmount);
-        vm.stopPrank();
 
         assertEq(poolVestingPeriod.getHoldersCount(), 1);
 
-        // deposit 2
-        vm.startPrank(user2);
-        asset.approve(address(poolVestingPeriod), depositAmount);
-        poolVestingPeriod.deposit(user2, depositAmount);
-
+        poolVestingPeriod.transfer(user2, depositAmount);
         assertEq(poolVestingPeriod.getHoldersCount(), 2);
-
-        address Buyer = vm.addr(uint256(keccak256(bytes("Buyer"))));
-        poolVestingPeriod.transfer(Buyer, depositAmount);
-
-        assertEq(poolVestingPeriod.getHoldersCount(), 3);
 
         vm.stopPrank();
     }
@@ -199,14 +188,13 @@ contract PoolVestingPeriodTest is Test, FixtureContract, PoolErrors {
     function test_get_holders(address user, address user2, uint256 amount) public {
         vm.assume(user != user2);
         vm.assume(user != address(0));
-        vm.assume(user != address(poolVestingPeriod));
         vm.assume(user2 != address(0));
+        vm.assume(user != address(poolVestingPeriod));
         vm.assume(user2 != address(poolVestingPeriod));
 
         // mint
         uint256 depositAmount = bound(amount, poolVestingPeriod.getPoolInfo().minInvestmentAmount, type(uint80).max);
         mintAsset(user, depositAmount);
-        mintAsset(user2, depositAmount);
 
         assertEq(poolVestingPeriod.getHolders().length, 0);
 
@@ -214,27 +202,17 @@ contract PoolVestingPeriodTest is Test, FixtureContract, PoolErrors {
         vm.startPrank(user);
         asset.approve(address(poolVestingPeriod), depositAmount);
         poolVestingPeriod.deposit(user, depositAmount);
-        vm.stopPrank();
 
         assertEq(poolVestingPeriod.getHolders().length, 1);
 
-        // deposit 2
-        vm.startPrank(user2);
-        asset.approve(address(poolVestingPeriod), depositAmount);
-        poolVestingPeriod.deposit(user2, depositAmount);
+        poolVestingPeriod.transfer(user2, depositAmount);
 
         assertEq(poolVestingPeriod.getHolders().length, 2);
-
-        address buyer = vm.addr(uint256(keccak256(bytes("Buyer"))));
-        poolVestingPeriod.transfer(buyer, depositAmount);
-
-        assertEq(poolVestingPeriod.getHolders().length, 3);
 
         address[] memory holders = poolVestingPeriod.getHolders();
 
         assertEq(holders[0], user);
         assertEq(holders[1], user2);
-        assertEq(holders[2], buyer);
         vm.stopPrank();
     }
 

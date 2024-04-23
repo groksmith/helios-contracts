@@ -38,15 +38,13 @@ abstract contract PoolFunds is PoolVestingPeriod {
     function deposit(uint256 _amount) public virtual {
         if (_amount < poolInfo.minInvestmentAmount) revert DepositAmountBelowMin();
 
-        address holder = msg.sender;
+        _updateEffectiveDepositDate(msg.sender, _amount);
 
-        _updateEffectiveDepositDate(holder, _amount);
+        _mint(msg.sender, _amount);
 
-        _mint(holder, _amount);
+        emit Deposit(msg.sender, _amount);
 
-        emit Deposit(holder, _amount);
-
-        _depositAssetsFrom(holder, _amount);
+        _depositAssetsFrom(msg.sender, _amount);
     }
 
     /// @notice withdraws the caller's assets

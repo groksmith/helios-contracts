@@ -66,7 +66,8 @@ abstract contract PoolVestingPeriod is PoolBase {
         return key;
     }
 
-    /// @notice Get the holder address by index
+    /// @notice Get holder's deposit unlock timestamp
+    /// @param _holder to be checked
     function getHolderUnlockDate(address _holder) public view returns (uint256) {
         if (!holdersToEffectiveDepositDate.contains(_holder)) revert InvalidHolder();
         return holdersToEffectiveDepositDate.get(_holder) + poolInfo.lockupPeriod;

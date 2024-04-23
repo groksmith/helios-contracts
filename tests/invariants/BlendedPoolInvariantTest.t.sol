@@ -9,6 +9,7 @@ import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 
 import {BlendedPoolTestHandler} from "./BlendedPoolTestHandler.t.sol";
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
+import {Pool} from "../../contracts/pool/Pool.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract BlendedPoolInvariantTest is Test {
@@ -17,6 +18,7 @@ contract BlendedPoolInvariantTest is Test {
 
     BlendedPoolTestHandler private handler;
     BlendedPool private blendedPool;
+    Pool private pool;
 
     ERC20 public asset;
     MockTokenERC20 private assetElevated;
@@ -37,21 +39,36 @@ contract BlendedPoolInvariantTest is Test {
         // Setup variables
         heliosGlobals.setAsset(address(asset), true);
         heliosGlobals.setPoolFactory(address(poolFactory));
+        heliosGlobals.setMultiSigAdmin(OWNER_ADDRESS);
 
         address blendedPoolAddress = poolFactory.createBlendedPool(
             {
                 _asset: address(asset),
                 _lockupPeriod: 300,
-                _minInvestmentAmount: 0,
+                _minInvestmentAmount: 1,
+                _tokenName: NAME,
+                _tokenSymbol: SYMBOL
+            }
+        );
+
+        address regionalPoolAddress = poolFactory.createPool(
+            {
+                _poolId: "pool id",
+                _asset: address(asset),
+                _lockupPeriod: 300,
+                _minInvestmentAmount: 1,
+                _investmentPoolSize: type(uint80).max,
                 _tokenName: NAME,
                 _tokenSymbol: SYMBOL
             }
         );
 
         blendedPool = BlendedPool(blendedPoolAddress);
+        pool = Pool(regionalPoolAddress);
+
         vm.stopPrank();
 
-        handler = new BlendedPoolTestHandler(blendedPool, assetElevated);
+        handler = new BlendedPoolTestHandler(blendedPool, pool, assetElevated);
         targetContract(address(handler));
     }
 
@@ -66,9 +83,16 @@ contract BlendedPoolInvariantTest is Test {
     //  - total yield withdrawals
     //  + total repaid
     //  - total borrowed
-    function invariant_pool_balance_equals_tracked_deposits() external {
-        uint256 inBalance = handler.totalInvested() + handler.totalRepaid();
-        uint256 outBalance = handler.totalBorrowed() + handler.totalWithdrawn() + handler.totalYieldWithdrawn();
+    function invariant_pool_balance_equals_tracked_deposits() public {
+        uint256 inBalance = handler.totalInvested() +
+                            handler.totalRepaid() +
+                            handler.totalYieldsFromRegionalPool();
+
+        uint256 outBalance = handler.totalBorrowed() +
+                            handler.totalWithdrawn() +
+                            handler.totalYieldWithdrawn() +
+                            handler.totalInvestedToRegionalPool();
+
         uint256 blendedPoolTotalAssets = asset.balanceOf(address(blendedPool));
 
         assertEq(inBalance - outBalance, blendedPoolTotalAssets);

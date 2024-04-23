@@ -7,13 +7,17 @@ import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
+import {Pool} from "../../contracts/pool/Pool.sol";
 import {MockTokenERC20} from "../mocks/MockTokenERC20.sol";
 
 contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     address public constant OWNER_ADDRESS = 0x8A867fcC5a4d1FBbf7c1A9D6e5306b78511fDDDe;
 
     BlendedPool public blendedPool;
+    Pool public pool;
     MockTokenERC20 public assetElevated;
     ERC20 public asset;
 
@@ -25,8 +29,9 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     address(uint160(uint256(keccak256("user5"))))
     ];
 
-    constructor(BlendedPool _blendedPool, MockTokenERC20 _assetElevated){
+    constructor(BlendedPool _blendedPool, Pool _pool, MockTokenERC20 _assetElevated){
         blendedPool = _blendedPool;
+        pool = _pool;
         assetElevated = _assetElevated;
         asset = ERC20(assetElevated);
     }
@@ -38,6 +43,8 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
     uint256 public totalYieldPrecisionLoss;
     uint256 public totalBorrowed;
     uint256 public totalRepaid;
+    uint256 public totalInvestedToRegionalPool;
+    uint256 public totalYieldsFromRegionalPool;
     uint256 public maxPrecisionLossForYields;
 
     /// Make a deposit for a user
@@ -169,8 +176,57 @@ contract BlendedPoolTestHandler is CommonBase, StdCheats, StdUtils {
         totalRepaid += amount;
     }
 
+    function depositToPool(uint256 amount) public virtual {
+        if (blendedPool.principalBalanceAmount() > 1)
+        {
+            uint maxDepositAmount = Math.min(blendedPool.principalBalanceAmount(), type(uint80).max);
+            amount = bound(amount, 1, maxDepositAmount);
+
+            vm.prank(OWNER_ADDRESS);
+            blendedPool.depositToOpenPool(address(pool), amount);
+
+            totalInvestedToRegionalPool += amount;
+        }
+    }
+
+    function withdrawFromPool() public virtual {
+        uint256 amount = pool.balanceOf(address(blendedPool));
+        if (amount > 0)
+        {
+            warp(pool.getHolderUnlockDate(address(blendedPool)));
+            vm.prank(OWNER_ADDRESS);
+            blendedPool.withdrawFromPool(address(pool), amount);
+
+            totalInvestedToRegionalPool -= amount;
+        }
+    }
+
+    function withdrawYieldFromPool() public virtual {
+        uint256 amount = pool.yields(address(blendedPool));
+        if (amount > 0)
+        {
+            vm.prank(OWNER_ADDRESS);
+            blendedPool.withdrawYieldFromPool(address(pool));
+            totalYieldsFromRegionalPool += amount;
+        }
+    }
+
+    function repayRegionalPool(uint256 amount) public virtual {
+        amount = bound(amount, 1, type(uint80).max);
+        if (amount > 0)
+        {
+            assetElevated.mint(OWNER_ADDRESS, amount);
+
+            vm.prank(OWNER_ADDRESS);
+            asset.approve(address(pool), amount);
+
+            vm.prank(OWNER_ADDRESS);
+            pool.repayYield(amount);
+        }
+    }
+
     /// Time warp simulation
-    function warp(uint256 timestamp) external {
+    function warp(uint256 timestamp) public virtual {
         timestamp = bound(timestamp, 500, type(uint80).max);
         vm.warp(block.timestamp + timestamp);
     }

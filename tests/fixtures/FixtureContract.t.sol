@@ -29,7 +29,7 @@ abstract contract FixtureContract is Test {
     function fixture() public {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
-        heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
+        heliosGlobals = new HeliosGlobals(OWNER_ADDRESS, OWNER_ADDRESS);
         assetElevated = new MockTokenERC20("USDC", "USDC");
         asset = ERC20(assetElevated);
 
@@ -37,7 +37,6 @@ abstract contract FixtureContract is Test {
         assetElevated.mint(USER_ADDRESS, 1000);
 
         heliosGlobals.setAsset(address(asset), true);
-        heliosGlobals.setMultiSigAdmin(OWNER_ADDRESS);
 
         poolFactory = new PoolFactory(address(heliosGlobals));
         heliosGlobals.setPoolFactory(address(poolFactory));

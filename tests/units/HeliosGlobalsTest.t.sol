@@ -37,21 +37,6 @@ contract HeliosGlobalsTest is Test, FixtureContract, HeliosGlobalsErrors {
         vm.stopPrank();
     }
 
-    function test_setAdminWithApprovals(address adminWithApprovals) public {
-        vm.assume(adminWithApprovals != OWNER_ADDRESS);
-        vm.startPrank(OWNER_ADDRESS);
-
-        //Asserts if initial state of contract is paused
-        assertEq(heliosGlobals.isMultiSigAdmin(adminWithApprovals), false);
-
-        heliosGlobals.setMultiSigAdmin(adminWithApprovals);
-
-        //Asserts if after pausing contract paused
-        assertEq(heliosGlobals.isMultiSigAdmin(adminWithApprovals), true);
-
-        vm.stopPrank();
-    }
-
     function testFuzz_when_not_owner_setPaused(address user) public {
         vm.assume(user != OWNER_ADDRESS);
         vm.startPrank(user);

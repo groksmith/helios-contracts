@@ -30,7 +30,7 @@ contract BlendedPoolInvariantTest is Test {
         vm.startPrank(OWNER_ADDRESS);
 
         // Setup contracts
-        heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
+        heliosGlobals = new HeliosGlobals(OWNER_ADDRESS, OWNER_ADDRESS);
         poolFactory = new PoolFactory(address(heliosGlobals));
         assetElevated = new MockTokenERC20("USDC", "USDC");
         asset = ERC20(assetElevated);
@@ -38,7 +38,6 @@ contract BlendedPoolInvariantTest is Test {
         // Setup variables
         heliosGlobals.setAsset(address(asset), true);
         heliosGlobals.setPoolFactory(address(poolFactory));
-        heliosGlobals.setMultiSigAdmin(OWNER_ADDRESS);
 
         address blendedPoolAddress = poolFactory.createBlendedPool(
             {

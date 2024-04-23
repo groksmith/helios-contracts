@@ -125,6 +125,10 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         blendedPool.borrow(OWNER_ADDRESS, depositAmount);
 
         vm.startPrank(user);
+
+        vm.expectRevert(NotMultiSigAdmin.selector);
+        blendedPool.borrow(OWNER_ADDRESS, depositAmount);
+
         //attempt to withdraw when not enough assets in pool
         vm.expectRevert(NotEnoughAssets.selector);
         blendedPool.withdraw(user, depositAmount);

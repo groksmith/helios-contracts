@@ -33,7 +33,7 @@ _timer:
 
 verify-prod: && _timer
     forge verify-contract {{ HELIOS_GLOBALS }} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
-        --constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_OWNER }}` \
+        --constructor-args `cast abi-encode "constructor(address, address)" {{ HELIOS_OWNER }} {{ MULTI_SIG_WALLET }}` \
         --verifier-url {{ VERIFIER_URL }} --watch
 
     forge verify-contract {{ POOL_FACTORY }} ./contracts/pool/PoolFactory.sol:PoolFactory \
@@ -91,7 +91,7 @@ deploy-all: && _timer
 
 verify-test: && _timer
 	forge verify-contract {{ HELIOS_GLOBALS }} ./contracts/global/HeliosGlobals.sol:HeliosGlobals \
-		--constructor-args `cast abi-encode "constructor(address)" {{ HELIOS_OWNER }}` \
+		--constructor-args `cast abi-encode "constructor(address, address)" {{ HELIOS_OWNER }} {{ MULTI_SIG_WALLET }}` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ POOL_FACTORY }} ./contracts/pool/PoolFactory.sol:PoolFactory \

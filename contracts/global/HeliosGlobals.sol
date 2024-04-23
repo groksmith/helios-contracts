@@ -10,6 +10,7 @@ import {HeliosGlobalsErrors} from "./HeliosGlobalsErrors.sol";
 /// @author Tigran Arakelyan
 /// @notice Maintains a central source of parameters and allowLists for the Helios protocol.
 contract HeliosGlobals is AccessControl, IHeliosGlobals, HeliosGlobalsErrors {
+    address private immutable multiSigAdmin; // MultiSig admin contract address
     bool public override protocolPaused; // Switch to pause the functionality of the entire protocol.
     address public override poolFactory; // Mapping of valid Pool Factories
     mapping(address => bool) public override isValidAsset; // Mapping of valid Assets
@@ -22,8 +23,9 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals, HeliosGlobalsErrors {
 
     bytes32 public constant MULTI_SIG_ADMIN = keccak256("MULTI_SIG_ADMIN");
 
-    constructor(address _admin) {
+    constructor(address _admin, address _multiSigAdmin) {
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        multiSigAdmin = _multiSigAdmin;
         emit Initialized();
     }
 
@@ -34,19 +36,13 @@ contract HeliosGlobals is AccessControl, IHeliosGlobals, HeliosGlobalsErrors {
 
     /// @notice Check if account is MultiSigAdmin of Helios protocol
     function isMultiSigAdmin(address _account) public view returns (bool) {
-        return hasRole(MULTI_SIG_ADMIN, _account);
+        return multiSigAdmin == _account;
     }
 
     /// @notice Sets the paused/unpaused state of the protocol. Only the Admin can call this function
     function setProtocolPause(bool _pause) external onlyAdmin {
         protocolPaused = _pause;
         emit ProtocolPaused(_pause);
-    }
-
-    /// @notice Sets the approve admin
-    function setMultiSigAdmin(address _account) external onlyAdmin {
-        _grantRole(MULTI_SIG_ADMIN, _account);
-        emit MultiSigAdminSet(_account);
     }
 
     /// @notice Sets the valid PoolFactory instance. Only the Admin can call this function

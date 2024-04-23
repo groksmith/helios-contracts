@@ -24,7 +24,6 @@ contract InitializeScript is Script {
         heliosGlobals.setPoolFactory(poolFactoryAddress);
         heliosGlobals.setAsset(heliosUsdAddress, true);
         heliosGlobals.setAsset(usdcAddress, true);
-        heliosGlobals.setMultiSigAdmin(multiSigWalletAddress);
 
         PoolFactory poolFactory = PoolFactory(poolFactoryAddress);
         address blendedPoolAddress = poolFactory.createBlendedPool(

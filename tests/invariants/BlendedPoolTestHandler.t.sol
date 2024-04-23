@@ -1,7 +1,5 @@
 pragma solidity 0.8.20;
 
-import "forge-std/console.sol";
-
 import {CommonBase} from "forge-std/Base.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";

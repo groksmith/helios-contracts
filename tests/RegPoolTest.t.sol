@@ -1,7 +1,6 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
 import {Pool} from "../contracts/pool/Pool.sol";

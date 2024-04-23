@@ -69,7 +69,7 @@ abstract contract PoolFunds is PoolVestingPeriod {
     /// @notice Borrow the pool's money for investment
     /// @param _to address for borrow funds
     /// @param _amount amount to be borrowed
-    function borrow(address _to, uint256 _amount) public virtual notZero(_amount) onlyMultiSigAdmin {
+    function borrow(address _to, uint256 _amount) public virtual whenProtocolNotPaused notZero(_amount) onlyMultiSigAdmin {
         if (principalBalanceAmount < _amount) revert BorrowedMoreThanDeposited();
         principalOut += _amount;
         _transferAssets(_to, _amount);
@@ -77,7 +77,7 @@ abstract contract PoolFunds is PoolVestingPeriod {
 
     /// @notice Repay asset without minimal threshold or getting LP in return
     /// @param _amount amount to be repaid
-    function repay(uint256 _amount) public virtual notZero(_amount) onlyAdmin {
+    function repay(uint256 _amount) public virtual whenProtocolNotPaused notZero(_amount) onlyAdmin {
         if (_amount > principalOut) revert CantRepayMoreThanBorrowed();
         if (asset.balanceOf(msg.sender) < _amount) revert NotEnoughBalance();
 

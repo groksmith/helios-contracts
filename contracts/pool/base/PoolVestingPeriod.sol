@@ -55,11 +55,13 @@ abstract contract PoolVestingPeriod is PoolBase {
     }
 
     /// @notice Return true if holder exists
+    /// @param _holder to be checked
     function holderExists(address _holder) public view returns (bool) {
         return holdersToEffectiveDepositDate.contains(_holder);
     }
 
     /// @notice Get the holder address by index
+    /// @param _index for holder
     function getHolderByIndex(uint256 _index) public view returns (address) {
         if (_index >= holdersToEffectiveDepositDate.length()) revert InvalidIndex();
         (address key,) = holdersToEffectiveDepositDate.at(_index);
@@ -109,6 +111,8 @@ abstract contract PoolVestingPeriod is PoolBase {
 
     /// @notice Update lockup period for a holder
     /// @dev Add the holder to holders AddressMap
+    /// @param _holder address
+    /// @param _amount that should be added to current balance
     function _updateEffectiveDepositDate(address _holder, uint256 _amount) internal {
         if (_holder == address(0)) revert InvalidHolder();
         if (_amount == 0) revert ZeroAmount();
@@ -160,6 +164,7 @@ abstract contract PoolVestingPeriod is PoolBase {
     }
 
     /// @notice Get lock status of a specific holder
+    /// @param _holder address
     function _tokensUnlocked(address _holder) internal view returns (bool) {
         if (!holdersToEffectiveDepositDate.contains(_holder)) revert InvalidHolder();
 

@@ -48,6 +48,7 @@ abstract contract PoolFunds is PoolVestingPeriod {
     }
 
     /// @notice withdraws the caller's assets
+    /// @param _beneficiary will forward all assets to address
     /// @param _amount to be withdrawn
     function withdraw(address _beneficiary, uint256 _amount) public virtual;
 

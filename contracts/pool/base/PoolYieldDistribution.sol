@@ -23,11 +23,14 @@ abstract contract PoolYieldDistribution is PoolFunds {
     PoolFunds(_asset, _tokenName, _tokenSymbol) {}
 
     /// @notice Used to transfer the investor's yields to him
+    /// @param _beneficiary will forward yield to address
     function withdrawYield(address _beneficiary) external virtual nonReentrant whenProtocolNotPaused returns (bool) {
         return _withdrawYield(msg.sender, _beneficiary);
     }
 
     /// @notice Used to transfer the investor's yields to reinvest
+    /// @param _holder address
+    /// @param _beneficiary address to forward yield to
     function withdrawYield(address _holder, address _beneficiary) external virtual onlyAdmin nonReentrant whenProtocolNotPaused returns (bool) {
         return _withdrawYield(_holder, _beneficiary);
     }

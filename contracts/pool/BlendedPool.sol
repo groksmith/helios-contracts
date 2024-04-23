@@ -32,6 +32,7 @@ contract BlendedPool is PoolYieldDistribution {
     }
 
     /// @notice withdraws the caller's liquidity assets
+    /// @param _beneficiary will forward all assets to address
     /// @param _amount to be withdrawn
     function withdraw(address _beneficiary, uint256 _amount) public override unlocked(msg.sender) nonReentrant whenProtocolNotPaused {
         if (balanceOf(msg.sender) < _amount) revert InsufficientFunds();
@@ -69,6 +70,9 @@ contract BlendedPool is PoolYieldDistribution {
         }
     }
 
+    /// @notice Only called by admin to deposit from Blended pool to Regional pool
+    /// @param _poolAddress address of pool to deposit
+    /// @param _amount the amount to deposit
     function depositToOpenPool(address _poolAddress, uint256 _amount) public onlyAdmin nonReentrant whenProtocolNotPaused {
         if (principalBalanceAmount < _amount) revert NotEnoughAssets();
 
@@ -83,18 +87,24 @@ contract BlendedPool is PoolYieldDistribution {
         }
     }
 
+    /// @notice Only called by admin, initiate withdraw assets from regional pool
+    /// @param _poolAddress address of pool to withdraw from
+    /// @param _amount the amount to withdraw
     function withdrawFromPool(address _poolAddress, uint256 _amount) public onlyAdmin nonReentrant whenProtocolNotPaused {
         Pool pool = Pool(_poolAddress);
         principalBalanceAmount += _amount;
         pool.withdraw(address(this), _amount);
     }
 
+    /// @notice Only called by admin, initiate withdraw yield from regional pool
+    /// @param _poolAddress address of pool to withdraw from
     function withdrawYieldFromPool(address _poolAddress) public onlyAdmin nonReentrant whenProtocolNotPaused {
         Pool pool = Pool(_poolAddress);
         principalBalanceAmount += pool.yields(address(this));
         pool.withdrawYield(address(this));
     }
 
+    /// @notice Retrieve pool array
     function investedPools() public view returns (address[] memory) {
         return pools.values();
     }

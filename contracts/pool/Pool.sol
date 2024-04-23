@@ -121,6 +121,7 @@ contract Pool is PoolYieldDistribution {
     }
 
     /// @notice Check if pool in given state
+    /// @param _state to check
     modifier inState(State _state) {
         if (poolState != _state) revert BadState();
         _;

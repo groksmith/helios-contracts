@@ -13,7 +13,6 @@ contract InitializeScript is Script {
         address heliosGlobalsAddress = vm.envAddress("HELIOS_GLOBALS");
         address poolFactoryAddress = vm.envAddress("POOL_FACTORY");
         address heliosUsdAddress = vm.envAddress("HELIOS_USD");
-        address multiSigWalletAddress = vm.envAddress("MULTI_SIG_WALLET");
         address usdcAddress = vm.envAddress("USDC");
         string memory tokenName = vm.envString("NAME");
         string memory tokenSymbol = vm.envString("SYMBOL");
@@ -21,16 +20,16 @@ contract InitializeScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         HeliosGlobals heliosGlobals = HeliosGlobals(heliosGlobalsAddress);
-        heliosGlobals.setPoolFactory(poolFactoryAddress);
-        heliosGlobals.setAsset(heliosUsdAddress, true);
-        heliosGlobals.setAsset(usdcAddress, true);
+//        heliosGlobals.setPoolFactory(poolFactoryAddress);
+//        heliosGlobals.setAsset(heliosUsdAddress, true);
+//        heliosGlobals.setAsset(usdcAddress, true);
 
         PoolFactory poolFactory = PoolFactory(poolFactoryAddress);
         address blendedPoolAddress = poolFactory.createBlendedPool(
             {
                 _asset: usdcAddress,
-                _lockupPeriod: 86400,
-                _minInvestmentAmount: 100000000,
+                _lockupPeriod: 7776000, // TODO: check before run in prod
+                _minInvestmentAmount: 100000000, // TODO: check before run in prod
                 _tokenName: tokenName,
                 _tokenSymbol: tokenSymbol
             }

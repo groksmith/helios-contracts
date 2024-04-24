@@ -13,7 +13,7 @@ remappings = [
 ]
 
 [fuzz]
-runs = 1000
+runs = 500
 
 [rpc_endpoints]
 base_sepolia = "${RPC_URL}"

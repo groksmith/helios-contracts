@@ -127,7 +127,7 @@ test-all: && _timer
 	forge test -vvvvv
 
 test-single: && _timer
-	forge test -vvvvv --match-test test_get_holders
+	forge test -vvvvv --match-test test_transfer_already_owned
 
 test-gas: && _timer
     forge test --gas-report

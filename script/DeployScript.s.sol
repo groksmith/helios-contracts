@@ -11,15 +11,14 @@ contract DeployScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address adminAddress = vm.envAddress("HELIOS_OWNER");
+        address multiSigAdminAddress = vm.envAddress("MULTI_SIG_WALLET");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        HeliosGlobals heliosGlobals = new HeliosGlobals(adminAddress);
+        HeliosGlobals heliosGlobals = new HeliosGlobals(adminAddress, multiSigAdminAddress);
         PoolFactory poolFactory = new PoolFactory(address(heliosGlobals));
         HeliosUSD heliosUsd = new HeliosUSD(adminAddress);
 
-        // Only for staging. Uncomment for staging
-        // MockTokenERC20 mockTokenERC20 = new MockTokenERC20("mUSDC", "mUSDC");
         vm.stopBroadcast();
 
         console.log("HeliosGlobals %s", address(heliosGlobals));

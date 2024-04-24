@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 /// @title Pool errors
 /// @author Tigran Arakelyan
 abstract contract PoolErrors {
-    error ZeroLiquidityAsset();
     error InvalidLiquidityAsset();
     error NotAdmin();
+    error NotMultiSigAdmin();
     error NotPool();
     error Paused();
     error InvalidValue();
@@ -18,7 +18,6 @@ abstract contract PoolErrors {
     error CantRepayMoreThanBorrowed();
     error NotEnoughBalance();
     error TransferFailed();
-    error InvalidIndex();
     error NotEnoughAssets();
     error MaxPoolSizeReached();
     error BadState();
@@ -26,4 +25,8 @@ abstract contract PoolErrors {
     error BlendedPoolNotCreated();
     error PoolIdAlreadyExists();
     error NotBlendedPool();
+    error InvalidIndex();
+    error InvalidHolder();
+    error ZeroAmount();
+    error WrongUnlockTime();
 }

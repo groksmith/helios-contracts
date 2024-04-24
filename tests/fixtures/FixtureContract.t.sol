@@ -7,7 +7,7 @@ import {HeliosGlobals} from "../../contracts/global/HeliosGlobals.sol";
 import {PoolFactory} from "../../contracts/pool/PoolFactory.sol";
 import {BlendedPool} from "../../contracts/pool/BlendedPool.sol";
 import {Pool} from "../../contracts/pool/Pool.sol";
-import {PoolErrors} from "../../contracts/pool/PoolErrors.sol";
+import {PoolErrors} from "../../contracts/pool/base/PoolErrors.sol";
 
 abstract contract FixtureContract is Test {
     string public constant NAME = "Helios Pool TKN";
@@ -29,7 +29,7 @@ abstract contract FixtureContract is Test {
     function fixture() public {
         vm.startPrank(OWNER_ADDRESS, OWNER_ADDRESS);
 
-        heliosGlobals = new HeliosGlobals(OWNER_ADDRESS);
+        heliosGlobals = new HeliosGlobals(OWNER_ADDRESS, OWNER_ADDRESS);
         assetElevated = new MockTokenERC20("USDC", "USDC");
         asset = ERC20(assetElevated);
 

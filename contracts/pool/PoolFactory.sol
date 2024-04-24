@@ -2,22 +2,26 @@
 pragma solidity ^0.8.20;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {PoolFactoryLibrary} from "../library/PoolFactoryLibrary.sol";
 import {BlendedPoolFactoryLibrary} from "../library/BlendedPoolFactoryLibrary.sol";
 
 import {IHeliosGlobals} from "../interfaces/IHeliosGlobals.sol";
 import {IPoolFactory} from "../interfaces/IPoolFactory.sol";
-import {PoolErrors} from "./PoolErrors.sol";
+import {PoolErrors} from "./base/PoolErrors.sol";
 
 /// @title Factory for Pool creation
 /// @author Tigran Arakelyan
 contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     IHeliosGlobals public immutable override globals; // A HeliosGlobals instance
 
     address public blendedPool; // Address of Blended Pool
+    EnumerableSet.AddressSet private poolSet; // EnumerableSet of pools
+
     mapping(string => address) public pools; // Map to reference Pools corresponding to their respective indices.
-    mapping(address => bool) public isPool; // True only if a Pool was instantiated by this factory.
 
     event PoolCreated(string poolId, address asset, address indexed pool, address indexed delegate);
     event BlendedPoolCreated(address asset, address indexed pool, address indexed delegate);
@@ -32,6 +36,8 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
     /// @param _lockupPeriod locking time for deposit's withdrawal
     /// @param _minInvestmentAmount minimal amount of asset needed to deposit
     /// @param _investmentPoolSize pool max capacity for deposits
+    /// @param _tokenName token name
+    /// @param _tokenSymbol token symbol
     function createPool(
         string calldata _poolId,
         address _asset,
@@ -41,7 +47,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
         string memory _tokenName,
         string memory _tokenSymbol)
     external virtual onlyAdmin whenProtocolNotPaused nonReentrant returns (address poolAddress) {
-        _isMappingKeyValid(_poolId);
+        if (pools[_poolId] != address(0)) revert PoolIdAlreadyExists();
 
         poolAddress = PoolFactoryLibrary.createPool(
             _asset,
@@ -52,7 +58,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
             _tokenSymbol);
 
         pools[_poolId] = poolAddress;
-        isPool[poolAddress] = true;
+        poolSet.add(poolAddress);
 
         emit PoolCreated(_poolId, _asset, poolAddress, msg.sender);
     }
@@ -61,6 +67,8 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
     /// @param _asset address of asset of pool
     /// @param _lockupPeriod locking time for deposit's withdrawal
     /// @param _minInvestmentAmount minimal amount of asset needed to deposit
+    /// @param _tokenName token name
+    /// @param _tokenSymbol token symbol
     function createBlendedPool(
         address _asset,
         uint256 _lockupPeriod,
@@ -78,22 +86,15 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
             _tokenSymbol
         );
 
-        if (blendedPoolAddress == address(0)) revert BlendedPoolNotCreated();
         blendedPool = blendedPoolAddress;
 
         emit BlendedPoolCreated(_asset, blendedPoolAddress, msg.sender);
     }
 
-    /// @notice Checks that the mapping key is valid (unique)
-    /// @dev Only for external systems compatibility
-    function _isMappingKeyValid(string calldata _key) internal view {
-        if (pools[_key] != address(0)) revert PoolIdAlreadyExists();
-    }
-
     /// @notice Whitelist pools created here
     /// @param _pool address of pool to check
     function isValidPool(address _pool) external override view returns (bool) {
-        return isPool[_pool];
+        return poolSet.contains(_pool);
     }
 
     /// @notice Return blended pool address
@@ -103,7 +104,7 @@ contract PoolFactory is IPoolFactory, ReentrancyGuard, PoolErrors {
 
     /// @notice Checks that `msg.sender` is the Admin
     modifier onlyAdmin() {
-        if (globals.isAdmin(msg.sender) == false) revert NotAdmin();
+        if (!globals.isAdmin(msg.sender)) revert NotAdmin();
         _;
     }
 

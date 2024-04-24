@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {AbstractPool} from "./AbstractPool.sol";
-import {PoolLibrary} from "../library/PoolLibrary.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import {Pool} from "./Pool.sol";
+import {PoolYieldDistribution} from "./base/PoolYieldDistribution.sol";
 
 /// @title Blended Pool implementation
 /// @author Tigran Arakelyan
-contract BlendedPool is AbstractPool {
-    event RegPoolRequested(address indexed regPool, uint256 amount);
+contract BlendedPool is PoolYieldDistribution {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    event RegPoolDeposited(address indexed regPool, uint256 amount);
+
+    EnumerableSet.AddressSet private pools;
 
     constructor(
         address _asset,
@@ -16,7 +21,7 @@ contract BlendedPool is AbstractPool {
         uint256 _minInvestmentAmount,
         string memory _tokenName,
         string memory _tokenSymbol)
-    AbstractPool(_asset, _tokenName, _tokenSymbol) {
+    PoolYieldDistribution(_asset, _tokenName, _tokenSymbol) {
         poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, type(uint256).max);
     }
 
@@ -27,33 +32,17 @@ contract BlendedPool is AbstractPool {
     }
 
     /// @notice withdraws the caller's liquidity assets
+    /// @param _beneficiary will forward all assets to address
     /// @param _amount to be withdrawn
-    function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
+    function withdraw(address _beneficiary, uint256 _amount) public override unlocked(msg.sender) nonReentrant whenProtocolNotPaused {
         if (balanceOf(msg.sender) < _amount) revert InsufficientFunds();
-        if (unlockedToWithdraw(msg.sender) < _amount) revert TokensLocked();
         if (principalBalanceAmount < _amount) revert NotEnoughAssets();
 
         _burn(msg.sender, _amount);
 
-        _emitBalanceUpdatedEvent();
-        emit Withdrawal(msg.sender, _amount);
+        emit Withdrawal(msg.sender, _beneficiary, _amount);
 
-        _transferAssets(msg.sender, _amount);
-    }
-
-    /// @notice Only called by a RegPool when it doesn't have enough Assets
-    /// @param _amount the amount requested for compensation
-    function requestAssets(uint256 _amount) external notZero(_amount) nonReentrant onlyPool {
-        if (principalBalanceAmount < _amount) revert NotEnoughAssets();
-
-        Pool pool = Pool(msg.sender);
-        bool success = asset.approve(address(pool), _amount);
-
-        if (success)
-        {
-            emit RegPoolRequested(msg.sender, _amount);
-            pool.blendedPoolDeposit(_amount);
-        }
+        _transferAssets(_beneficiary, _amount);
     }
 
     function borrow(address _to, uint256 _amount) public override nonReentrant {
@@ -64,9 +53,65 @@ contract BlendedPool is AbstractPool {
         super.repay(_amount);
     }
 
+    /// @notice Only called by a RegPool when it doesn't have enough Assets
+    /// @param _amount the amount requested for compensation
+    function depositToClosedPool(uint256 _amount) external notZero(_amount) nonReentrant onlyPool {
+        if (principalBalanceAmount < _amount) revert NotEnoughAssets();
+
+        Pool pool = Pool(msg.sender);
+        bool success = asset.approve(address(pool), _amount);
+
+        if (success)
+        {
+            pools.add(address(pool));
+            principalBalanceAmount -= _amount;
+            emit RegPoolDeposited(msg.sender, _amount);
+            pool.blendedPoolDeposit(_amount);
+        }
+    }
+
+    /// @notice Only called by admin to deposit from Blended pool to Regional pool
+    /// @param _poolAddress address of pool to deposit
+    /// @param _amount the amount to deposit
+    function depositToOpenPool(address _poolAddress, uint256 _amount) public onlyAdmin nonReentrant whenProtocolNotPaused {
+        if (principalBalanceAmount < _amount) revert NotEnoughAssets();
+
+        Pool pool = Pool(_poolAddress);
+        bool success = asset.approve(_poolAddress, _amount);
+        if (success)
+        {
+            pools.add(address(pool));
+            principalBalanceAmount -= _amount;
+            emit RegPoolDeposited(address(pool), _amount);
+            pool.deposit(_amount);
+        }
+    }
+
+    /// @notice Only called by admin, initiate withdraw assets from regional pool
+    /// @param _poolAddress address of pool to withdraw from
+    /// @param _amount the amount to withdraw
+    function withdrawFromPool(address _poolAddress, uint256 _amount) public onlyAdmin nonReentrant whenProtocolNotPaused {
+        Pool pool = Pool(_poolAddress);
+        principalBalanceAmount += _amount;
+        pool.withdraw(address(this), _amount);
+    }
+
+    /// @notice Only called by admin, initiate withdraw yield from regional pool
+    /// @param _poolAddress address of pool to withdraw from
+    function withdrawYieldFromPool(address _poolAddress) public onlyAdmin nonReentrant whenProtocolNotPaused {
+        Pool pool = Pool(_poolAddress);
+        principalBalanceAmount += pool.yields(address(this));
+        pool.withdrawYield(address(this));
+    }
+
+    /// @notice Retrieve pool array
+    function investedPools() public view returns (address[] memory) {
+        return pools.values();
+    }
+
     /// @notice Only pool can call
     modifier onlyPool() {
-        if (poolFactory.isValidPool(msg.sender) == false) revert NotPool();
+        if (!poolFactory.isValidPool(msg.sender)) revert NotPool();
         _;
     }
 }

@@ -3,13 +3,12 @@ pragma solidity ^0.8.20;
 
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
-import {AbstractPool} from "./AbstractPool.sol";
+import {PoolYieldDistribution} from "./base/PoolYieldDistribution.sol";
 import {BlendedPool} from "./BlendedPool.sol";
-import {PoolLibrary} from "../library/PoolLibrary.sol";
 
 /// @title Regional Pool implementation
 /// @author Tigran Arakelyan
-contract Pool is AbstractPool {
+contract Pool is PoolYieldDistribution {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     enum State {Active, Closed/*, Deactivated*/}
@@ -24,7 +23,7 @@ contract Pool is AbstractPool {
         uint256 _investmentPoolSize,
         string memory _tokenName,
         string memory _tokenSymbol)
-    AbstractPool(_asset, _tokenName, _tokenSymbol) {
+    PoolYieldDistribution(_asset, _tokenName, _tokenSymbol) {
         poolInfo = PoolInfo(_lockupPeriod, _minInvestmentAmount, _investmentPoolSize);
 
         poolState = State.Active;
@@ -47,9 +46,8 @@ contract Pool is AbstractPool {
 
     /// @notice withdraws the caller's assets
     /// @param _amount the amount of assets to be withdrawn
-    function withdraw(uint256 _amount) public override nonReentrant whenProtocolNotPaused {
+    function withdraw(address _beneficiary, uint256 _amount) public override unlocked(msg.sender) nonReentrant whenProtocolNotPaused {
         if (balanceOf(msg.sender) < _amount) revert InsufficientFunds();
-        if (unlockedToWithdraw(msg.sender) < _amount) revert TokensLocked();
 
         if (principalBalanceAmount < _amount) {
             uint256 insufficientAmount = _amount - principalBalanceAmount;
@@ -74,14 +72,21 @@ contract Pool is AbstractPool {
 
                 // Borrow liquidity from Blended Pool to Regional Pool
                 // Return back to Blended Pool equal amount of Regional Pool's tokens (so now Blended Pool act as investor for Regional Pool)
-                blendedPool.requestAssets(insufficientAmount);
+                blendedPool.depositToClosedPool(insufficientAmount);
 
                 // Now we have liquidity
             } else {
                 // Ok, going to manual flow
-                (, uint256 currentValue) = pendingWithdrawals.tryGet(msg.sender);
-                uint256 updatedValue = currentValue + _amount;
-                pendingWithdrawals.set(msg.sender, updatedValue);
+                (bool exists, uint256 currentValue) = pendingWithdrawals.tryGet(msg.sender);
+                if (exists)
+                {
+                    uint256 updatedValue = currentValue + _amount;
+                    pendingWithdrawals.set(msg.sender, updatedValue);
+                }
+                else
+                {
+                    pendingWithdrawals.set(msg.sender, _amount);
+                }
 
                 emit PendingWithdrawal(msg.sender, _amount);
                 return;
@@ -92,10 +97,9 @@ contract Pool is AbstractPool {
             _burn(msg.sender, _amount);
         }
 
-        _emitBalanceUpdatedEvent();
-        emit Withdrawal(msg.sender, _amount);
+        emit Withdrawal(msg.sender, _beneficiary, _amount);
 
-        _transferAssets(msg.sender, _amount);
+        _transferAssets(_beneficiary, _amount);
     }
 
     /*
@@ -117,6 +121,7 @@ contract Pool is AbstractPool {
     }
 
     /// @notice Check if pool in given state
+    /// @param _state to check
     modifier inState(State _state) {
         if (poolState != _state) revert BadState();
         _;

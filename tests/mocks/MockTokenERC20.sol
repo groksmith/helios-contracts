@@ -13,4 +13,8 @@ contract MockTokenERC20 is ERC20 {
     function burn(address _of, uint256 _amount) external {
         _burn(_of, _amount);
     }
+
+    function decimals() public view override returns (uint8) {
+        return 6;
+    }
 }

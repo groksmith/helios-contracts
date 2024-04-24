@@ -1,14 +1,11 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 import {HeliosGlobals} from "../contracts/global/HeliosGlobals.sol";
 import {MockTokenERC20} from "./mocks/MockTokenERC20.sol";
-import {AbstractPool} from "../contracts/pool/AbstractPool.sol";
 import {Pool} from "../contracts/pool/Pool.sol";
-import {PoolLibrary} from "../contracts/library/PoolLibrary.sol";
 import {FixtureContract} from "./fixtures/FixtureContract.t.sol";
-import {PoolErrors} from "../contracts/pool/PoolErrors.sol";
+import {PoolErrors} from "../contracts/pool/base/PoolErrors.sol";
 
 contract RegPoolTest is FixtureContract, PoolErrors {
     event PendingWithdrawal(address indexed investor, uint256 amount);
@@ -38,7 +35,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
 
         //testing initial condition i.e. zeroes
         assertEq(regPool1.balanceOf(user1), 0);
-        assertEq(regPool1.totalDeposited(), 0);
+        assertEq(regPool1.totalInvested(), 0);
         assertEq(regPool1.getHoldersCount(), 0, "wrong holder number");
 
         asset.approve(address(regPool1), user1Deposit);
@@ -48,7 +45,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         assertEq(regPool1.balanceOf(user1), user1Deposit, "wrong LP balance for user1");
 
         //pool's total minted should also be user1Deposit
-        assertEq(regPool1.totalDeposited(), user1Deposit, "wrong totalDeposit after user1 deposit");
+        assertEq(regPool1.totalInvested(), user1Deposit, "wrong totalDeposit after user1 deposit");
         vm.stopPrank();
 
         //now let's test for user2
@@ -61,7 +58,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         assertEq(regPool1.balanceOf(user2), user2Deposit, "wrong user2 LP balance");
 
         //pool's total minted should also be user1Deposit
-        assertEq(regPool1.totalDeposited(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
+        assertEq(regPool1.totalInvested(), user1Deposit + user2Deposit, "wrong totalDeposited after user2");
         assertEq(regPool1.getHoldersCount(), 2, "wrong holder number");
 
         vm.stopPrank();
@@ -120,8 +117,8 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         vm.warp(currentTime + 1000);
 
         // the user can withdraw the sum he has deposited earlier
-        regPool1.withdraw(amountBounded - 1);
-        regPool1.withdraw(1);
+        regPool1.withdraw(user, amountBounded - 1);
+        regPool1.withdraw(user, 1);
 
         vm.stopPrank();
     }
@@ -171,7 +168,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         vm.startPrank(regularPoolInvestor);
         assertEq(regPool1.totalBalance(), 0, "Regular pool is not empty");
         // the user can withdraw the sum he has deposited earlier
-        regPool1.withdraw(regularPoolInvestment);
+        regPool1.withdraw(regularPoolInvestor, regularPoolInvestment);
         assertEq(regPool1.totalBalance(), 0, "Wrong RP balance");
         assertEq(regPool1.balanceOf(address(blendedPool)), regularPoolInvestment, "Wrong token amount from RP");
 
@@ -215,7 +212,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         vm.expectEmit(true, true, false, false);
         // The expected event signature
         emit PendingWithdrawal(regularPoolInvestor, regularPoolInvestment);
-        regPool1.withdraw(regularPoolInvestment);
+        regPool1.withdraw(regularPoolInvestor, regularPoolInvestment);
 
         uint256 pendingAmount = regPool1.getPendingWithdrawalAmount(address(regularPoolInvestor));
         assertEq(pendingAmount, regularPoolInvestment, "Wrong pendingWithdrawals amount");
@@ -249,14 +246,14 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         regPool1.deposit(amountBounded);
 
         vm.expectRevert(TokensLocked.selector);
-        regPool1.withdraw(amountBounded);
+        regPool1.withdraw(user, amountBounded);
 
         vm.warp(currentTime + 1000);
 
-        regPool1.withdraw(amountBounded);
+        regPool1.withdraw(user, amountBounded);
 
         vm.expectRevert(InsufficientFunds.selector);
-        regPool1.withdraw(amountBounded);
+        regPool1.withdraw(user, amountBounded);
 
         vm.stopPrank();
     }
@@ -275,20 +272,15 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         asset.approve(address(regPool1), depositAmount);
         regPool1.deposit(depositAmount);
 
-        uint256 unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
-        assertEq(unlockedFundsAmount, 0);
-
-        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 1);
+        vm.warp(regPool1.unlockedToWithdraw(user) + 1);
 
         asset.approve(address(regPool1), depositAmount);
         regPool1.deposit(depositAmount);
 
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
-        assertEq(unlockedFundsAmount, depositAmount);
+        assertEq(regPool1.unlockedToWithdraw(user), 0);
 
-        vm.warp(block.timestamp + regPool1.getPoolInfo().lockupPeriod + 1);
-        unlockedFundsAmount = regPool1.unlockedToWithdraw(user);
-        assertEq(unlockedFundsAmount, 2 * depositAmount);
+        vm.warp(regPool1.getHolderUnlockDate(user) + 1);
+        assertEq(regPool1.unlockedToWithdraw(user), 2 * depositAmount);
     }
 
     /// @notice Test repay
@@ -417,7 +409,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
 
         // No yield yet
         vm.expectRevert(ZeroYield.selector);
-        regPool1.withdrawYield();
+        regPool1.withdrawYield(user1);
 
         vm.expectRevert(NotAdmin.selector);
         regPool1.repayYield(yieldGenerated);
@@ -443,7 +435,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
 
         vm.startPrank(user1);
         uint256 user1BalanceBefore = asset.balanceOf(user1);
-        regPool1.withdrawYield();
+        regPool1.withdrawYield(user1);
 
         assertEq(
             asset.balanceOf(user1) - user1BalanceBefore,
@@ -454,7 +446,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
 
         vm.startPrank(user2);
         uint256 user2BalanceBefore = asset.balanceOf(user2);
-        regPool1.withdrawYield();
+        regPool1.withdrawYield(user2);
         assertEq(
             asset.balanceOf(user2) - user2BalanceBefore,
             900,
@@ -491,6 +483,57 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         regPool1.getHolderByIndex(3);
     }
 
+    /// @notice Test get holders
+    function test_get_holders(address user1, address user2) external {
+        vm.assume(user1 != user2);
+
+        user1 = createInvestorAndMintAsset(user1, 1000);
+        user2 = createInvestorAndMintAsset(user2, 1000);
+
+        //firstly the users need to deposit before withdrawing
+        uint256 user1Deposit = 100;
+        vm.startPrank(user1);
+        asset.approve(address(regPool1), user1Deposit);
+        regPool1.deposit(user1Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.getHolders().length, 1);
+
+        uint256 user2Deposit = 900;
+        vm.startPrank(user2);
+        asset.approve(address(regPool1), user2Deposit);
+        regPool1.deposit(user2Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.getHolders().length, 2);
+    }
+
+    /// @notice Test get holders
+    function test_get_holder_exists(address user1, address user2) external {
+        vm.assume(user1 != user2);
+
+        user1 = createInvestorAndMintAsset(user1, 1000);
+        user2 = createInvestorAndMintAsset(user2, 1000);
+
+        //firstly the users need to deposit before withdrawing
+        uint256 user1Deposit = 100;
+        vm.startPrank(user1);
+        asset.approve(address(regPool1), user1Deposit);
+        regPool1.deposit(user1Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.holderExists(user1), true);
+        assertEq(regPool1.holderExists(user2), false);
+
+        uint256 user2Deposit = 900;
+        vm.startPrank(user2);
+        asset.approve(address(regPool1), user2Deposit);
+        regPool1.deposit(user2Deposit);
+        vm.stopPrank();
+
+        assertEq(regPool1.holderExists(user2), true);
+    }
+
     /// @notice Test attempt to change states
     function test_pool_close(address user1) external {
         uint256 depositAmount = 100000;
@@ -522,7 +565,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
     }
 
     /// @notice Test attempt transfer tokens
-    function testFuzz_pool_deposit_transfer(address holder, address newHolder, uint256 amount1, uint256 amount2) external {
+    function testFuzz_pool_deposit_transfer(address holder, address newHolder, uint256 amount1) external {
         vm.assume(holder != address(0));
         vm.assume(newHolder != address(0));
         vm.assume(newHolder != holder);
@@ -532,28 +575,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
             regPool1.getPoolInfo().minInvestmentAmount,
             regPool1.getPoolInfo().investmentPoolSize / 4);
 
-        uint256 amountBounded2 = bound(
-            amount2,
-            regPool1.getPoolInfo().minInvestmentAmount,
-            regPool1.getPoolInfo().investmentPoolSize / 4);
-
-        uint256 lockTime1 = block.timestamp + 1000;
-        uint256 lockTime2 = lockTime1 + 6000;
-
         vm.startPrank(holder);
-        mintAsset(holder, amountBounded1);
-        asset.approve(address(regPool1), amountBounded1);
-        regPool1.deposit(amountBounded1);
-
-        vm.expectRevert(TokensLocked.selector);
-        regPool1.transfer(newHolder, amountBounded1);
-
-        vm.warp(lockTime1);
-        mintAsset(holder, amountBounded2);
-        asset.approve(address(regPool1), amountBounded2);
-        regPool1.deposit(amountBounded2);
-
-        vm.warp(lockTime2);
         mintAsset(holder, amountBounded1);
         asset.approve(address(regPool1), amountBounded1);
         regPool1.deposit(amountBounded1);
@@ -561,7 +583,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         uint256 holderTokensAmountBefore = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
 
-        regPool1.transfer(newHolder, amountBounded1 + amountBounded2);
+        regPool1.transfer(newHolder, amountBounded1);
 
         uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);
@@ -569,6 +591,10 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         assertEq(
             holderTokensAmountBefore - holderTokensAmountAfter,
             newHolderTokensAmountAfter - newHolderTokensAmountBefore);
+
+        vm.warp(regPool1.getPoolInfo().lockupPeriod + 1);
+
+        assertEq(regPool1.unlockedToWithdraw(newHolder), amountBounded1);
     }
 
     /// @notice Test attempt transfer tokens
@@ -587,23 +613,7 @@ contract RegPoolTest is FixtureContract, PoolErrors {
             regPool1.getPoolInfo().minInvestmentAmount,
             regPool1.getPoolInfo().investmentPoolSize / 4);
 
-        uint256 lockTime1 = block.timestamp + 1000;
-        uint256 lockTime2 = lockTime1 + 6000;
-
         vm.startPrank(holder);
-        mintAsset(holder, amountBounded1);
-        asset.approve(address(regPool1), amountBounded1);
-        regPool1.deposit(amountBounded1);
-
-        vm.expectRevert(TokensLocked.selector);
-        regPool1.transferFrom(holder, newHolder, amountBounded1);
-
-        vm.warp(lockTime1);
-        mintAsset(holder, amountBounded2);
-        asset.approve(address(regPool1), amountBounded2);
-        regPool1.deposit(amountBounded2);
-
-        vm.warp(lockTime2);
         mintAsset(holder, amountBounded1);
         asset.approve(address(regPool1), amountBounded1);
         regPool1.deposit(amountBounded1);
@@ -612,7 +622,11 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         uint256 newHolderTokensAmountBefore = regPool1.balanceOf(newHolder);
 
         regPool1.approve(address(holder), amountBounded1 + amountBounded2);
-        regPool1.transferFrom(holder, newHolder, amountBounded1 + amountBounded2);
+
+        vm.expectRevert(InvalidHolder.selector);
+        regPool1.transferFrom(holder, address(0), amountBounded1);
+
+        regPool1.transferFrom(holder, newHolder, amountBounded1);
 
         uint256 holderTokensAmountAfter = regPool1.balanceOf(holder);
         uint256 newHolderTokensAmountAfter = regPool1.balanceOf(newHolder);
@@ -620,5 +634,9 @@ contract RegPoolTest is FixtureContract, PoolErrors {
         assertEq(
             holderTokensAmountBefore - holderTokensAmountAfter,
             newHolderTokensAmountAfter - newHolderTokensAmountBefore);
+
+        vm.warp(regPool1.getPoolInfo().lockupPeriod + 1);
+
+        assertEq(regPool1.unlockedToWithdraw(newHolder), amountBounded1);
     }
 }

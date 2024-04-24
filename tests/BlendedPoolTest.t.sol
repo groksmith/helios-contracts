@@ -102,36 +102,38 @@ contract BlendedPoolTest is Test, FixtureContract, PoolErrors {
         uint256 depositAmount = bound(amount, blendedPool.getPoolInfo().minInvestmentAmount, type(uint80).max);
         createInvestorAndMintAsset(user, depositAmount);
 
+        // deposit
         vm.startPrank(user);
 
-        // deposit
         asset.approve(address(blendedPool), depositAmount);
         blendedPool.deposit(depositAmount);
 
-        //attempt to withdraw too early fails
+        // attempt to withdraw too early fails
         vm.expectRevert(TokensLocked.selector);
         blendedPool.withdraw(user, depositAmount);
 
+        vm.expectRevert(NotMultiSigAdmin.selector);
+        blendedPool.borrow(OWNER_ADDRESS, depositAmount);
+
+        vm.stopPrank();
+
+        vm.startPrank(OWNER_ADDRESS);
+
+        // drawdown pool
+        blendedPool.borrow(OWNER_ADDRESS, depositAmount);
+
         vm.warp(blendedPool.getPoolInfo().lockupPeriod + 1);
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        //attempt to withdraw when not enough assets in pool
+        vm.expectRevert(NotEnoughAssets.selector);
+        blendedPool.withdraw(user, depositAmount);
 
         //attempt to withdraw more than deposited
         vm.expectRevert(InsufficientFunds.selector);
         blendedPool.withdraw(user, depositAmount + 1);
 
-        vm.stopPrank();
-
-        // drawdown pool
-        vm.prank(OWNER_ADDRESS);
-        blendedPool.borrow(OWNER_ADDRESS, depositAmount);
-
-        vm.startPrank(user);
-
-        vm.expectRevert(NotMultiSigAdmin.selector);
-        blendedPool.borrow(OWNER_ADDRESS, depositAmount);
-
-        //attempt to withdraw when not enough assets in pool
-        vm.expectRevert(NotEnoughAssets.selector);
-        blendedPool.withdraw(user, depositAmount);
         vm.stopPrank();
     }
 

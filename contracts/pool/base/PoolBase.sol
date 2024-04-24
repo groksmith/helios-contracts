@@ -75,7 +75,7 @@ abstract contract PoolBase is ERC20, ReentrancyGuard, PoolErrors {
 
     /// @notice Checks that the MultiSigAdmin call
     modifier onlyMultiSigAdmin() {
-        if (!poolFactory.globals().isMultiSigAdmin(msg.sender)) revert NotAdmin();
+        if (!poolFactory.globals().isMultiSigAdmin(msg.sender)) revert NotMultiSigAdmin();
         _;
     }
 }

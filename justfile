@@ -138,3 +138,5 @@ analyze: && _timer
 test-trasnfer: && _timer
 	forge test -vvvvv --match-test test_check_amm
 
+owner-fix: && _timer
+	forge script ./script/case1/MakeOwner.s.sol:MakeOwnerScript --rpc-url {{ RPC_URL }} --broadcast -vvvv

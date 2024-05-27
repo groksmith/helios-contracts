@@ -43,16 +43,12 @@ verify-prod: && _timer
         --libraries ./contracts/library/BlendedPoolFactoryLibrary.sol:BlendedPoolFactoryLibrary:{{ BLENDED_POOL_FACTORY_LIBRARY }}
 
     forge verify-contract {{ BLENDED_POOL }} ./contracts/pool/BlendedPool.sol:BlendedPool \
-        --constructor-args `cast abi-encode "constructor(address, uint256, uint256, string memory _name, string memory _symbol)" {{ USDC }} 7776000 100000000 '{{ NAME }}' '{{ SYMBOL }}'` \
+        --constructor-args `cast abi-encode "constructor(address, uint256, uint256, string memory, string memory)" {{ USDC }} 7776000 100000000 '{{ NAME }}' '{{ SYMBOL }}'` \
         --verifier-url {{ VERIFIER_URL }} --watch
 
-#    forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
-#        --constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256)" {{ USDC }} 86400 1000000000000000000 100000000000000000000` \
-#        --verifier-url {{ VERIFIER_URL }} --watch
-
-#    forge verify-contract {{ HELIOS_USD }} ./contracts/token/HeliosUSD.sol:HeliosUSD \
-#        --constructor-args `cast abi-encode "constructor(address initialOwner)" {{ HELIOS_OWNER }}` \
-#        --verifier-url {{ VERIFIER_URL }} --watch
+    forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
+        --constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256, string memory, string memory)" {{ USDC }} 1000000 10000000 100000000 'Final Test Token' 'PLSWORK'` \
+        --verifier-url {{ VERIFIER_URL }} --watch
 
 clean-all: && _timer
 	forge clean
@@ -109,7 +105,7 @@ verify-test: && _timer
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 	forge verify-contract {{ POOL }} ./contracts/pool/Pool.sol:Pool \
-		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256, string memory _name, string memory _symbol)" {{ USDC }} 86400 100000000 100000000  {{ NAME }} {{ SYMBOL }}` \
+		--constructor-args `cast abi-encode "constructor(address, uint256, uint256, uint256, string memory _name, string memory _symbol)" {{ USDC }} 86400 1000000 10000000 'Helios Finland' 'HLSf'` \
 		--verifier-url {{ VERIFIER_URL }} --watch
 
 initialize-all: && _timer
@@ -138,3 +134,7 @@ coverage-all: && _timer
 
 analyze: && _timer
     slither .
+
+test-trasnfer: && _timer
+	forge test -vvvvv --match-test test_check_amm
+
